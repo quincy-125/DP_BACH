@@ -2,12 +2,8 @@
 
 ## Import required modules/packages
 
-import openslide
-import tensorflow as tf
-import io
-import os
-import PIL
 import numpy as np
+import tensorflow as tf
 
 """
 2 options for Attention Network
