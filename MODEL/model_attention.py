@@ -248,7 +248,8 @@ class CLAM(tf.keras.Model):
         pos_index = tf.convert_to_tensor(pos_index)
         top_pos = list()
         for i in pos_index:
-            top_pos.append(h[i])
+            # print(f'Pos index h is, {len(h)}, i is {i}')
+            top_pos.append(h[i - 1])
 
         top_neg_ids = tf.math.top_k(-A, self.n_instance_sample)[1][-1]
         neg_index = list()
@@ -260,7 +261,10 @@ class CLAM(tf.keras.Model):
         neg_index = tf.convert_to_tensor(neg_index)
         top_neg = list()
         for i in neg_index:
-            top_neg.append(h[i])
+            # print('shape of h, ', h[i].shape, 'i is ', i)
+            # shape of h,  (1, 512) i is  tf.Tensor(16, shape=(), dtype=int32)
+            # print(f'Neg index h is, {len(h)}, i is {i}')
+            top_neg.append(h[i - 1])
 
         instance_samples = tf.concat(values=[top_pos, top_neg], axis=0)
 
@@ -300,7 +304,7 @@ class CLAM(tf.keras.Model):
         pos_index = tf.convert_to_tensor(pos_index)
         top_pos = list()
         for i in pos_index:
-            top_pos.append(h[i])
+            top_pos.append(h[i - 1])
 
         # mutually-exclusive -> top k instances w/ highest attention scores ==> false pos = neg
         pos_pseudo_labels = self.generate_neg_labels(self.n_instance_sample)
@@ -328,9 +332,9 @@ class CLAM(tf.keras.Model):
         """
         Args:
             img_features -> original 1024-dimensional instance-level feature vectors
-            slide_label -> input slide-level labels, default be 0 or 1 in binary classification case
+            labels -> mutable entire label set, could be 0 or 1 for binary classification
             mil_op -> whether or not perform the instance-level clustering, default be False
-            slide_predict_op -> whether or not return the slide-level representation, default be False
+            slide_predict_op ->
             att_only_op -> if only return the attention scores, default be False
         """
 
