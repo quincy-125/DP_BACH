@@ -20,43 +20,6 @@ import numpy as np
 """
 Read Image Feature Vectors [1024-dimensional] from tfrecord file
 """
-# Required Path for TFRecord File
-
-tf_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy' \
-         '/tfrecord_level_quincy_cluster '
-
-
-def get_data_from_tf(tf_path):
-    feature = {'height': tf.io.FixedLenFeature([], tf.int64),
-               'width': tf.io.FixedLenFeature([], tf.int64),
-               'depth': tf.io.FixedLenFeature([], tf.int64),
-               'label': tf.io.FixedLenFeature([], tf.int64),
-               'image/format': tf.io.FixedLenFeature([], tf.string),
-               'image_name': tf.io.FixedLenFeature([], tf.string),
-               'image/encoded': tf.io.FixedLenFeature([], tf.string),
-               'image_feature': tf.io.FixedLenFeature([], tf.string)}
-
-    tfrecord_dataset = tf.data.TFRecordDataset(tf_path)
-
-    def _parse_image_function(key):
-        return tf.io.parse_single_example(key, feature)
-
-    CLAM_dataset = tfrecord_dataset.map(_parse_image_function)
-
-    Image_Features = list()
-    for tfrecord_value in CLAM_dataset:
-        img_features = tf.io.parse_tensor(tfrecord_value['image_feature'], 'float32')
-        Image_Features.append(img_features)
-
-    return Image_Features
-
-def get_slide_label(tf_path):
-    if 'svs' in tf_path:
-        slide_label = 0
-    else:
-        slide_label = 1
-
-    return slide_label
 
 # None-Gated Attention Network Class - assign the same weights of each attention head/layer
 class NG_Att_Net(tf.keras.Model):
@@ -209,15 +172,13 @@ class CLAM(tf.keras.Model):
             'small': [1024, 512, 256],
             'big': [1024, 512, 384]
         }
-        self.size = self.size_dictionary[net_siz_arg]
+        size = self.size_dictionary[net_siz_arg]
 
         if att_net_gate:
-            self.att_net = G_Att_Net(dim_features=self.size[0], dim_compress_features=self.size[1],
-                                     n_hidden_units=self.size[2],
+            self.att_net = G_Att_Net(dim_features=size[0], dim_compress_features=size[1], n_hidden_units=size[2],
                                      n_classes=n_classes, dropout=dropout, dropout_rate=dropout_rate)
         else:
-            self.att_net = NG_Att_Net(dim_features=self.size[0], dim_compress_features=self.size[1],
-                                      n_hidden_units=self.size[2],
+            self.att_net = NG_Att_Net(dim_features=size[0], dim_compress_features=size[1], n_hidden_units=size[2],
                                       n_classes=n_classes, dropout=dropout, dropout_rate=dropout_rate)
 
         # Multi-Instance Learning - Adding 2 classifier models, one for bag-level, one for instance-level
@@ -225,25 +186,19 @@ class CLAM(tf.keras.Model):
         self.bag_classifiers = list()  # list of keras sequential model w/ single linear dense layer for each class
         for i in range(n_classes):
             self.bag_classifier = tf.keras.models.Sequential(
-                tf.keras.layers.Dense(units=1, activation='linear', input_shape=(self.size[1],))
-                # W_[c,m] shape be (1,512)
+                tf.keras.layers.Dense(units=1, activation='linear', input_shape=(size[1],))  # W_[c,m] shape be (1,512)
             )  # independent sequential model w/ single linear dense layer to do slide-level prediction for each class
             self.bag_classifiers.append(self.bag_classifier)
 
         # Instance-level classifier model
-
         # for each of n classes, take transpose of compressed img feature for kth patch (h_k) with shape (512,1) in,
         # and return the cluster assignment score predicted for kth patch (P_[m,k]) with shape (2,1)
         self.instance_classifiers = list()
         for i in range(n_classes):
             self.instance_classifier = tf.keras.models.Sequential(
-                tf.keras.layers.Dense(units=self.n_classes, activation='linear', input_shape=(self.size[1],))
+                tf.keras.layers.Dense(units=self.n_classes, activation='linear', input_shape=(size[1],))
             )  # W_[inst,m] shape (2,512)
             self.instance_classifiers.append(self.instance_classifier)
-
-    # Validating Attention Network by summarizing the model
-    def valid_att_net(self):
-        return self.att_net.att_model_no_gate().summary()
 
     # Generate patch-level pseudo labels with staticmethod [default values -> 1 for positive, 0 for negative]
     # Generate positive patch-level pseudo labels
@@ -318,7 +273,7 @@ class CLAM(tf.keras.Model):
 
         for i in range(self.n_instance_sample):
             logit = tf.reshape(classifier(instance_samples[i]), (2, 1))
-            ins_loss = self.mil_loss_func(pseudo_labels[i], logit).numpy()
+            ins_loss = self.mil_loss_func(pseudo_labels[i], logit)
             logits.append(logit)
             instance_loss.append(ins_loss)
 
@@ -337,6 +292,7 @@ class CLAM(tf.keras.Model):
 
     # Out-class attention branch based instance-level clustering [Optional Functionality]
     def instance_level_clustering_out_class(self, A, h, classifier):
+        # get compressed 512-dimensional instance-level feature vectors for following use, denoted by h
         A = tf.reshape(tf.convert_to_tensor(A), (1, len(A) * self.n_classes))
         top_pos_ids = tf.math.top_k(A, self.n_instance_sample)[1][-1]
         pos_index = list()
@@ -357,7 +313,7 @@ class CLAM(tf.keras.Model):
 
         for i in range(self.n_instance_sample):
             logit = tf.reshape(classifier(top_pos[i]), (2, 1))
-            ins_loss = self.mil_loss_func(pos_pseudo_labels[i], logit).numpy()
+            ins_loss = self.mil_loss_func(pos_pseudo_labels[i], logit)
             logits.append(logit)
             instance_loss.append(ins_loss)
 
@@ -376,9 +332,9 @@ class CLAM(tf.keras.Model):
         """
         Args:
             img_features -> original 1024-dimensional instance-level feature vectors
-            slide_label -> slide-level label, be either 0 or 1 for binary classification purpose
+            slide_label -> input slide-level labels, default be 0 or 1 in binary classification case
             mil_op -> whether or not perform the instance-level clustering, default be False
-            slide_predict_op -> whether or not return the slide-level representation
+            slide_predict_op -> whether or not return the slide-level representation, default be False
             att_only_op -> if only return the attention scores, default be False
         """
 
@@ -444,7 +400,7 @@ class CLAM(tf.keras.Model):
 
         # return s_[slide,m] (slide-level prediction scores)
         for j in range(self.n_classes):
-            ssu = self.bag_classifiers[j](tf.reshape(slide_agg_rep[j], (1, self.size[1])))[0, 0]
+            ssu = self.bag_classifiers[j](tf.reshape(slide_agg_rep[j], (1, 512)))[0, 0]
             tf.compat.v1.assign(slide_score_unnorm[0, j], ssu)
 
         Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
