@@ -1,21 +1,6 @@
-## Create attention neural network with Keras
-
-## Import required modules/packages
-
-import numpy as np
 import tensorflow as tf
+import numpy as np
 
-"""
-2 options for Attention Network
-    1. Attention Network w/ Gating
-    2. Attention Network w.o. Gating
-
->> Create new class of Attention Network which include the above 2 classes of attention network options
-"""
-
-"""
-Read Image Feature Vectors [1024-dimensional] from tfrecord file
-"""
 
 # None-Gated Attention Network Class - assign the same weights of each attention head/layer
 class NG_Att_Net(tf.keras.Model):
@@ -153,7 +138,7 @@ class G_Att_Net(tf.keras.Model):
 # CLAM Class - Attention Network (Gated/None-Gated) + Instance-Level Clustering
 class CLAM(tf.keras.Model):
     def __init__(self, att_net_gate=False, net_siz_arg='small', n_instance_sample=8, n_classes=2, subtype_prob=False,
-                 dropout=False, dropout_rate=.25, mil_loss_func=tf.keras.losses.CategoricalCrossentropy()):
+                 dropout=False, dropout_rate=.25, mil_loss_func=tf.keras.losses.CategoricalHinge()):
         super(CLAM, self).__init__()
         self.att_net_gate = att_net_gate
         self.net_size_arg = net_siz_arg
@@ -168,13 +153,15 @@ class CLAM(tf.keras.Model):
             'small': [1024, 512, 256],
             'big': [1024, 512, 384]
         }
-        size = self.size_dictionary[net_siz_arg]
+        self.size = self.size_dictionary[net_siz_arg]
 
         if att_net_gate:
-            self.att_net = G_Att_Net(dim_features=size[0], dim_compress_features=size[1], n_hidden_units=size[2],
+            self.att_net = G_Att_Net(dim_features=self.size[0], dim_compress_features=self.size[1],
+                                     n_hidden_units=self.size[2],
                                      n_classes=n_classes, dropout=dropout, dropout_rate=dropout_rate)
         else:
-            self.att_net = NG_Att_Net(dim_features=size[0], dim_compress_features=size[1], n_hidden_units=size[2],
+            self.att_net = NG_Att_Net(dim_features=self.size[0], dim_compress_features=self.size[1],
+                                      n_hidden_units=self.size[2],
                                       n_classes=n_classes, dropout=dropout, dropout_rate=dropout_rate)
 
         # Multi-Instance Learning - Adding 2 classifier models, one for bag-level, one for instance-level
@@ -182,7 +169,8 @@ class CLAM(tf.keras.Model):
         self.bag_classifiers = list()  # list of keras sequential model w/ single linear dense layer for each class
         for i in range(n_classes):
             self.bag_classifier = tf.keras.models.Sequential(
-                tf.keras.layers.Dense(units=1, activation='linear', input_shape=(size[1],))  # W_[c,m] shape be (1,512)
+                tf.keras.layers.Dense(units=1, activation='linear', input_shape=(self.size[1],))
+                # W_[c,m] shape be (1,512)
             )  # independent sequential model w/ single linear dense layer to do slide-level prediction for each class
             self.bag_classifiers.append(self.bag_classifier)
 
@@ -192,7 +180,7 @@ class CLAM(tf.keras.Model):
         self.instance_classifiers = list()
         for i in range(n_classes):
             self.instance_classifier = tf.keras.models.Sequential(
-                tf.keras.layers.Dense(units=self.n_classes, activation='linear', input_shape=(size[1],))
+                tf.keras.layers.Dense(units=self.n_classes, activation='linear', input_shape=(self.size[1],))
             )  # W_[inst,m] shape (2,512)
             self.instance_classifiers.append(self.instance_classifier)
 
@@ -341,7 +329,7 @@ class CLAM(tf.keras.Model):
         # get the compressed 512-dim feature vectors for following use
         h = self.att_net.compress(img_features)
 
-        A = self.att_net.forward(img_features)
+        A = self.att_net.call(img_features)
         att_net_out = A  # output from attention network
         A = tf.math.softmax(A)  # attention scores computed by Eqa#1 in CLAM paper
 
@@ -351,17 +339,15 @@ class CLAM(tf.keras.Model):
             }
             return CLAM_outcomes  # return attention scores of the kth patch for the mth class (i.e. a_[k,m])
 
+        instance_loss_total = 0.0
+        pos_acc_total = 0.0
+        neg_acc_total = 0.0
+
         if mil_op:
-            instance_loss_total = 0.0
-            pos_acc_total = 0.0
-            neg_acc_total = 0.0
-
             for i in range(len(self.instance_classifiers)):
-
                 classifier = self.instance_classifiers[i]
                 if i == slide_label:
                     instance_loss, pos_acc, neg_acc = self.instance_clustering_in_class(A, h, classifier)
-
                     pos_acc_total += pos_acc
                     neg_acc_total += neg_acc
                 else:
@@ -400,10 +386,17 @@ class CLAM(tf.keras.Model):
 
         # return s_[slide,m] (slide-level prediction scores)
         for j in range(self.n_classes):
-            ssu = self.bag_classifiers[j](tf.reshape(slide_agg_rep[j], (1, 512)))[0, 0]
+            ssu = self.bag_classifiers[j](tf.reshape(slide_agg_rep[j], (1, self.size[1])))[0, 0]
             tf.compat.v1.assign(slide_score_unnorm[0, j], ssu)
 
         Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
-        Y_prob = tf.compat.v1.math.softmax(slide_score_unnorm)
+        Y_prob = tf.compat.v1.math.softmax(slide_score_unnorm)  # shape be (1,2), predictions for each of the classes
 
-        return att_net_out, slide_score_unnorm, Y_hat, Y_prob, CLAM_outcomes
+        # compute slide-level loss
+        slide_loss_func = tf.keras.losses.CategoricalCrossentropy()
+        slide_loss_total = slide_loss_func(slide_label, Y_prob)
+
+        # compute total loss
+        total_loss = slide_loss_total + instance_loss_total
+
+        return att_net_out, slide_score_unnorm, Y_hat, Y_prob, total_loss, CLAM_outcomes
