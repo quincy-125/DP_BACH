@@ -1,3 +1,5 @@
+import time
+
 import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np
@@ -6,11 +8,10 @@ import datetime
 import os
 import random
 
-tfrecord = '/Users/quincy/Downloads/TFRECORD_ICIAR2018'
-clam_dir = '/Users/quincy/Downloads/CLAM'
-train_data = '/Users/quincy/Downloads/CLAM/train/'
-val_data = '/Users/quincy/Downloads/CLAM/valid/'
-test_data = '/Users/quincy/Downloads/CLAM/test/'
+train_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/train/'
+val_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/valid/'
+test_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/test/'
+
 
 def get_data_from_tf(tf_path):
     feature = {'height': tf.io.FixedLenFeature([], tf.int64),
@@ -35,10 +36,11 @@ def get_data_from_tf(tf_path):
         img_feature = tf.io.parse_tensor(tfrecord_value['image_feature'], 'float32')
         slide_labels = tfrecord_value['label']
         slide_label = int(slide_labels)
-        slide_true = tf.one_hot([slide_label],2)
+        slide_true = tf.one_hot([slide_label], 2)
         image_features.append(img_feature)
 
     return image_features, slide_label, slide_true
+
 
 # None-Gated Attention Network Class - assign the same weights of each attention head/layer
 class NG_Att_Net(tf.keras.Model):
@@ -97,6 +99,7 @@ class NG_Att_Net(tf.keras.Model):
             a = self.model(i)
             A.append(a)
         return A
+
 
 # Gated Attention Network Class - scaling the weights of each attention head/layer -> weights of each attention layer
 # would be different
@@ -428,6 +431,7 @@ class M_CLAM(tf.keras.Model):
 
         return att_score, A, h, ins_labels, ins_logits, slide_score_unnorm, Y_hat, Y_prob
 
+
 def tf_shut_up(no_warn_op=False):
     if no_warn_op:
         tf.get_logger().setLevel('ERROR')
@@ -473,17 +477,18 @@ def lom_func():
 
     return losses, metrics, optimizers
 
+
 losses, metrics, optimizers = lom_func()
 
 
 def train_step(c_model, train_path, i_loss_func, b_loss_func, mutual_ex=False, n_class=2, c1=0.7, c2=0.3,
                learn_rate=2e-04, l2_decay=1e-05):
-    loss_total = list();
-    loss_ins = list();
-    loss_bag = list();
-    acc = list();
-    auc = list();
-    precision = list();
+    loss_total = list()
+    loss_ins = list()
+    loss_bag = list()
+    acc = list()
+    auc = list()
+    precision = list()
     recall = list()
 
     c_optimizer = optimizers['AdamW'](learning_rate=learn_rate, weight_decay=l2_decay)
@@ -492,18 +497,18 @@ def train_step(c_model, train_path, i_loss_func, b_loss_func, mutual_ex=False, n
         print('=', end="")
         single_train_data = train_path + i
         img_features, slide_label, slide_true = get_data_from_tf(single_train_data)
-        train_tp = 0;
-        train_fp = 0;
-        train_tn = 0;
-        train_fn = 0;
-        train_acc = 0.0;
-        train_auc = 0.0;
-        train_precision = 0.0;
+        train_tp = 0
+        train_fp = 0
+        train_tn = 0
+        train_fn = 0
+        train_acc = 0.0
+        train_auc = 0.0
+        train_precision = 0.0
         train_recall = 0.0
 
         with tf.GradientTape() as c_tape:
-            att_score, A, h, ins_labels, ins_logits, slide_score_unnorm, Y_hat, Y_prob = c_model.call(img_features,
-                                                                                                      slide_label)
+            att_score, A, h, ins_labels, ins_logits, slide_score_unnorm, \
+            Y_hat, Y_prob = c_model.call(img_features, slide_label)
             ins_loss = list()
             for i in range(len(ins_logits)):
                 i_loss = i_loss_func(tf.one_hot(ins_labels[i], 2), ins_logits[i])
@@ -517,49 +522,49 @@ def train_step(c_model, train_path, i_loss_func, b_loss_func, mutual_ex=False, n
         c_grad = c_tape.gradient([I_Loss, B_Loss, T_Loss], c_model.trainable_variables)
         c_optimizer.apply_gradients(zip(c_grad, c_model.trainable_variables))
 
-        loss_total.append(T_Loss);
-        loss_ins.append(I_Loss);
-        loss_bag.append(B_Loss);
-        tp = metrics['TP'](slide_true, Y_prob); \
-                fp = metrics['FP'](slide_true, Y_prob);
-        tn = metrics['TN'](slide_true, Y_prob);
-        fn = metrics['FN'](slide_true, Y_prob); \
-                acc_value = metrics['BinaryAccuracy'](slide_true, Y_prob);
-        auc_value = metrics['AUC'](slide_true, Y_prob); \
-                precision_value = metrics['Precision'](slide_true, Y_prob);
-        recall_value = metrics['Recall'](slide_true, Y_prob); \
-                train_tp += tp;
-        train_fp += fp;
-        train_tn += tn;
-        train_fn += fn;
-        train_acc += acc_value;
-        train_auc += auc_value; \
-                train_precision += precision_value;
-        train_recall += recall_value;
-        acc.append(train_acc);
-        auc.append(train_auc); \
-                precision.append(train_precision);
+        loss_total.append(T_Loss)
+        loss_ins.append(I_Loss)
+        loss_bag.append(B_Loss)
+        tp = metrics['TP'](slide_true, Y_prob)
+        fp = metrics['FP'](slide_true, Y_prob)
+        tn = metrics['TN'](slide_true, Y_prob)
+        fn = metrics['FN'](slide_true, Y_prob)
+        acc_value = metrics['BinaryAccuracy'](slide_true, Y_prob)
+        auc_value = metrics['AUC'](slide_true, Y_prob)
+        precision_value = metrics['Precision'](slide_true, Y_prob)
+        recall_value = metrics['Recall'](slide_true, Y_prob)
+        train_tp += tp
+        train_fp += fp
+        train_tn += tn
+        train_fn += fn
+        train_acc += acc_value
+        train_auc += auc_value
+        train_precision += precision_value
+        train_recall += recall_value
+        acc.append(train_acc)
+        auc.append(train_auc)
+        precision.append(train_precision)
         recall.append(train_recall)
 
-    acc_train = tf.math.add_n(acc) / len(os.listdir(train_path));
-    auc_train = tf.math.add_n(auc) / len(os.listdir(train_path)); \
-            precision_train = tf.math.add_n(precision) / len(os.listdir(train_path));
-    recall_train = tf.math.add_n(recall) / len(os.listdir(train_path)); \
-            train_loss = tf.math.add_n(loss_total) / len(os.listdir(train_path));
-    train_ins_loss = tf.math.add_n(loss_ins) / len(os.listdir(train_path)); \
-            train_bag_loss = tf.math.add_n(loss_bag) / len(os.listdir(train_path))
+    acc_train = tf.math.add_n(acc) / len(os.listdir(train_path))
+    auc_train = tf.math.add_n(auc) / len(os.listdir(train_path))
+    precision_train = tf.math.add_n(precision) / len(os.listdir(train_path))
+    recall_train = tf.math.add_n(recall) / len(os.listdir(train_path))
+    train_loss = tf.math.add_n(loss_total) / len(os.listdir(train_path))
+    train_ins_loss = tf.math.add_n(loss_ins) / len(os.listdir(train_path))
+    train_bag_loss = tf.math.add_n(loss_bag) / len(os.listdir(train_path))
 
-    return train_loss, train_ins_loss, train_bag_loss, acc_train, auc_train, train_tp, train_fp, train_tn, \
-           train_fn, precision_train, recall_train
+    return train_loss, train_ins_loss, train_bag_loss, acc_train, auc_train, \
+           train_tp, train_fp, train_tn, train_fn, precision_train, recall_train
 
 
 def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex=False, n_class=2, c1=0.7, c2=0.3):
-    loss_t = list();
-    loss_i = list();
-    loss_b = list();
-    acc = list();
-    auc = list();
-    precision = list();
+    loss_t = list()
+    loss_i = list()
+    loss_b = list()
+    acc = list()
+    auc = list()
+    precision = list()
     recall = list()
 
     for j in os.listdir(val_path):
@@ -567,8 +572,8 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex=False, n_cla
         single_val_data = val_path + j
         img_features, slide_label, slide_true = get_data_from_tf(single_val_data)
 
-        att_score, A, h, ins_labels, ins_logits, slide_score_unnorm, Y_hat, Y_prob = c_model.call(img_features,
-                                                                                                  slide_label)
+        att_score, A, h, ins_labels, ins_logits, slide_score_unnorm, \
+        Y_hat, Y_prob = c_model.call(img_features, slide_label)
         ins_loss = list()
         for i in range(len(ins_logits)):
             i_loss = i_loss_func(tf.one_hot(ins_labels[i], 2), ins_logits[i])
@@ -580,65 +585,70 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex=False, n_cla
         B_Loss = b_loss_func(slide_true, slide_score_unnorm)
         T_Loss = c1 * B_Loss + c2 * I_Loss
 
-        loss_t.append(T_Loss);
-        loss_i.append(I_Loss);
+        loss_t.append(T_Loss)
+        loss_i.append(I_Loss)
         loss_b.append(B_Loss)
 
-        val_tp = 0;
-        val_fp = 0;
-        val_tn = 0;
-        val_fn = 0;
-        val_acc = 0.0;
-        val_auc = 0.0;
-        val_precision = 0.0;
+        val_tp = 0
+        val_fp = 0
+        val_tn = 0
+        val_fn = 0
+        val_acc = 0.0
+        val_auc = 0.0
+        val_precision = 0.0
         val_recall = 0.0
 
-        tp = metrics['TP'](slide_true, Y_prob);
-        fp = metrics['FP'](slide_true, Y_prob);
-        tn = metrics['TN'](slide_true, Y_prob); \
-                fn = metrics['FN'](slide_true, Y_prob)
-        acc_value = metrics['BinaryAccuracy'](slide_true, Y_prob);
-        auc_value = metrics['AUC'](slide_true, Y_prob); \
-                precision_value = metrics['Precision'](slide_true, Y_prob);
+        tp = metrics['TP'](slide_true, Y_prob)
+        fp = metrics['FP'](slide_true, Y_prob)
+        tn = metrics['TN'](slide_true, Y_prob)
+        fn = metrics['FN'](slide_true, Y_prob)
+        acc_value = metrics['BinaryAccuracy'](slide_true, Y_prob)
+        auc_value = metrics['AUC'](slide_true, Y_prob)
+        precision_value = metrics['Precision'](slide_true, Y_prob)
         recall_value = metrics['Recall'](slide_true, Y_prob)
 
-        val_tp += tp;
-        val_fp += fp;
-        val_tn += tn;
-        val_fn += fn;
-        val_acc += acc_value;
-        val_auc += auc_value; \
-                val_precision += precision_value;
+        val_tp += tp
+        val_fp += fp
+        val_tn += tn
+        val_fn += fn
+        val_acc += acc_value
+        val_auc += auc_value
+        val_precision += precision_value
         val_recall += recall_value
 
-        acc.append(val_acc);
-        auc.append(val_auc);
-        precision.append(val_precision);
-        recall.append(val_recall);
-        loss_t.append(T_Loss);
+        acc.append(val_acc)
+        auc.append(val_auc)
+        precision.append(val_precision)
+        recall.append(val_recall)
+        loss_t.append(T_Loss)
 
-    val_loss = tf.math.add_n(loss_t) / len(os.listdir(val_path));
-    val_ins_loss = tf.math.add_n(loss_i) / len(os.listdir(val_path)); \
-            val_bag_loss = tf.math.add_n(loss_b) / len(os.listdir(val_path));
-    val_acc = tf.math.add_n(acc) / len(os.listdir(val_path)); \
-            val_auc = tf.math.add_n(auc) / len(os.listdir(val_path));
-    val_precision = tf.math.add_n(precision) / len(os.listdir(val_path)); \
-            val_recall = tf.math.add_n(recall) / len(os.listdir(val_path))
+    val_loss = tf.math.add_n(loss_t) / len(os.listdir(val_path))
+    val_ins_loss = tf.math.add_n(loss_i) / len(os.listdir(val_path))
+    val_bag_loss = tf.math.add_n(loss_b) / len(os.listdir(val_path))
+    val_acc = tf.math.add_n(acc) / len(os.listdir(val_path))
+    val_auc = tf.math.add_n(auc) / len(os.listdir(val_path))
+    val_precision = tf.math.add_n(precision) / len(os.listdir(val_path))
+    val_recall = tf.math.add_n(recall) / len(os.listdir(val_path))
 
     return val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, \
            val_fn, val_precision, val_recall
 
+
 m_clam = M_CLAM(att_gate=True, net_size='small', n_ins=8, n_class=2, mut_ex=True,
-                 dropout=True, drop_rate=.25, mil_ins=True, att_only=False, m_bag=True)
+                dropout=True, drop_rate=.25, mil_ins=True, att_only=False, m_bag=True)
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-train_log_dir = '/Users/quincy/Downloads/CLAM/log/' + current_time + '/train'
-val_log_dir = '/Users/quincy/Downloads/CLAM/log/' + current_time + '/val'
+train_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy' \
+                '/Data/CLAM/log/' + current_time + '/train'
+val_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/' \
+              'Data/CLAM/log/' + current_time + '/val'
+
 
 def train_eval(train_log, val_log, epochs=1):
     train_summary_writer = tf.summary.create_file_writer(train_log)
     val_summary_writer = tf.summary.create_file_writer(val_log)
     for epoch in range(epochs):
+        start_time = time.time()
         # Training Step
         train_loss, train_ins_loss, train_bag_loss, acc_train, auc_train, train_tp, train_fp, \
         train_tn, train_fn, precision_train, recall_train = train_step(
@@ -676,12 +686,16 @@ def train_eval(train_log, val_log, epochs=1):
             tf.summary.histogram('False Positive', int(val_fp), step=epoch)
             tf.summary.histogram('True Negative', int(val_tn), step=epoch)
             tf.summary.histogram('False Negative', int(val_fn), step=epoch)
-        template = '\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}'
+        epoch_run_time = time.time() - start_time
+        template = '\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, ' \
+                   'Epoch Running Time: {}'
         print(template.format(epoch + 1,
-                          f"{float(train_loss):.8}",
-                          f"{float(acc_train):.4%}",
-                          f"{float(val_loss):.8}",
-                          f"{float(val_acc):.4%}"))
+                              f"{float(train_loss):.8}",
+                              f"{float(acc_train):.4%}",
+                              f"{float(val_loss):.8}",
+                              f"{float(val_acc):.4%}",
+                              "--- %s minutes ---" % int(epoch_run_time / 60)))
+
 
 tf_shut_up(no_warn_op=True)
 
