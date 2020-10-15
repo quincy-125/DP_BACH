@@ -234,7 +234,7 @@ class M_Ins(tf.keras.Model):
         logits_in = list()
 
         for i in range(self.n_class * n_ins):
-            logit_in = ins_classifier(ins_in[i])
+            logit_in = tf.math.softmax(ins_classifier(ins_in[i]))
             logits_in.append(logit_in)
 
         return ins_label_in, logits_in
@@ -259,7 +259,7 @@ class M_Ins(tf.keras.Model):
         logits_out = list()
 
         for i in range(n_ins):
-            logit_out = ins_classifier(top_pos[i])
+            logit_out = tf.math.softmax(ins_classifier(top_pos[i]))
             logits_out.append(logit_out)
 
         return ins_label_out, logits_out
@@ -481,8 +481,8 @@ def lom_func():
 losses, metrics, optimizers = lom_func()
 
 
-def train_step(c_model, train_path, i_loss_func, b_loss_func, mutual_ex=False, n_class=2, c1=0.7, c2=0.3,
-               learn_rate=2e-04, l2_decay=1e-05):
+def train_step(i_model, b_model, c_model, train_path, i_loss_func, b_loss_func, n_ins=8,
+               mutual_ex=False, n_class=2, c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05):
     loss_total = list()
     loss_ins = list()
     loss_bag = list()
@@ -506,9 +506,11 @@ def train_step(c_model, train_path, i_loss_func, b_loss_func, mutual_ex=False, n
         train_precision = 0.0
         train_recall = 0.0
 
-        with tf.GradientTape() as c_tape:
+        with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
             att_score, A, h, ins_labels, ins_logits, slide_score_unnorm, \
             Y_hat, Y_prob = c_model.call(img_features, slide_label)
+            ins_labels, ins_logits = i_model.call(slide_label, mutual_ex, n_ins, h, A)
+            slide_score_unnorm, Y_hat, Y_prob = b_model.call(A, h)
             ins_loss = list()
             for i in range(len(ins_logits)):
                 i_loss = i_loss_func(tf.one_hot(ins_labels[i], 2), ins_logits[i])
@@ -582,7 +584,7 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex=False, n_cla
             I_Loss = (tf.math.add_n(ins_loss) / len(ins_logits)) / n_class
         else:
             I_Loss = tf.math.add_n(ins_loss) / len(ins_logits)
-        B_Loss = b_loss_func(slide_true, slide_score_unnorm)
+        B_Loss = b_loss_func(slide_true, Y_prob)
         T_Loss = c1 * B_Loss + c2 * I_Loss
 
         loss_t.append(T_Loss)
@@ -634,8 +636,11 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex=False, n_cla
            val_fn, val_precision, val_recall
 
 
-m_clam = M_CLAM(att_gate=True, net_size='small', n_ins=8, n_class=2, mut_ex=True,
-                dropout=True, drop_rate=.25, mil_ins=True, att_only=False, m_bag=True)
+m_ins = M_Ins(dim_compress_features=512, n_class=2)
+s_bag = S_Bag(dim_compress_features=512, n_class=2)
+m_bag = M_Bag(dim_compress_features=512, n_class=2)
+m_clam = M_CLAM(att_gate=True, net_size='small', n_ins=15, n_class=2, mut_ex=True,
+                dropout=True, drop_rate=.25, mil_ins=True, att_only=False, m_bag=False)
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 train_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy' \
@@ -652,7 +657,7 @@ def train_eval(train_log, val_log, epochs=1):
         # Training Step
         train_loss, train_ins_loss, train_bag_loss, acc_train, auc_train, train_tp, train_fp, \
         train_tn, train_fn, precision_train, recall_train = train_step(
-            c_model=m_clam, train_path=train_data, i_loss_func=losses['squaredhinge'],
+            i_model=M_Ins, b_model=s_bag, c_model=m_clam, train_path=train_data, i_loss_func=losses['hinge'],
             b_loss_func=losses['binarycrossentropy'], mutual_ex=True, n_class=2, c1=0.7,
             c2=0.3, learn_rate=2e-04, l2_decay=1e-05
         )
@@ -671,7 +676,7 @@ def train_eval(train_log, val_log, epochs=1):
         # Validation Step
         val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, \
         val_fn, val_precision, val_recall = val_step(
-            c_model=m_clam, val_path=val_data, i_loss_func=losses['squaredhinge'],
+            c_model=m_clam, val_path=val_data, i_loss_func=losses['hinge'],
             b_loss_func=losses['binarycrossentropy'], mutual_ex=True, n_class=2, c1=0.7, c2=0.3
         )
         with val_summary_writer.as_default():
@@ -699,4 +704,4 @@ def train_eval(train_log, val_log, epochs=1):
 
 tf_shut_up(no_warn_op=True)
 
-train_eval(train_log=train_log_dir, val_log=val_log_dir, epochs=50)
+train_eval(train_log=train_log_dir, val_log=val_log_dir, epochs=200)
