@@ -173,9 +173,9 @@ class G_Att_Net(tf.keras.Model):
         return h, A
 
 
-class M_Ins(tf.keras.Model):
+class Ins(tf.keras.Model):
     def __init__(self, dim_compress_features=512, n_class=2, n_ins=8, mut_ex=False):
-        super(M_Ins, self).__init__()
+        super(Ins, self).__init__()
         self.dim_compress_features = dim_compress_features
         self.n_class = n_class
         self.n_ins = n_ins
@@ -292,20 +292,36 @@ class M_Ins(tf.keras.Model):
         return ins_labels, ins_logits
 
 
-class S_Bag(tf.keras.Model):
-    def __init__(self, dim_compress_features=512, n_class=2):
-        super(S_Bag, self).__init__()
+
+class Bag(tf.keras.Model):
+    def __init__(self, dim_compress_features=512, n_class=2, m_bag=False):
+        super(Bag, self).__init__()
         self.dim_compress_features = dim_compress_features
         self.n_class = n_class
-        
-        self.s_bag_model = tf.keras.models.Sequential()
-        self.s_bag_layer = tf.keras.layers.Dense(
-            units=1, activation='linear', input_shape=(n_class, dim_compress_features), name='Bag_Classifier_Layer'
-        )
-        self.s_bag_model.add(self.s_bag_layer)
-    
-    def s_bag_classifier(self):
-        return self.s_bag_model
+        self.m_bag = m_bag
+
+    def bag_classifier(self):
+        if self.m_bag:
+            # List of bag classifier models for each of the classes
+            self.m_bag_model = list()
+            self.m_bag = tf.keras.models.Sequential()
+            self.m_bag_layer = tf.keras.layers.Dense(
+            units=1, activation='linear', input_shape=(self.n_class, self.dim_compress_features), name='Bag_Classifier_Layer'
+            )
+            self.m_bag.add(self.m_bag_layer)
+            for i in range(self.n_class):
+                self.m_bag_model.append(self.m_bag)
+            bag_classifier = self.m_bag_model
+        else:
+            # One bag classifier model for all classes
+            self.s_bag_model = tf.keras.models.Sequential()
+            self.s_bag_layer = tf.keras.layers.Dense(
+                units=1, activation='linear', input_shape=(self.n_class, self.dim_compress_features), name='Bag_Classifier_Layer'
+            )
+            self.s_bag_model.add(self.s_bag_layer)
+            bag_classifier = self.s_bag_model
+            
+        return bag_classifier
     
     def h_slide(self, A, h):
         # compute the slide-level representation aggregated per the attention score distribution for the mth class
@@ -316,65 +332,43 @@ class S_Bag(tf.keras.Model):
         slide_agg_rep = tf.math.add_n(SAR)   # return h_[slide,m], shape be (2,512)
         
         return slide_agg_rep
-        
-    def call(self, A, h):
+    
+    def s_call(self, A, h):
+        bag_classifier = self.bag_classifier()
         slide_agg_rep = self.h_slide(A, h)
-        slide_score_unnorm = self.s_bag_model(slide_agg_rep)
+        slide_score_unnorm = bag_classifier(slide_agg_rep)
         Y_hat = tf.math.top_k(tf.reshape(slide_score_unnorm, (1, self.n_class)), 1)[1][-1]
         Y_prob = tf.math.softmax(tf.reshape(slide_score_unnorm, (1, self.n_class)))   #shape be (1,2), predictions for each of the classes
         
         return slide_score_unnorm, Y_hat, Y_prob
-
-
-class M_Bag(tf.keras.Model):
-    def __init__(self, dim_compress_features=512, n_class=2):
-        super(M_Bag, self).__init__()
-        self.dim_compress_features = dim_compress_features
-        self.n_class = n_class
-        
-        self.m_bag_models = list()
-        self.m_bag_model = tf.keras.models.Sequential()
-        self.m_bag_layer = tf.keras.layers.Dense(
-        units=1, activation='linear', input_shape=(n_class, dim_compress_features), name='Bag_Classifier_Layer'
-        )
-        self.m_bag_model.add(self.m_bag_layer)
-        
-        for i in range(self.n_class):
-            self.m_bag_models.append(self.m_bag_model)
     
-    def m_bag_classifier(self):
-        return self.m_bag_models
-    
-    def h_slide(self, A, h):
-        # compute the slide-level representation aggregated per the attention score distribution for the mth class
-        SAR = list()
-        for i in range(len(A)):
-            sar = tf.linalg.matmul(tf.transpose(A[i]), h[i])  # shape be (2,512)
-            SAR.append(sar)
-        slide_agg_rep = tf.math.add_n(SAR)   # return h_[slide,m], shape be (2,512)
-        
-        return slide_agg_rep
-    
-    def call(self, A, h):
+    def m_call(self, A, h):
+        bag_classifier = self.bag_classifier()
         slide_agg_rep = self.h_slide(A, h)
         # unnormalized slide-level score (s_[slide,m]) with uninitialized entries, shape be (1,num_of_classes)
         slide_score_unnorm = tf.Variable(np.empty((1, self.n_class)), dtype=tf.float32)
         # return s_[slide,m] (slide-level prediction scores)
         for i in range(self.n_class):
-            bag_classifier = self.m_bag_models[i]
-            ssu = bag_classifier(slide_agg_rep)[i][0]
-            #print('starting printing',ssu, 'then', ssu[i][0])
+            ssu = bag_classifier[i](slide_agg_rep)[i][0]
             tf.compat.v1.assign(slide_score_unnorm[0,i], ssu)
         Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
         Y_prob = tf.math.softmax(slide_score_unnorm)
         
         return slide_score_unnorm, Y_hat, Y_prob
+    
+    def call(self, A, h):
+        if self.m_bag:
+            slide_score_unnorm, Y_hat, Y_prob = self.m_call(A, h)
+        else:
+            slide_score_unnorm, Y_hat, Y_prob = self.s_call(A, h)
+
+        return slide_score_unnorm, Y_hat, Y_prob
 
 
-class M_CLAM(tf.keras.Model):
+class CLAM(tf.keras.Model):
     def __init__(self, att_gate=False, net_size='small', n_ins=8, n_class=2, mut_ex=False, 
                  dropout=False, drop_rate=.25, mil_ins=False, att_only=False, m_bag=False):
-        super(M_CLAM, self).__init__()
+        super(CLAM, self).__init__()
         self.att_gate = att_gate
         self.net_size = net_size
         self.n_ins = n_ins
@@ -399,12 +393,9 @@ class M_CLAM(tf.keras.Model):
             self.att_net = NG_Att_Net(dim_features=self.net_shape[0], dim_compress_features=self.net_shape[1], n_hidden_units=self.net_shape[2],
                                     n_classes=self.n_class, dropout=self.dropout, dropout_rate=self.drop_rate)
         
-        if self.m_bag:
-            self.bag_net = M_Bag(dim_compress_features=self.net_shape[1], n_class=self.n_class)
-        else:
-            self.bag_net = S_Bag(dim_compress_features=self.net_shape[1], n_class=self.n_class)
+        self.bag_net = Bag(dim_compress_features=self.net_shape[1], n_class=self.n_class, m_bag=self.m_bag)
         
-        self.ins_net = M_Ins(dim_compress_features=self.net_shape[1], n_class=self.n_class, n_ins=self.n_ins, mut_ex=self.mut_ex)
+        self.ins_net = Ins(dim_compress_features=self.net_shape[1], n_class=self.n_class, n_ins=self.n_ins, mut_ex=self.mut_ex)
         
     def call(self, img_features, slide_label):
         """
@@ -425,7 +416,7 @@ class M_CLAM(tf.keras.Model):
 
         slide_score_unnorm, Y_hat, Y_prob = self.bag_net.call(A, h)
 
-        return att_score, A, h, ins_labels, ins_logits, Y_prob, Y_hat
+        return att_score, A, h, ins_labels, ins_logits, slide_score_unnorm, Y_prob, Y_hat
 
 
 def tf_shut_up(no_warn_op=False):
@@ -482,7 +473,7 @@ def train_step(i_model, b_model, c_model, train_path, i_loss_func, b_loss_func, 
     loss_total = list(); loss_ins = list(); loss_bag = list(); acc = list(); auc = list(); precision = list(); recall = list()
     c_optimizer = optimizers['AdamW'](learning_rate=learn_rate, weight_decay=l2_decay)
     i_optimizer = optimizers['AdamW'](learning_rate=learn_rate, weight_decay=l2_decay)
-    b_optimizer = optimizers['AdamW'](learning_rate=learn_rate, weight_decay=l2_decay)
+    b_optimizer = optimizers['AdamW'](learning_rate=0.001, weight_decay=l2_decay)
     
     for i in os.listdir(train_path):
         print('=', end = "")
@@ -491,7 +482,7 @@ def train_step(i_model, b_model, c_model, train_path, i_loss_func, b_loss_func, 
         train_tp = 0; train_fp = 0; train_tn = 0; train_fn = 0; train_acc = 0.0; train_auc = 0.0; train_precision = 0.0; train_recall = 0.0
   
         with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
-            att_score, A, h, ins_labels, ins_logits, Y_prob, Y_hat = c_model.call(img_features, slide_label)
+            att_score, A, h, ins_labels, ins_logits, slide_score_unnorm, Y_prob, Y_hat = c_model.call(img_features, slide_label)
             ins_labels, ins_logits = i_model.call(slide_label, h, A)
             slide_score_unnorm, Y_hat, Y_prob = b_model.call(A, h)
             ins_loss = list()
@@ -504,7 +495,7 @@ def train_step(i_model, b_model, c_model, train_path, i_loss_func, b_loss_func, 
             else:
                 I_Loss = tf.math.add_n(ins_loss) / len(ins_logits)   
             B_Loss = b_loss_func(slide_true, Y_prob)
-            T_Loss = (B_Loss / (I_Loss + B_Loss)) * B_Loss + (I_Loss / (I_Loss + B_Loss)) * I_Loss
+            T_Loss = c2*B_Loss + c1*I_Loss   
             #print('unnorm', slide_score_unnorm, 'b logit,', Y_prob, 'label', slide_true, 'loss', B_Loss,'\n')
             #print('loss', T_Loss)
         i_grad = i_tape.gradient(I_Loss, i_model.trainable_variables)
@@ -540,7 +531,7 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex=False, n_cla
         single_val_data = val_path + j
         img_features, slide_label, slide_true = get_data_from_tf(single_val_data)
 
-        att_score, A, h, ins_labels, ins_logits, Y_prob, Y_hat = c_model.call(img_features, slide_label)
+        att_score, A, h, ins_labels, ins_logits, slide_score_unnorm, Y_prob, Y_hat = c_model.call(img_features, slide_label)
         ins_loss = list()
         for i in range(len(ins_logits)):
             i_loss = i_loss_func(tf.one_hot(ins_labels[i], 2), ins_logits[i])
@@ -550,7 +541,7 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex=False, n_cla
         else:
             I_Loss = tf.math.add_n(ins_loss) / len(ins_logits)
         B_Loss = b_loss_func(slide_true, Y_prob)
-        T_Loss = c1 * B_Loss + c2 * I_Loss
+        T_Loss = c2*B_Loss + c1*I_Loss
         
         loss_t.append(T_Loss); loss_i.append(I_Loss); loss_b.append(B_Loss)
           
@@ -571,21 +562,13 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex=False, n_cla
     val_auc = tf.math.add_n(auc) / len(os.listdir(val_path)); val_precision = tf.math.add_n(precision) / len(os.listdir(val_path)); \
     val_recall = tf.math.add_n(recall) / len(os.listdir(val_path))
   
-    return val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, val_fn, val_precision, val_recall    
+    return val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, val_fn, val_precision, val_recall       
 
 
-ng = NG_Att_Net(dim_features=1024, dim_compress_features=512, n_hidden_units=256, n_classes=2,
-                 dropout=False, dropout_rate=.25)
-g = G_Att_Net(dim_features=1024, dim_compress_features=512, n_hidden_units=256, n_classes=2,
-                 dropout=False, dropout_rate=.25)
-
-m_ins = M_Ins(dim_compress_features=512, n_class=2, n_ins=8, mut_ex=True)
-
-s_bag = S_Bag(dim_compress_features=512, n_class=2)
-m_bag = M_Bag(dim_compress_features=512, n_class=2)
-
-m_clam = M_CLAM(att_gate=True, net_size='small', n_ins=8, n_class=2, mut_ex=False, 
-                 dropout=True, drop_rate=.25, mil_ins=True, att_only=False, m_bag=False)
+ins = Ins(dim_compress_features=512, n_class=2, n_ins=8, mut_ex=True)
+bag = Bag(dim_compress_features=512, n_class=2, m_bag=False)
+clam = CLAM(att_gate=True, net_size='small', n_ins=8, n_class=2, mut_ex=False, 
+            dropout=False, drop_rate=.25, mil_ins=True, att_only=False, m_bag=True)
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 train_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy' \
@@ -602,7 +585,7 @@ def train_eval(train_log, val_log, epochs=1):
         start_time = time.time()
         train_loss, train_ins_loss, train_bag_loss, acc_train, auc_train, train_tp, train_fp, \
         train_tn, train_fn, precision_train, recall_train = train_step(
-            i_model=m_ins, b_model=s_bag, c_model=m_clam, train_path=train_data, i_loss_func=losses['hinge'], b_loss_func=losses['binarycrossentropy'], 
+            i_model=ins, b_model=bag, c_model=clam, train_path=train_data, i_loss_func=losses['hinge'], b_loss_func=losses['binarycrossentropy'], 
             mutual_ex=True, n_class=2, c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05
         )
         with train_summary_writer.as_default():
