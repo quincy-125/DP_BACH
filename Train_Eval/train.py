@@ -180,8 +180,9 @@ class Ins(tf.keras.Model):
         self.n_class = n_class
         self.n_ins = n_ins
         self.mut_ex = mut_ex
-        
-        self.m_ins_models = list()
+    
+    def ins_classifier(self):
+        self.ins_model = list()
         self.m_ins_model = tf.keras.models.Sequential()
         self.m_ins_layer = tf.keras.layers.Dense(
         units=self.n_class, activation='linear', input_shape=(self.dim_compress_features,), name='Instance_Classifier_Layer'
@@ -189,10 +190,9 @@ class Ins(tf.keras.Model):
         self.m_ins_model.add(self.m_ins_layer)
         
         for i in range(self.n_class):
-            self.m_ins_models.append(self.m_ins_model)
-    
-    def m_ins_classifier(self):
-        return self.m_ins_models
+            self.ins_model.append(self.m_ins_model)
+            
+        return self.ins_model
     
     @staticmethod
     def generate_pos_labels(n_pos_sample):
@@ -233,7 +233,8 @@ class Ins(tf.keras.Model):
         logits_in = list()
         
         for i in range(self.n_class * self.n_ins):
-            logit_in = tf.math.softmax(ins_classifier(ins_in[i]))
+            #logit_in = tf.math.softmax(ins_classifier(ins_in[i]))
+            logit_in = ins_classifier(ins_in[i])
             logits_in.append(logit_in)
 
         return ins_label_in, logits_in
@@ -258,14 +259,15 @@ class Ins(tf.keras.Model):
         logits_out = list()
   
         for i in range(self.n_ins):
-            logit_out = tf.math.softmax(ins_classifier(top_pos[i]))
+            #logit_out = tf.math.softmax(ins_classifier(top_pos[i]))
+            logit_out = ins_classifier(top_pos[i])
             logits_out.append(logit_out)
 
         return ins_label_out, logits_out
     
     def call(self, bag_label, h, A):
         for i in range(self.n_class):
-            ins_classifier = self.m_ins_models[i]
+            ins_classifier = self.ins_classifier()[i]
             if i == bag_label:
                 A_I = list()
                 for j in range(len(A)):
@@ -473,7 +475,7 @@ def train_step(i_model, b_model, c_model, train_path, i_loss_func, b_loss_func, 
     loss_total = list(); loss_ins = list(); loss_bag = list(); acc = list(); auc = list(); precision = list(); recall = list()
     c_optimizer = optimizers['AdamW'](learning_rate=learn_rate, weight_decay=l2_decay)
     i_optimizer = optimizers['AdamW'](learning_rate=learn_rate, weight_decay=l2_decay)
-    b_optimizer = optimizers['AdamW'](learning_rate=0.001, weight_decay=l2_decay)
+    b_optimizer = optimizers['AdamW'](learning_rate=learn_rate, weight_decay=l2_decay)
     
     for i in os.listdir(train_path):
         print('=', end = "")
@@ -489,20 +491,15 @@ def train_step(i_model, b_model, c_model, train_path, i_loss_func, b_loss_func, 
             for i in range(len(ins_logits)):
                 i_loss = i_loss_func(tf.one_hot(ins_labels[i], 2), ins_logits[i])
                 ins_loss.append(i_loss)
-                #print('ins logit', ins_logits[i], 'label', tf.one_hot(ins_labels[i],2), 'loss', i_loss)
             if mutual_ex:
-                I_Loss = (tf.math.add_n(ins_loss) / len(ins_logits)) / n_class
+                I_Loss = (tf.math.add_n(ins_loss) / (len(ins_labels) / 2)) / n_class
             else:
-                I_Loss = tf.math.add_n(ins_loss) / len(ins_logits)   
+                I_Loss = tf.math.add_n(ins_loss) / (len(ins_labels) / 2) 
             B_Loss = b_loss_func(slide_true, Y_prob)
-            T_Loss = c2*B_Loss + c1*I_Loss   
-            #print('unnorm', slide_score_unnorm, 'b logit,', Y_prob, 'label', slide_true, 'loss', B_Loss,'\n')
-            #print('loss', T_Loss)
+            T_Loss = c1 * B_Loss + c2 * I_Loss   
         i_grad = i_tape.gradient(I_Loss, i_model.trainable_variables)
-        #print('grad', i_grad)
         i_optimizer.apply_gradients(zip(i_grad, i_model.trainable_variables))
         b_grad = b_tape.gradient(B_Loss, b_model.trainable_variables)
-        #print('grad', b_grad)
         b_optimizer.apply_gradients(zip(b_grad, b_model.trainable_variables))
         c_grad = c_tape.gradient(T_Loss, c_model.trainable_variables)
         c_optimizer.apply_gradients(zip(c_grad, c_model.trainable_variables)) 
@@ -537,11 +534,11 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex=False, n_cla
             i_loss = i_loss_func(tf.one_hot(ins_labels[i], 2), ins_logits[i])
             ins_loss.append(i_loss)
         if mutual_ex:
-            I_Loss = (tf.math.add_n(ins_loss) / len(ins_logits)) / n_class
+            I_Loss = (tf.math.add_n(ins_loss) / (len(ins_labels) / 2)) / n_class
         else:
-            I_Loss = tf.math.add_n(ins_loss) / len(ins_logits)
+            I_Loss = tf.math.add_n(ins_loss) / (len(ins_labels) / 2) 
         B_Loss = b_loss_func(slide_true, Y_prob)
-        T_Loss = c2*B_Loss + c1*I_Loss
+        T_Loss = c1 * B_Loss + c2 * I_Loss
         
         loss_t.append(T_Loss); loss_i.append(I_Loss); loss_b.append(B_Loss)
           
@@ -562,7 +559,7 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex=False, n_cla
     val_auc = tf.math.add_n(auc) / len(os.listdir(val_path)); val_precision = tf.math.add_n(precision) / len(os.listdir(val_path)); \
     val_recall = tf.math.add_n(recall) / len(os.listdir(val_path))
   
-    return val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, val_fn, val_precision, val_recall       
+    return val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, val_fn, val_precision, val_recall           
 
 
 ins = Ins(dim_compress_features=512, n_class=2, n_ins=8, mut_ex=True)
