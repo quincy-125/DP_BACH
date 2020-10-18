@@ -233,8 +233,7 @@ class Ins(tf.keras.Model):
         logits_in = list()
         
         for i in range(self.n_class * self.n_ins):
-            #logit_in = tf.math.softmax(ins_classifier(ins_in[i]))
-            logit_in = ins_classifier(ins_in[i])
+            logit_in = tf.math.softmax(ins_classifier(ins_in[i]))
             logits_in.append(logit_in)
 
         return ins_label_in, logits_in
@@ -259,8 +258,7 @@ class Ins(tf.keras.Model):
         logits_out = list()
   
         for i in range(self.n_ins):
-            #logit_out = tf.math.softmax(ins_classifier(top_pos[i]))
-            logit_out = ins_classifier(top_pos[i])
+            logit_out = tf.math.softmax(ins_classifier(top_pos[i]))
             logits_out.append(logit_out)
 
         return ins_label_out, logits_out
@@ -472,7 +470,14 @@ losses, metrics, optimizers = lom_func()
 
 def train_step(i_model, b_model, c_model, train_path, i_loss_func, b_loss_func, mutual_ex=False, 
                n_class=2, c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05):
-    loss_total = list(); loss_ins = list(); loss_bag = list(); acc = list(); auc = list(); precision = list(); recall = list()
+    loss_total = list()
+    loss_ins = list()
+    loss_bag = list()
+    acc = list()
+    auc = list()
+    precision = list()
+    recall = list()
+
     c_optimizer = optimizers['AdamW'](learning_rate=learn_rate, weight_decay=l2_decay)
     i_optimizer = optimizers['AdamW'](learning_rate=learn_rate, weight_decay=l2_decay)
     b_optimizer = optimizers['AdamW'](learning_rate=learn_rate, weight_decay=l2_decay)
@@ -481,82 +486,139 @@ def train_step(i_model, b_model, c_model, train_path, i_loss_func, b_loss_func, 
         print('=', end = "")
         single_train_data = train_path + i
         img_features, slide_label, slide_true = get_data_from_tf(single_train_data)
-        train_tp = 0; train_fp = 0; train_tn = 0; train_fn = 0; train_acc = 0.0; train_auc = 0.0; train_precision = 0.0; train_recall = 0.0
-  
+
+        train_tp = 0
+        train_fp = 0
+        train_tn = 0
+        train_fn = 0
+
         with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
             att_score, A, h, ins_labels, ins_logits, slide_score_unnorm, Y_prob, Y_hat = c_model.call(img_features, slide_label)
             ins_labels, ins_logits = i_model.call(slide_label, h, A)
             slide_score_unnorm, Y_hat, Y_prob = b_model.call(A, h)
+
             ins_loss = list()
             for i in range(len(ins_logits)):
                 i_loss = i_loss_func(tf.one_hot(ins_labels[i], 2), ins_logits[i])
                 ins_loss.append(i_loss)
             if mutual_ex:
-                I_Loss = (tf.math.add_n(ins_loss) / (len(ins_labels) / 2)) / n_class
+                I_Loss = (tf.math.add_n(ins_loss) / len(ins_labels)) / n_class
             else:
-                I_Loss = tf.math.add_n(ins_loss) / (len(ins_labels) / 2) 
+                I_Loss = tf.math.add_n(ins_loss) / len(ins_labels)
             B_Loss = b_loss_func(slide_true, Y_prob)
-            T_Loss = c1 * B_Loss + c2 * I_Loss   
+            T_Loss = c1 * B_Loss + c2 * I_Loss
+
         i_grad = i_tape.gradient(I_Loss, i_model.trainable_variables)
         i_optimizer.apply_gradients(zip(i_grad, i_model.trainable_variables))
+
         b_grad = b_tape.gradient(B_Loss, b_model.trainable_variables)
         b_optimizer.apply_gradients(zip(b_grad, b_model.trainable_variables))
+
         c_grad = c_tape.gradient(T_Loss, c_model.trainable_variables)
         c_optimizer.apply_gradients(zip(c_grad, c_model.trainable_variables)) 
         
-        loss_total.append(T_Loss); loss_ins.append(I_Loss); loss_bag.append(B_Loss); tp = metrics['TP'](slide_true, Y_prob); \
-        fp = metrics['FP'](slide_true, Y_prob); tn = metrics['TN'](slide_true, Y_prob); fn = metrics['FN'](slide_true, Y_prob); \
-        acc_value = metrics['BinaryAccuracy'](slide_true, Y_prob); auc_value = metrics['AUC'](slide_true, Y_prob); \
-        precision_value = metrics['Precision'](slide_true, Y_prob); recall_value = metrics['Recall'](slide_true, Y_prob); \
-        train_tp += tp; train_fp += fp; train_tn += tn; train_fn += fn; train_acc += acc_value; train_auc += auc_value; \
-        train_precision += precision_value; train_recall += recall_value; acc.append(train_acc); auc.append(train_auc); \
-        precision.append(train_precision); recall.append(train_recall)
+        loss_total.append(T_Loss)
+        loss_ins.append(I_Loss)
+        loss_bag.append(B_Loss)
+
+        tp = metrics['TP'](slide_true, Y_prob)
+        fp = metrics['FP'](slide_true, Y_prob)
+        tn = metrics['TN'](slide_true, Y_prob)
+        fn = metrics['FN'](slide_true, Y_prob)
+
+        train_tp += tp
+        train_fp += fp
+        train_tn += tn
+        train_fn += fn
+
+        acc_value = metrics['BinaryAccuracy'](slide_true, Y_prob)
+        auc_value = metrics['AUC'](slide_true, Y_prob)
+        precision_value = metrics['Precision'](slide_true, Y_prob)
+        recall_value = metrics['Recall'](slide_true, Y_prob)
+
+        acc.append(acc_value)
+        auc.append(auc_value)
+        precision.append(precision_value)
+        recall.append(recall_value)
         
-    acc_train = tf.math.add_n(acc) / len(os.listdir(train_path)); auc_train = tf.math.add_n(auc) / len(os.listdir(train_path)); \
-    precision_train = tf.math.add_n(precision) / len(os.listdir(train_path)); recall_train = tf.math.add_n(recall) / len(os.listdir(train_path)); \
-    train_loss = tf.math.add_n(loss_total) / len(os.listdir(train_path)); train_ins_loss = tf.math.add_n(loss_ins) / len(os.listdir(train_path)); \
+    acc_train = tf.math.add_n(acc) / len(os.listdir(train_path))
+    auc_train = tf.math.add_n(auc) / len(os.listdir(train_path))
+    precision_train = tf.math.add_n(precision) / len(os.listdir(train_path))
+    recall_train = tf.math.add_n(recall) / len(os.listdir(train_path))
+
+    train_loss = tf.math.add_n(loss_total) / len(os.listdir(train_path))
+    train_ins_loss = tf.math.add_n(loss_ins) / len(os.listdir(train_path))
     train_bag_loss = tf.math.add_n(loss_bag) / len(os.listdir(train_path))
 
     return train_loss, train_ins_loss, train_bag_loss, acc_train, auc_train, train_tp, train_fp, train_tn, train_fn, precision_train, recall_train
 
 
 def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex=False, n_class=2, c1=0.7, c2=0.3): 
-    loss_t = list(); loss_i = list(); loss_b = list(); acc = list(); auc = list(); precision = list(); recall = list()
+    loss_t = list()
+    loss_i = list()
+    loss_b = list()
+    acc = list()
+    auc = list()
+    precision = list()
+    recall = list()
     
     for j in os.listdir(val_path):
         print('=', end = "")
         single_val_data = val_path + j
         img_features, slide_label, slide_true = get_data_from_tf(single_val_data)
 
+        val_tp = 0
+        val_fp = 0
+        val_tn = 0
+        val_fn = 0
+
         att_score, A, h, ins_labels, ins_logits, slide_score_unnorm, Y_prob, Y_hat = c_model.call(img_features, slide_label)
+
         ins_loss = list()
         for i in range(len(ins_logits)):
             i_loss = i_loss_func(tf.one_hot(ins_labels[i], 2), ins_logits[i])
             ins_loss.append(i_loss)
         if mutual_ex:
-            I_Loss = (tf.math.add_n(ins_loss) / (len(ins_labels) / 2)) / n_class
+            I_Loss = (tf.math.add_n(ins_loss) / len(ins_labels)) / n_class
         else:
-            I_Loss = tf.math.add_n(ins_loss) / (len(ins_labels) / 2) 
+            I_Loss = tf.math.add_n(ins_loss) / len(ins_labels)
+
         B_Loss = b_loss_func(slide_true, Y_prob)
         T_Loss = c1 * B_Loss + c2 * I_Loss
         
-        loss_t.append(T_Loss); loss_i.append(I_Loss); loss_b.append(B_Loss)
-          
-        val_tp = 0; val_fp = 0; val_tn = 0; val_fn = 0; val_acc = 0.0; val_auc = 0.0; val_precision = 0.0; val_recall = 0.0
-        
-        tp = metrics['TP'](slide_true, Y_prob); fp = metrics['FP'](slide_true, Y_prob); tn = metrics['TN'](slide_true, Y_prob); \
-        fn = metrics['FN'](slide_true, Y_prob)
-        acc_value = metrics['BinaryAccuracy'](slide_true, Y_prob); auc_value = metrics['AUC'](slide_true, Y_prob); \
-        precision_value = metrics['Precision'](slide_true, Y_prob); recall_value = metrics['Recall'](slide_true, Y_prob)
-    
-        val_tp += tp; val_fp += fp; val_tn += tn; val_fn += fn; val_acc += acc_value; val_auc += auc_value; \
-        val_precision += precision_value; val_recall += recall_value
-        
-        acc.append(val_acc); auc.append(val_auc); precision.append(val_precision); recall.append(val_recall); loss_t.append(T_Loss);
+        loss_t.append(T_Loss)
+        loss_i.append(I_Loss)
+        loss_b.append(B_Loss)
 
-    val_loss = tf.math.add_n(loss_t) / len(os.listdir(val_path)); val_ins_loss = tf.math.add_n(loss_i) / len(os.listdir(val_path)); \
-    val_bag_loss = tf.math.add_n(loss_b) / len(os.listdir(val_path)); val_acc = tf.math.add_n(acc) / len(os.listdir(val_path)); \
-    val_auc = tf.math.add_n(auc) / len(os.listdir(val_path)); val_precision = tf.math.add_n(precision) / len(os.listdir(val_path)); \
+        tp = metrics['TP'](slide_true, Y_prob)
+        fp = metrics['FP'](slide_true, Y_prob)
+        tn = metrics['TN'](slide_true, Y_prob)
+        fn = metrics['FN'](slide_true, Y_prob)
+
+        val_tp += tp
+        val_fp += fp
+        val_tn += tn
+        val_fn += fn
+
+        acc_value = metrics['BinaryAccuracy'](slide_true, Y_prob)
+        auc_value = metrics['AUC'](slide_true, Y_prob)
+        precision_value = metrics['Precision'](slide_true, Y_prob)
+        recall_value = metrics['Recall'](slide_true, Y_prob)
+
+        acc.append(acc_value)
+        auc.append(auc_value)
+        precision.append(precision_value)
+        recall.append(recall_value)
+
+        loss_t.append(T_Loss)
+
+    val_loss = tf.math.add_n(loss_t) / len(os.listdir(val_path))
+    val_ins_loss = tf.math.add_n(loss_i) / len(os.listdir(val_path))
+    val_bag_loss = tf.math.add_n(loss_b) / len(os.listdir(val_path))
+
+    val_acc = tf.math.add_n(acc) / len(os.listdir(val_path))
+    val_auc = tf.math.add_n(auc) / len(os.listdir(val_path))
+    val_precision = tf.math.add_n(precision) / len(os.listdir(val_path))
     val_recall = tf.math.add_n(recall) / len(os.listdir(val_path))
   
     return val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, val_fn, val_precision, val_recall           
@@ -600,7 +662,7 @@ def train_eval(train_log, val_log, epochs=1):
         # Validation Step
         val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, \
         val_fn, val_precision, val_recall = val_step(
-            c_model=m_clam, val_path=val_data, i_loss_func=losses['hinge'], 
+            c_model=clam, val_path=val_data, i_loss_func=losses['hinge'],
             b_loss_func=losses['binarycrossentropy'], mutual_ex=True, n_class=2, c1=0.7, c2=0.3
         )  
         with val_summary_writer.as_default():
