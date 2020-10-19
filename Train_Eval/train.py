@@ -713,7 +713,7 @@ def train_eval(train_log, val_log, epochs=1):
         start_time = time.time()
         train_loss, train_ins_loss, train_bag_loss, acc_train, auc_train, train_tp, train_fp, \
         train_tn, train_fn, precision_train, recall_train = train_step(
-            i_model=ins, b_model=s_bag, c_model=s_clam, train_path=train_data, i_loss_func=losses['binarycrossentropy'], b_loss_func=losses['binarycrossentropy'],
+            i_model=ins, b_model=s_bag, c_model=s_clam, train_path=train_data, i_loss_func=losses['squaredhinge'], b_loss_func=losses['binarycrossentropy'],
             mutual_ex=True, n_class=2, c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05
         )
         with train_summary_writer.as_default():
@@ -731,7 +731,7 @@ def train_eval(train_log, val_log, epochs=1):
         # Validation Step
         val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, \
         val_fn, val_precision, val_recall = val_step(
-            c_model=s_clam, val_path=val_data, i_loss_func=losses['binarycrossentropy'],
+            c_model=s_clam, val_path=val_data, i_loss_func=losses['squaredhinge'],
             b_loss_func=losses['binarycrossentropy'], mutual_ex=True, n_class=2, c1=0.7, c2=0.3
         )  
         with val_summary_writer.as_default():
