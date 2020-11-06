@@ -1,6 +1,8 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
+from tqdm import tqdm
 import numpy as np
+import pickle as pkl
 import PIL
 import datetime
 import os
@@ -329,6 +331,7 @@ class S_Bag(tf.keras.Model):
 
         return slide_score_unnorm, Y_hat, Y_prob, Y_true
 
+
 class S_CLAM(tf.keras.Model):
     def __init__(self, att_gate=False, net_size='small', n_ins=8, n_class=2, mut_ex=False,
                  dropout=False, drop_rate=.25, mil_ins=False, att_only=False):
@@ -384,55 +387,9 @@ class S_CLAM(tf.keras.Model):
 
         return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, Y_prob, Y_hat, Y_true
 
-tfrecord = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/TFRECORD_ICIAR2018'
-clam_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM'
-
-
-def dataset_shuffle(dataset, path, percent=[0.8, 0.1, 0.1]):
-    """
-    Input Arg:
-        dataset -> path where all tfrecord data stored
-        path -> path where you want to save training, testing, and validation data folder
-    """
-
-    # return training, validation, and testing path name
-    train = path + '/train'
-    valid = path + '/valid'
-    test = path + '/test'
-
-    # create training, validation, and testing directory only if it is not existed
-    if os.path.exists(train) == False:
-        os.mkdir(os.path.join(clam_dir, 'train'))
-    if os.path.exists(valid) == False:
-        os.mkdir(os.path.join(clam_dir, 'valid'))
-    if os.path.exists(test) == False:
-        os.mkdir(os.path.join(clam_dir, 'test'))
-
-    total_num_data = len(os.listdir(dataset))
-
-    # only shuffle the data when train, validation, and test directory are all empty
-    if len(os.listdir(train)) == 0 & len(os.listdir(valid)) == 0 & len(os.listdir(test)) == 0:
-        train_names = random.sample(os.listdir(dataset), int(total_num_data * percent[0]))
-        for i in train_names:
-            train_srcpath = os.path.join(dataset, i)
-            shutil.copy(train_srcpath, train)
-
-        valid_names = random.sample(list(set(os.listdir(dataset)) - set(os.listdir(train))),
-                                    int(total_num_data * percent[1]))
-        for j in valid_names:
-            valid_srcpath = os.path.join(dataset, j)
-            shutil.copy(valid_srcpath, valid)
-
-        test_names = list(set(os.listdir(dataset)) - set(os.listdir(train)) - set(os.listdir(valid)))
-        for k in test_names:
-            test_srcpath = os.path.join(dataset, k)
-            shutil.copy(test_srcpath, test)
-
-dataset_shuffle(tfrecord, clam_dir, percent=[0.8,0.1,0.1])
-
-train_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/train/'
-val_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/valid/'
-test_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/test/'
+train_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/train/'
+val_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/val/'
+test_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/test/'
 
 def tf_shut_up(no_warn_op=False):
     if no_warn_op:
@@ -484,8 +441,7 @@ losses, metrics, optimizers = lom_func()
 def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimizer_func,
                c_optimizer_func, i_loss_func, b_loss_func, i_ave_loss_func, b_ave_loss_func,
                t_ave_loss_func, acc_func, auc_func, precision_func, tp_func, fp_func,
-               tn_func, fn_func, recall_func, mutual_ex=False, n_class=2,
-               c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05):
+               tn_func, fn_func, recall_func, mutual_ex, n_class, c1, c2, learn_rate, l2_decay):
     loss_total = list()
     loss_ins = list()
     loss_bag = list()
@@ -505,8 +461,8 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
         train_fn = 0
 
         with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
-            att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, Y_prob, Y_hat, Y_true = c_model.call(
-                img_features, slide_label)
+            att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
+            Y_prob, Y_hat, Y_true = c_model.call(img_features, slide_label)
 
             ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
             ins_loss = list()
@@ -574,8 +530,7 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
 
 def val_step(c_model, val_path, i_loss_func, b_loss_func, acc_func, auc_func,
              tp_func, fp_func, tn_func, fn_func, precision_func, i_ave_loss_func,
-             b_ave_loss_func, t_ave_loss_func, recall_func,
-             mutual_ex=False, n_class=2, c1=0.7, c2=0.3):
+             b_ave_loss_func, t_ave_loss_func, recall_func, mutual_ex, n_class, c1, c2):
     loss_t = list()
     loss_i = list()
     loss_b = list()
@@ -590,8 +545,8 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, acc_func, auc_func,
         val_tn = 0
         val_fn = 0
 
-        att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, Y_prob, Y_hat, Y_true = c_model.call(
-            img_features, slide_label)
+        att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
+        Y_prob, Y_hat, Y_true = c_model.call(img_features, slide_label)
 
         ins_loss = list()
         for i in range(len(ins_logits)):
@@ -644,36 +599,53 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, acc_func, auc_func,
 
     return val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, val_fn, val_precision, val_recall
 
+
+def test(c_model, test_path):
+    for k in os.listdir(test_path):
+        print('=', end="")
+        single_test_data = test_path + k
+        img_features, slide_label = get_data_from_tf(single_test_data)
+
+        att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
+        Y_prob, Y_hat, Y_true = c_model.call(img_features, slide_label)
+
+        predict_label = int(tf.math.argmax(Y_prob)[0])
+
+        template = '\n Ground Truth Label:{}, Predicted Label:{}'
+        print(template.format(slide_label,
+                              predict_label))
+
+    return slide_label, predict_label
+
 ins = Ins(dim_compress_features=512, n_class=2, n_ins=8, mut_ex=True)
 
 s_bag = S_Bag(dim_compress_features=512, n_class=2)
 
 s_clam = S_CLAM(att_gate=True, net_size='big', n_ins=8, n_class=2, mut_ex=False,
-            dropout=True, drop_rate=.5, mil_ins=True, att_only=False)
+            dropout=True, drop_rate=.55, mil_ins=True, att_only=False)
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 train_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/log/' + current_time + '/train'
 val_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/log/' + current_time + '/val'
 
+ckpt_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/CKPT/'
 
-def train_eval(train_log, val_log, i_model=ins, b_model=s_bag, c_model=s_clam,
-               i_optimizer_func=optimizers['AdamW'], b_optimizer_func=optimizers['AdamW'],
-               c_optimizer_func=optimizers['AdamW'],
-               i_loss_func=losses['binarycrossentropy'], b_loss_func=losses['categoricalcrossentropy'],
-               i_ave_loss_func=metrics['Mean'],
-               b_ave_loss_func=metrics['Mean'], t_ave_loss_func=metrics['Mean'], tp_func=metrics['TP'],
-               fp_func=metrics['FP'], tn_func=metrics['TN'], fn_func=metrics['FN'], acc_func=metrics['BinaryAccuracy'],
-               auc_func=metrics['AUC'], precision_func=metrics['Precision'], recall_func=metrics['Recall'],
-               mutual_ex=True, n_class=2, c1=0.6, c2=0.4, learn_rate=2e-04, l2_decay=1e-05, epochs=1):
+
+def train_eval(train_log, val_log, ckpt_path, train_path, val_path, i_model, b_model,
+               c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func, i_loss_func,
+               b_loss_func, i_ave_loss_func, b_ave_loss_func, t_ave_loss_func, tp_func,
+               fp_func, tn_func, fn_func, acc_func, auc_func, precision_func, recall_func,
+               mutual_ex, n_class, c1, c2, learn_rate, l2_decay, epochs):
     train_summary_writer = tf.summary.create_file_writer(train_log)
     val_summary_writer = tf.summary.create_file_writer(val_log)
+
     for epoch in range(epochs):
         # Training Step
         start_time = time.time()
 
         train_loss, train_ins_loss, train_bag_loss, acc_train, auc_train, train_tp, train_fp, \
         train_tn, train_fn, precision_train, recall_train = train_step(
-            i_model=i_model, b_model=b_model, c_model=c_model, train_path=train_data,
+            i_model=i_model, b_model=b_model, c_model=c_model, train_path=train_path,
             i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func, c_optimizer_func=c_optimizer_func,
             i_loss_func=i_loss_func, b_loss_func=b_loss_func, i_ave_loss_func=i_ave_loss_func,
             b_ave_loss_func=b_ave_loss_func,
@@ -694,15 +666,10 @@ def train_eval(train_log, val_log, i_model=ins, b_model=s_bag, c_model=s_clam,
             tf.summary.histogram('True Negative', int(train_tn), step=epoch)
             tf.summary.histogram('False Negative', int(train_fn), step=epoch)
 
-        #         acc_func.reset_states()
-        #         auc_func.reset_states()
-        #         precision_func.reset_states()
-        #         recall_func.reset_states()
-
         # Validation Step
         val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, \
         val_fn, val_precision, val_recall = val_step(
-            c_model=s_clam, val_path=val_data, i_loss_func=i_loss_func, b_loss_func=b_loss_func,
+            c_model=c_model, val_path=val_path, i_loss_func=i_loss_func, b_loss_func=b_loss_func,
             i_ave_loss_func=i_ave_loss_func, b_ave_loss_func=b_ave_loss_func, t_ave_loss_func=t_ave_loss_func,
             tp_func=tp_func, fp_func=fp_func, tn_func=tn_func, fn_func=fn_func,
             acc_func=acc_func, auc_func=auc_func, precision_func=precision_func, recall_func=recall_func,
@@ -721,11 +688,6 @@ def train_eval(train_log, val_log, i_model=ins, b_model=s_bag, c_model=s_clam,
             tf.summary.histogram('True Negative', int(val_tn), step=epoch)
             tf.summary.histogram('False Negative', int(val_fn), step=epoch)
 
-        #         acc_func.reset_states()
-        #         auc_func.reset_states()
-        #         precision_func.reset_states()
-        #         recall_func.reset_states()
-
         epoch_run_time = time.time() - start_time
         template = '\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, Epoch Running Time: {}'
         print(template.format(epoch + 1,
@@ -735,12 +697,60 @@ def train_eval(train_log, val_log, i_model=ins, b_model=s_bag, c_model=s_clam,
                               f"{float(val_acc):.4%}",
                               "--- %s mins ---" % int(epoch_run_time / 60)))
 
+        # Saving training checkpoints
+        i_ckpt = tf.train.Checkpoint(step=tf.Variable(epoch),
+                                     optimizer=i_optimizer_func(learning_rate=learn_rate, weight_decay=l2_decay),
+                                     model=i_model)
+        i_ckpt_manager = tf.train.CheckpointManager(checkpoint=i_ckpt, directory=os.path.join(ckpt_path, 'ins'),
+                                                    max_to_keep=10)
+        i_ckpt.restore(i_ckpt_manager.latest_checkpoint)
+        i_save_path = i_ckpt_manager.save()
+
+        b_ckpt = tf.train.Checkpoint(step=tf.Variable(epoch),
+                                     optimizer=b_optimizer_func(learning_rate=learn_rate, weight_decay=l2_decay),
+                                     model=b_model)
+        b_ckpt_manager = tf.train.CheckpointManager(checkpoint=b_ckpt, directory=os.path.join(ckpt_path, 'bag'),
+                                                    max_to_keep=10)
+        b_ckpt.restore(b_ckpt_manager.latest_checkpoint)
+        b_save_path = b_ckpt_manager.save()
+
+        c_ckpt = tf.train.Checkpoint(step=tf.Variable(epoch),
+                                     optimizer=c_optimizer_func(learning_rate=learn_rate, weight_decay=l2_decay),
+                                     model=c_model)
+        c_ckpt_manager = tf.train.CheckpointManager(checkpoint=c_ckpt, directory=os.path.join(ckpt_path, 'clam'),
+                                                    max_to_keep=10)
+        c_ckpt.restore(c_ckpt_manager.latest_checkpoint)
+        c_save_path = c_ckpt_manager.save()
+
+
+def clam_main(train_log, val_log, ckpt_path, train_path, val_path, test_path, i_model, b_model,
+              c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func, i_loss_func,
+              b_loss_func, i_ave_loss_func, b_ave_loss_func, t_ave_loss_func, tp_func,
+              fp_func, tn_func, fn_func, acc_func, auc_func, precision_func, recall_func,
+              mutual_ex, n_class, c1, c2, learn_rate, l2_decay, epochs):
+    train_eval(train_log=train_log_dir, val_log=val_log_dir,
+               ckpt_path=ckpt_dir, train_path=train_data, val_path=val_data,
+               i_model=ins, b_model=s_bag, c_model=s_clam,
+               i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
+               c_optimizer_func=c_optimizer_func, i_loss_func=i_loss_func,
+               b_loss_func=b_loss_func, i_ave_loss_func=i_ave_loss_func,
+               b_ave_loss_func=b_ave_loss_func, t_ave_loss_func=t_ave_loss_func, tp_func=tp_func,
+               fp_func=fp_func, tn_func=tn_func, fn_func=fn_func, acc_func=acc_func,
+               auc_func=auc_func, precision_func=precision_func, recall_func=recall_func,
+               mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2, learn_rate=learn_rate, l2_decay=l2_decay,
+               epochs=epochs)
+
+    slide_label, predict_label = test(c_model=c_model, test_path=test_path)
+
 tf_shut_up(no_warn_op=True)
 
-train_eval(train_log=train_log_dir, val_log=val_log_dir, i_model=ins, b_model=s_bag, c_model=s_clam,
-            i_optimizer_func=optimizers['AdamW'], b_optimizer_func=optimizers['AdamW'], c_optimizer_func=optimizers['AdamW'],
-            i_loss_func=losses['binarycrossentropy'], b_loss_func=losses['binarycrossentropy'], i_ave_loss_func=metrics['Mean'],
-            b_ave_loss_func=metrics['Mean'], t_ave_loss_func=metrics['Mean'], tp_func=metrics['TP'],
-            fp_func=metrics['FP'], tn_func=metrics['TN'], fn_func=metrics['FN'], acc_func=metrics['BinaryAccuracy'],
-            auc_func=metrics['AUC'], precision_func=metrics['Precision'], recall_func=metrics['Recall'],
-            mutual_ex=True, n_class=2, c1=0.7, c2=0.3, learn_rate=0.002, l2_decay=1e-05, epochs=200)
+clam_main(train_log=train_log_dir, val_log=val_log_dir,
+           ckpt_path=ckpt_dir, train_path=train_data, val_path=val_data,
+           test_path=test_data, i_model=ins, b_model=s_bag, c_model=s_clam,
+           i_optimizer_func=optimizers['AdamW'], b_optimizer_func=optimizers['AdamW'],
+           c_optimizer_func=optimizers['AdamW'], i_loss_func=losses['binarycrossentropy'],
+           b_loss_func=losses['categoricalcrossentropy'], i_ave_loss_func=metrics['Mean'],
+           b_ave_loss_func=metrics['Mean'], t_ave_loss_func=metrics['Mean'], tp_func=metrics['TP'],
+           fp_func=metrics['FP'], tn_func=metrics['TN'], fn_func=metrics['FN'], acc_func=metrics['BinaryAccuracy'],
+           auc_func=metrics['AUC'], precision_func=metrics['Precision'], recall_func=metrics['Recall'],
+           mutual_ex=True, n_class=2, c1=0.7, c2=0.3, learn_rate=5e-04, l2_decay=1e-05, epochs=200)
