@@ -609,11 +609,13 @@ def test(c_model, test_path):
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
         Y_prob, Y_hat, Y_true = c_model.call(img_features, slide_label)
 
-        predict_label = int(tf.math.argmax(Y_prob)[0])
+        predict_label = Y_prob.numpy()
+        predict_label = np.argmax(predict_label)
 
-        template = '\n Ground Truth Label:{}, Predicted Label:{}'
+        template = '\n Ground Truth Label:{}, Predicted Label:{}, Y_Prob: {}'
         print(template.format(slide_label,
-                              predict_label))
+                              predict_label,
+                              Y_prob.numpy()))
 
     return slide_label, predict_label
 
@@ -628,10 +630,8 @@ current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 train_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/log/' + current_time + '/train'
 val_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/log/' + current_time + '/val'
 
-ckpt_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/CKPT/'
 
-
-def train_eval(train_log, val_log, ckpt_path, train_path, val_path, i_model, b_model,
+def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
                c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func, i_loss_func,
                b_loss_func, i_ave_loss_func, b_ave_loss_func, t_ave_loss_func, tp_func,
                fp_func, tn_func, fn_func, acc_func, auc_func, precision_func, recall_func,
@@ -697,40 +697,14 @@ def train_eval(train_log, val_log, ckpt_path, train_path, val_path, i_model, b_m
                               f"{float(val_acc):.4%}",
                               "--- %s mins ---" % int(epoch_run_time / 60)))
 
-        # Saving training checkpoints
-        i_ckpt = tf.train.Checkpoint(step=tf.Variable(epoch),
-                                     optimizer=i_optimizer_func(learning_rate=learn_rate, weight_decay=l2_decay),
-                                     model=i_model)
-        i_ckpt_manager = tf.train.CheckpointManager(checkpoint=i_ckpt, directory=os.path.join(ckpt_path, 'ins'),
-                                                    max_to_keep=10)
-        i_ckpt.restore(i_ckpt_manager.latest_checkpoint)
-        i_save_path = i_ckpt_manager.save()
 
-        b_ckpt = tf.train.Checkpoint(step=tf.Variable(epoch),
-                                     optimizer=b_optimizer_func(learning_rate=learn_rate, weight_decay=l2_decay),
-                                     model=b_model)
-        b_ckpt_manager = tf.train.CheckpointManager(checkpoint=b_ckpt, directory=os.path.join(ckpt_path, 'bag'),
-                                                    max_to_keep=10)
-        b_ckpt.restore(b_ckpt_manager.latest_checkpoint)
-        b_save_path = b_ckpt_manager.save()
-
-        c_ckpt = tf.train.Checkpoint(step=tf.Variable(epoch),
-                                     optimizer=c_optimizer_func(learning_rate=learn_rate, weight_decay=l2_decay),
-                                     model=c_model)
-        c_ckpt_manager = tf.train.CheckpointManager(checkpoint=c_ckpt, directory=os.path.join(ckpt_path, 'clam'),
-                                                    max_to_keep=10)
-        c_ckpt.restore(c_ckpt_manager.latest_checkpoint)
-        c_save_path = c_ckpt_manager.save()
-
-
-def clam_main(train_log, val_log, ckpt_path, train_path, val_path, test_path, i_model, b_model,
+def clam_main(train_log, val_log, train_path, val_path, test_path, i_model, b_model,
               c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func, i_loss_func,
               b_loss_func, i_ave_loss_func, b_ave_loss_func, t_ave_loss_func, tp_func,
               fp_func, tn_func, fn_func, acc_func, auc_func, precision_func, recall_func,
               mutual_ex, n_class, c1, c2, learn_rate, l2_decay, epochs):
-    train_eval(train_log=train_log_dir, val_log=val_log_dir,
-               ckpt_path=ckpt_dir, train_path=train_data, val_path=val_data,
-               i_model=ins, b_model=s_bag, c_model=s_clam,
+    train_eval(train_log=train_log, val_log=val_log, train_path=train_path,
+               val_path=val_path, i_model=i_model, b_model=b_model, c_model=c_model,
                i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
                c_optimizer_func=c_optimizer_func, i_loss_func=i_loss_func,
                b_loss_func=b_loss_func, i_ave_loss_func=i_ave_loss_func,
@@ -744,8 +718,7 @@ def clam_main(train_log, val_log, ckpt_path, train_path, val_path, test_path, i_
 
 tf_shut_up(no_warn_op=True)
 
-clam_main(train_log=train_log_dir, val_log=val_log_dir,
-           ckpt_path=ckpt_dir, train_path=train_data, val_path=val_data,
+clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_data, val_path=val_data,
            test_path=test_data, i_model=ins, b_model=s_bag, c_model=s_clam,
            i_optimizer_func=optimizers['AdamW'], b_optimizer_func=optimizers['AdamW'],
            c_optimizer_func=optimizers['AdamW'], i_loss_func=losses['binarycrossentropy'],
@@ -753,4 +726,4 @@ clam_main(train_log=train_log_dir, val_log=val_log_dir,
            b_ave_loss_func=metrics['Mean'], t_ave_loss_func=metrics['Mean'], tp_func=metrics['TP'],
            fp_func=metrics['FP'], tn_func=metrics['TN'], fn_func=metrics['FN'], acc_func=metrics['BinaryAccuracy'],
            auc_func=metrics['AUC'], precision_func=metrics['Precision'], recall_func=metrics['Recall'],
-           mutual_ex=True, n_class=2, c1=0.7, c2=0.3, learn_rate=5e-04, l2_decay=1e-05, epochs=200)
+           mutual_ex=True, n_class=2, c1=0.6, c2=0.4, learn_rate=0.002, l2_decay=1e-05, epochs=120)
