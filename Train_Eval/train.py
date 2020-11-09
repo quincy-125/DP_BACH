@@ -1,6 +1,8 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tqdm import tqdm
+import sklearn
+from sklearn import metrics
 import numpy as np
 import pickle as pkl
 import PIL
@@ -326,10 +328,11 @@ class S_Bag(tf.keras.Model):
         Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
         Y_prob = tf.math.softmax(
             tf.reshape(slide_score_unnorm, (1, self.n_class)))  # shape be (1,2), predictions for each of the classes
+        predict_label = np.argmax(Y_prob.numpy())
 
         Y_true = tf.one_hot([bag_label], 2)
 
-        return slide_score_unnorm, Y_hat, Y_prob, Y_true
+        return slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true
 
 
 class S_CLAM(tf.keras.Model):
@@ -383,9 +386,9 @@ class S_CLAM(tf.keras.Model):
         if self.mil_ins:
             ins_labels, ins_logits_unnorm, ins_logits = self.ins_net.call(slide_label, h, A)
 
-        slide_score_unnorm, Y_hat, Y_prob, Y_true = self.bag_net.call(slide_label, A, h)
+        slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = self.bag_net.call(slide_label, A, h)
 
-        return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, Y_prob, Y_hat, Y_true
+        return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_label
 
 train_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/train/'
 val_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/val/'
@@ -440,8 +443,7 @@ losses, metrics, optimizers = lom_func()
 
 def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimizer_func,
                c_optimizer_func, i_loss_func, b_loss_func, i_ave_loss_func, b_ave_loss_func,
-               t_ave_loss_func, acc_func, auc_func, precision_func, tp_func, fp_func,
-               tn_func, fn_func, recall_func, mutual_ex, n_class, c1, c2, learn_rate, l2_decay):
+               t_ave_loss_func, mutual_ex, n_class, c1, c2, learn_rate, l2_decay):
     loss_total = list()
     loss_ins = list()
     loss_bag = list()
@@ -450,6 +452,9 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
     b_optimizer = b_optimizer_func(learning_rate=learn_rate, weight_decay=l2_decay)
     c_optimizer = c_optimizer_func(learning_rate=learn_rate, weight_decay=l2_decay)
 
+    slide_true_label = list()
+    slide_predict_label = list()
+
     train_sample_list = os.listdir(train_path)
     train_sample_list = random.sample(train_sample_list, len(train_sample_list))
     for i in train_sample_list:
@@ -457,14 +462,9 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
         single_train_data = train_path + i
         img_features, slide_label = get_data_from_tf(single_train_data)
 
-        train_tp = 0
-        train_fp = 0
-        train_tn = 0
-        train_fn = 0
-
         with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
             att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-            Y_prob, Y_hat, Y_true = c_model.call(img_features, slide_label)
+            Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
 
             ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
             ins_loss = list()
@@ -476,7 +476,7 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
             else:
                 I_Loss = tf.math.add_n(ins_loss)
 
-            slide_score_unnorm, Y_hat, Y_prob, Y_true = b_model.call(slide_label, A, h)
+            slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
             B_Loss = b_loss_func(Y_true, Y_prob)
             T_Loss = c1 * B_Loss + c2 * I_Loss
 
@@ -484,40 +484,32 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
         i_optimizer.apply_gradients(zip(i_grad, i_model.trainable_weights))
 
         b_grad = b_tape.gradient(B_Loss, b_model.trainable_weights)
-
         b_optimizer.apply_gradients(zip(b_grad, b_model.trainable_weights))
 
         c_grad = c_tape.gradient(T_Loss, c_model.trainable_weights)
         c_optimizer.apply_gradients(zip(c_grad, c_model.trainable_weights))
 
+        slide_true_label.append(slide_label)
+        slide_predict_label.append(predict_label)
+
         loss_total.append(T_Loss)
         loss_ins.append(I_Loss)
         loss_bag.append(B_Loss)
 
-        tp_func.update_state(Y_true, Y_prob)
-        fp_func.update_state(Y_true, Y_prob)
-        tn_func.update_state(Y_true, Y_prob)
-        fn_func.update_state(Y_true, Y_prob)
+        # print(slide_label, '\t', predict_label, '\t', Y_prob)
 
-        tp = tp_func.result()
-        fp = fp_func.result()
-        tn = tn_func.result()
-        fn = fn_func.result()
+    tn, fp, fn, tp = sklearn.metrics.confusion_matrix(slide_true_label, slide_predict_label).ravel()
+    train_tn = int(tn)
+    train_fp = int(fp)
+    train_fn = int(fn)
+    train_tp = int(tp)
 
-        train_tp += tp
-        train_fp += fp
-        train_tn += tn
-        train_fn += fn
+    train_sensitivity = round(train_tp / (train_tp + train_fn), 2)
+    train_specificity = round(train_tn / (train_tn + train_fp), 2)
+    train_acc = round((train_tp + train_tn) / (train_tn + train_fp + train_fn + train_tp), 2)
 
-        acc_func.update_state(Y_true, Y_prob)
-        auc_func.update_state(Y_true, Y_prob)
-        precision_func.update_state(Y_true, Y_prob)
-        recall_func.update_state(Y_true, Y_prob)
-
-    acc_train = acc_func.result()
-    auc_train = auc_func.result()
-    precision_train = precision_func.result()
-    recall_train = recall_func.result()
+    fpr, tpr, thresholds = sklearn.metrics.roc_curve(slide_true_label, slide_predict_label, pos_label=1)
+    train_auc = round(sklearn.metrics.auc(fpr, tpr), 2)
 
     t_ave_loss_func.update_state(loss_total)
     i_ave_loss_func.update_state(loss_ins)
@@ -527,15 +519,17 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
     train_ins_loss = i_ave_loss_func.result()
     train_bag_loss = b_ave_loss_func.result()
 
-    return train_loss, train_ins_loss, train_bag_loss, acc_train, auc_train, train_tp, train_fp, train_tn, train_fn, precision_train, recall_train
+    return train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, train_sensitivity, train_specificity, train_acc, train_auc
 
 
-def val_step(c_model, val_path, i_loss_func, b_loss_func, acc_func, auc_func,
-             tp_func, fp_func, tn_func, fn_func, precision_func, i_ave_loss_func,
-             b_ave_loss_func, t_ave_loss_func, recall_func, mutual_ex, n_class, c1, c2):
+def val_step(c_model, val_path, i_loss_func, b_loss_func, i_ave_loss_func,
+             b_ave_loss_func, t_ave_loss_func, mutual_ex, n_class, c1, c2):
     loss_t = list()
     loss_i = list()
     loss_b = list()
+
+    slide_true_label = list()
+    slide_predict_label = list()
 
     val_sample_list = os.listdir(val_path)
     val_sample_list = random.sample(val_sample_list, len(val_sample_list))
@@ -544,13 +538,8 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, acc_func, auc_func,
         single_val_data = val_path + j
         img_features, slide_label = get_data_from_tf(single_val_data)
 
-        val_tp = 0
-        val_fp = 0
-        val_tn = 0
-        val_fn = 0
-
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-        Y_prob, Y_hat, Y_true = c_model.call(img_features, slide_label)
+        Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
 
         ins_loss = list()
         for i in range(len(ins_logits)):
@@ -568,30 +557,23 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, acc_func, auc_func,
         loss_i.append(I_Loss)
         loss_b.append(B_Loss)
 
-        tp_func.update_state(Y_true, Y_prob)
-        fp_func.update_state(Y_true, Y_prob)
-        tn_func.update_state(Y_true, Y_prob)
-        fn_func.update_state(Y_true, Y_prob)
+        slide_true_label.append(slide_label)
+        slide_predict_label.append(predict_label)
 
-        tp = tp_func.result()
-        fp = fp_func.result()
-        tn = tn_func.result()
-        fn = fn_func.result()
+        # print(slide_label, '\t', predict_label, '\t', Y_prob)
 
-        val_tp += tp
-        val_fp += fp
-        val_tn += tn
-        val_fn += fn
+    tn, fp, fn, tp = sklearn.metrics.confusion_matrix(slide_true_label, slide_predict_label).ravel()
+    val_tn = int(tn)
+    val_fp = int(fp)
+    val_fn = int(fn)
+    val_tp = int(tp)
 
-        acc_func.update_state(Y_true, Y_prob)
-        auc_func.update_state(Y_true, Y_prob)
-        precision_func.update_state(Y_true, Y_prob)
-        recall_func.update_state(Y_true, Y_prob)
+    val_sensitivity = round(val_tp / (val_tp + val_fn), 2)
+    val_specificity = round(val_tn / (val_tn + val_fp), 2)
+    val_acc = round((val_tp + val_tn) / (val_tn + val_fp + val_fn + val_tp), 2)
 
-    val_acc = acc_func.result()
-    val_auc = auc_func.result()
-    val_precision = precision_func.result()
-    val_recall = recall_func.result()
+    fpr, tpr, thresholds = sklearn.metrics.roc_curve(slide_true_label, slide_predict_label, pos_label=1)
+    val_auc = round(sklearn.metrics.auc(fpr, tpr), 2)
 
     t_ave_loss_func.update_state(loss_t)
     i_ave_loss_func.update_state(loss_i)
@@ -601,27 +583,50 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, acc_func, auc_func,
     val_ins_loss = i_ave_loss_func.result()
     val_bag_loss = b_ave_loss_func.result()
 
-    return val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, val_fn, val_precision, val_recall
+    return val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, val_sensitivity, val_specificity, val_acc, val_auc
 
 
 def test(c_model, test_path):
+    start_time = time.time()
+
+    slide_true_label = list()
+    slide_predict_label = list()
+
     for k in os.listdir(test_path):
         print('=', end="")
         single_test_data = test_path + k
         img_features, slide_label = get_data_from_tf(single_test_data)
 
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-        Y_prob, Y_hat, Y_true = c_model.call(img_features, slide_label)
+        Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
 
-        predict_label = Y_prob.numpy()
-        predict_label = np.argmax(predict_label)
+        slide_true_label.append(slide_label)
+        slide_predict_label.append(predict_label)
 
-        template = '\n Ground Truth Label:{}, Predicted Label:{}, Y_Prob: {}'
-        print(template.format(slide_label,
-                              predict_label,
-                              Y_prob.numpy()))
+        print(slide_label, '\t', predict_label, '\t', Y_prob)
 
-    return slide_label, predict_label
+    tn, fp, fn, tp = sklearn.metrics.confusion_matrix(slide_true_label, slide_predict_label).ravel()
+    test_tn = int(tn)
+    test_fp = int(fp)
+    test_fn = int(fn)
+    test_tp = int(tp)
+
+    test_sensitivity = round(test_tp / (test_tp + test_fn), 2)
+    test_specificity = round(test_tn / (test_tn + test_fp), 2)
+    test_acc = round((test_tp + test_tn) / (test_tn + test_fp + test_fn + test_tp), 2)
+
+    fpr, tpr, thresholds = sklearn.metrics.roc_curve(slide_true_label, slide_predict_label, pos_label=1)
+    test_auc = round(sklearn.metrics.auc(fpr, tpr), 2)
+
+    test_run_time = time.time() - start_time
+
+    template = '\n Test Accuracy: {}, Test Sensitivity: {}, Test Specificity: {}, Test Running Time: {}'
+    print(template.format(f"{float(test_acc):.4%}",
+                          f"{float(test_sensitivity):.4%}",
+                          f"{float(test_specificity):.4%}",
+                          "--- %s mins ---" % int(test_run_time / 60)))
+
+    return test_tn, test_fp, test_fn, test_tp, test_sensitivity, test_specificity, test_acc, test_auc
 
 ins = Ins(dim_compress_features=512, n_class=2, n_ins=8, mut_ex=True)
 
@@ -637,8 +642,7 @@ val_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.Di
 
 def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
                c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func, i_loss_func,
-               b_loss_func, i_ave_loss_func, b_ave_loss_func, t_ave_loss_func, tp_func,
-               fp_func, tn_func, fn_func, acc_func, auc_func, precision_func, recall_func,
+               b_loss_func, i_ave_loss_func, b_ave_loss_func, t_ave_loss_func,
                mutual_ex, n_class, c1, c2, learn_rate, l2_decay, epochs):
     train_summary_writer = tf.summary.create_file_writer(train_log)
     val_summary_writer = tf.summary.create_file_writer(val_log)
@@ -647,36 +651,33 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
         # Training Step
         start_time = time.time()
 
-        train_loss, train_ins_loss, train_bag_loss, acc_train, auc_train, train_tp, train_fp, \
-        train_tn, train_fn, precision_train, recall_train = train_step(
+        train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, \
+        train_sensitivity, train_specificity, train_acc, train_auc = train_step(
             i_model=i_model, b_model=b_model, c_model=c_model, train_path=train_path,
             i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func, c_optimizer_func=c_optimizer_func,
             i_loss_func=i_loss_func, b_loss_func=b_loss_func, i_ave_loss_func=i_ave_loss_func,
             b_ave_loss_func=b_ave_loss_func,
-            t_ave_loss_func=t_ave_loss_func, tp_func=tp_func, fp_func=fp_func, tn_func=tn_func, fn_func=fn_func,
-            acc_func=acc_func, auc_func=auc_func, precision_func=precision_func, recall_func=recall_func,
-            mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2, learn_rate=learn_rate, l2_decay=l2_decay)
+            t_ave_loss_func=t_ave_loss_func, mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2, learn_rate=learn_rate,
+            l2_decay=l2_decay)
 
         with train_summary_writer.as_default():
             tf.summary.scalar('Total Loss', float(train_loss), step=epoch)
             tf.summary.scalar('Instance Loss', float(train_ins_loss), step=epoch)
             tf.summary.scalar('Bag Loss', float(train_bag_loss), step=epoch)
-            tf.summary.scalar('Accuracy', float(acc_train), step=epoch)
-            tf.summary.scalar('AUC', float(auc_train), step=epoch)
-            tf.summary.scalar('Precision', float(precision_train), step=epoch)
-            tf.summary.scalar('Recall', float(recall_train), step=epoch)
+            tf.summary.scalar('Accuracy', float(train_acc), step=epoch)
+            tf.summary.scalar('AUC', float(train_auc), step=epoch)
+            tf.summary.scalar('Sensitivity', float(train_sensitivity), step=epoch)
+            tf.summary.scalar('Specificity', float(train_specificity), step=epoch)
             tf.summary.histogram('True Positive', int(train_tp), step=epoch)
             tf.summary.histogram('False Positive', int(train_fp), step=epoch)
             tf.summary.histogram('True Negative', int(train_tn), step=epoch)
             tf.summary.histogram('False Negative', int(train_fn), step=epoch)
 
         # Validation Step
-        val_loss, val_ins_loss, val_bag_loss, val_acc, val_auc, val_tp, val_fp, val_tn, \
-        val_fn, val_precision, val_recall = val_step(
+        val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, \
+        val_sensitivity, val_specificity, val_acc, val_auc = val_step(
             c_model=c_model, val_path=val_path, i_loss_func=i_loss_func, b_loss_func=b_loss_func,
             i_ave_loss_func=i_ave_loss_func, b_ave_loss_func=b_ave_loss_func, t_ave_loss_func=t_ave_loss_func,
-            tp_func=tp_func, fp_func=fp_func, tn_func=tn_func, fn_func=fn_func,
-            acc_func=acc_func, auc_func=auc_func, precision_func=precision_func, recall_func=recall_func,
             mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2)
 
         with val_summary_writer.as_default():
@@ -685,8 +686,8 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
             tf.summary.scalar('Bag Loss', float(val_bag_loss), step=epoch)
             tf.summary.scalar('Accuracy', float(val_acc), step=epoch)
             tf.summary.scalar('AUC', float(val_auc), step=epoch)
-            tf.summary.scalar('Precision', float(val_precision), step=epoch)
-            tf.summary.scalar('Recall', float(val_recall), step=epoch)
+            tf.summary.scalar('Sensitivity', float(val_sensitivity), step=epoch)
+            tf.summary.scalar('Specificity', float(val_specificity), step=epoch)
             tf.summary.histogram('True Positive', int(val_tp), step=epoch)
             tf.summary.histogram('False Positive', int(val_fp), step=epoch)
             tf.summary.histogram('True Negative', int(val_tn), step=epoch)
@@ -696,38 +697,35 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
         template = '\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, Epoch Running Time: {}'
         print(template.format(epoch + 1,
                               f"{float(train_loss):.8}",
-                              f"{float(acc_train):.4%}",
+                              f"{float(train_acc):.4%}",
                               f"{float(val_loss):.8}",
                               f"{float(val_acc):.4%}",
                               "--- %s mins ---" % int(epoch_run_time / 60)))
 
 
-def clam_main(train_log, val_log, train_path, val_path, test_path, i_model, b_model,
-              c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func, i_loss_func,
-              b_loss_func, i_ave_loss_func, b_ave_loss_func, t_ave_loss_func, tp_func,
-              fp_func, tn_func, fn_func, acc_func, auc_func, precision_func, recall_func,
-              mutual_ex, n_class, c1, c2, learn_rate, l2_decay, epochs):
-    train_eval(train_log=train_log, val_log=val_log, train_path=train_path,
-               val_path=val_path, i_model=i_model, b_model=b_model, c_model=c_model,
+def clam_main(train_log, val_log, train_path, val_path, test_path,
+              i_model, b_model, c_model, i_optimizer_func, b_optimizer_func,
+              c_optimizer_func, i_loss_func, b_loss_func, i_ave_loss_func,
+              b_ave_loss_func, t_ave_loss_func, mutual_ex, n_class, c1, c2, learn_rate, l2_decay, epochs):
+    train_eval(train_log=train_log, val_log=val_log, train_path=train_data,
+               val_path=val_data, i_model=ins, b_model=s_bag, c_model=s_clam,
                i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
                c_optimizer_func=c_optimizer_func, i_loss_func=i_loss_func,
                b_loss_func=b_loss_func, i_ave_loss_func=i_ave_loss_func,
-               b_ave_loss_func=b_ave_loss_func, t_ave_loss_func=t_ave_loss_func, tp_func=tp_func,
-               fp_func=fp_func, tn_func=tn_func, fn_func=fn_func, acc_func=acc_func,
-               auc_func=auc_func, precision_func=precision_func, recall_func=recall_func,
-               mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2, learn_rate=learn_rate, l2_decay=l2_decay,
-               epochs=epochs)
+               b_ave_loss_func=b_ave_loss_func, t_ave_loss_func=t_ave_loss_func,
+               mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2,
+               learn_rate=learn_rate, l2_decay=l2_decay, epochs=epochs)
 
-    slide_label, predict_label = test(c_model=c_model, test_path=test_path)
+    test_tn, test_fp, test_fn, test_tp, test_sensitivity, test_specificity, test_acc, test_auc = test(c_model=c_model,
+                                                                                                      test_path=test_path)
 
 tf_shut_up(no_warn_op=True)
 
-clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_data, val_path=val_data,
-           test_path=test_data, i_model=ins, b_model=s_bag, c_model=s_clam,
+clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_data,
+          val_path=val_data, test_path=test_data, i_model=ins, b_model=s_bag, c_model=s_clam,
            i_optimizer_func=optimizers['AdamW'], b_optimizer_func=optimizers['AdamW'],
            c_optimizer_func=optimizers['AdamW'], i_loss_func=losses['binarycrossentropy'],
-           b_loss_func=losses['categoricalcrossentropy'], i_ave_loss_func=metrics['Mean'],
-           b_ave_loss_func=metrics['Mean'], t_ave_loss_func=metrics['Mean'], tp_func=metrics['TP'],
-           fp_func=metrics['FP'], tn_func=metrics['TN'], fn_func=metrics['FN'], acc_func=metrics['BinaryAccuracy'],
-           auc_func=metrics['AUC'], precision_func=metrics['Precision'], recall_func=metrics['Recall'],
-           mutual_ex=True, n_class=2, c1=0.7, c2=0.3, learn_rate=7e-04, l2_decay=1e-05, epochs=200)
+           b_loss_func=losses['binarycrossentropy'], i_ave_loss_func=metrics['Mean'],
+           b_ave_loss_func=metrics['Mean'], t_ave_loss_func=metrics['Mean'],
+           mutual_ex=True, n_class=2, c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, epochs=50)
+
