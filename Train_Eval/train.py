@@ -450,7 +450,9 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
     b_optimizer = b_optimizer_func(learning_rate=learn_rate, weight_decay=l2_decay)
     c_optimizer = c_optimizer_func(learning_rate=learn_rate, weight_decay=l2_decay)
 
-    for i in os.listdir(train_path):
+    train_sample_list = os.listdir(train_path)
+    train_sample_list = random.sample(train_sample_list, len(train_sample_list))
+    for i in train_sample_list:
         print('=', end="")
         single_train_data = train_path + i
         img_features, slide_label = get_data_from_tf(single_train_data)
@@ -535,7 +537,9 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, acc_func, auc_func,
     loss_i = list()
     loss_b = list()
 
-    for j in os.listdir(val_path):
+    val_sample_list = os.listdir(val_path)
+    val_sample_list = random.sample(val_sample_list, len(val_sample_list))
+    for j in val_sample_list:
         print('=', end="")
         single_val_data = val_path + j
         img_features, slide_label = get_data_from_tf(single_val_data)
@@ -726,4 +730,4 @@ clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_data, v
            b_ave_loss_func=metrics['Mean'], t_ave_loss_func=metrics['Mean'], tp_func=metrics['TP'],
            fp_func=metrics['FP'], tn_func=metrics['TN'], fn_func=metrics['FN'], acc_func=metrics['BinaryAccuracy'],
            auc_func=metrics['AUC'], precision_func=metrics['Precision'], recall_func=metrics['Recall'],
-           mutual_ex=True, n_class=2, c1=0.6, c2=0.4, learn_rate=0.002, l2_decay=1e-05, epochs=120)
+           mutual_ex=True, n_class=2, c1=0.7, c2=0.3, learn_rate=7e-04, l2_decay=1e-05, epochs=200)
