@@ -10,6 +10,7 @@ import datetime
 import os
 import random
 import shutil
+import statistics
 import time
 
 def get_data_from_tf(tf_path):
@@ -402,48 +403,8 @@ def tf_shut_up(no_warn_op=False):
               '\n', 'If not, check the value of your input prameter for this function and re-run it.')
 
 
-def lom_func():
-    losses = {
-        'Hinge': tf.keras.losses.Hinge,
-        'hinge': tf.keras.losses.hinge,
-        'SquaredHinge': tf.keras.losses.SquaredHinge,
-        'squaredhinge': tf.keras.losses.squared_hinge,
-        'CategoricalHinge': tf.keras.losses.CategoricalHinge,
-        'categoricalhinge': tf.keras.losses.categorical_hinge,
-        'BinaryCrossentropy': tf.keras.losses.BinaryCrossentropy,
-        'binarycrossentropy': tf.keras.losses.binary_crossentropy,
-        'CategoricalCrossentropy': tf.keras.losses.CategoricalCrossentropy,
-        'categoricalcrossentropy': tf.keras.losses.categorical_crossentropy
-    }
-
-    metrics = {
-        'Accuracy': tf.keras.metrics.Accuracy(),
-        'BinaryAccuracy': tf.keras.metrics.BinaryAccuracy(),
-        'CategoricalAccuracy': tf.keras.metrics.CategoricalAccuracy(),
-        'Precision': tf.keras.metrics.Precision(),
-        'Recall': tf.keras.metrics.Recall(),
-        'AUC': tf.keras.metrics.AUC(),
-        'TP': tf.keras.metrics.TruePositives(),
-        'FP': tf.keras.metrics.FalsePositives(),
-        'TN': tf.keras.metrics.TrueNegatives(),
-        'FN': tf.keras.metrics.FalseNegatives(),
-        'Mean': tf.keras.metrics.Mean()
-    }
-
-    optimizers = {
-        'Adam': tf.keras.optimizers.Adam,
-        'Adamx': tf.keras.optimizers.Adamax,
-        'AdamW': tfa.optimizers.AdamW
-    }
-
-    return losses, metrics, optimizers
-
-losses, metrics, optimizers = lom_func()
-
-
 def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimizer_func,
-               c_optimizer_func, i_loss_func, b_loss_func, i_ave_loss_func, b_ave_loss_func,
-               t_ave_loss_func, mutual_ex, n_class, c1, c2, learn_rate, l2_decay):
+               c_optimizer_func, i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2, learn_rate, l2_decay):
     loss_total = list()
     loss_ins = list()
     loss_bag = list()
@@ -492,11 +453,9 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
         slide_true_label.append(slide_label)
         slide_predict_label.append(predict_label)
 
-        loss_total.append(T_Loss)
-        loss_ins.append(I_Loss)
-        loss_bag.append(B_Loss)
-
-        # print(slide_label, '\t', predict_label, '\t', Y_prob)
+        loss_total.append(float(T_Loss))
+        loss_ins.append(float(I_Loss))
+        loss_bag.append(float(B_Loss))
 
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(slide_true_label, slide_predict_label).ravel()
     train_tn = int(tn)
@@ -511,19 +470,14 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
     fpr, tpr, thresholds = sklearn.metrics.roc_curve(slide_true_label, slide_predict_label, pos_label=1)
     train_auc = round(sklearn.metrics.auc(fpr, tpr), 2)
 
-    t_ave_loss_func.update_state(loss_total)
-    i_ave_loss_func.update_state(loss_ins)
-    b_ave_loss_func.update_state(loss_bag)
-
-    train_loss = t_ave_loss_func.result()
-    train_ins_loss = i_ave_loss_func.result()
-    train_bag_loss = b_ave_loss_func.result()
+    train_loss = statistics.mean(loss_total)
+    train_ins_loss = statistics.mean(loss_ins)
+    train_bag_loss = statistics.mean(loss_bag)
 
     return train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, train_sensitivity, train_specificity, train_acc, train_auc
 
 
-def val_step(c_model, val_path, i_loss_func, b_loss_func, i_ave_loss_func,
-             b_ave_loss_func, t_ave_loss_func, mutual_ex, n_class, c1, c2):
+def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2):
     loss_t = list()
     loss_i = list()
     loss_b = list()
@@ -553,14 +507,12 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, i_ave_loss_func,
         B_Loss = b_loss_func(Y_true, Y_prob)
         T_Loss = c1 * B_Loss + c2 * I_Loss
 
-        loss_t.append(T_Loss)
-        loss_i.append(I_Loss)
-        loss_b.append(B_Loss)
+        loss_t.append(float(T_Loss))
+        loss_i.append(float(I_Loss))
+        loss_b.append(float(B_Loss))
 
         slide_true_label.append(slide_label)
         slide_predict_label.append(predict_label)
-
-        # print(slide_label, '\t', predict_label, '\t', Y_prob)
 
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(slide_true_label, slide_predict_label).ravel()
     val_tn = int(tn)
@@ -575,13 +527,9 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, i_ave_loss_func,
     fpr, tpr, thresholds = sklearn.metrics.roc_curve(slide_true_label, slide_predict_label, pos_label=1)
     val_auc = round(sklearn.metrics.auc(fpr, tpr), 2)
 
-    t_ave_loss_func.update_state(loss_t)
-    i_ave_loss_func.update_state(loss_i)
-    b_ave_loss_func.update_state(loss_b)
-
-    val_loss = t_ave_loss_func.result()
-    val_ins_loss = i_ave_loss_func.result()
-    val_bag_loss = b_ave_loss_func.result()
+    val_loss = statistics.mean(loss_t)
+    val_ins_loss = statistics.mean(loss_i)
+    val_bag_loss = statistics.mean(loss_b)
 
     return val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, val_sensitivity, val_specificity, val_acc, val_auc
 
@@ -633,7 +581,7 @@ ins = Ins(dim_compress_features=512, n_class=2, n_ins=8, mut_ex=True)
 s_bag = S_Bag(dim_compress_features=512, n_class=2)
 
 s_clam = S_CLAM(att_gate=True, net_size='big', n_ins=8, n_class=2, mut_ex=False,
-            dropout=True, drop_rate=.55, mil_ins=True, att_only=False)
+            dropout=True, drop_rate=.5, mil_ins=True, att_only=False)
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 train_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/log/' + current_time + '/train'
@@ -642,8 +590,7 @@ val_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.Di
 
 def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
                c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func, i_loss_func,
-               b_loss_func, i_ave_loss_func, b_ave_loss_func, t_ave_loss_func,
-               mutual_ex, n_class, c1, c2, learn_rate, l2_decay, epochs):
+               b_loss_func, mutual_ex, n_class, c1, c2, learn_rate, l2_decay, epochs):
     train_summary_writer = tf.summary.create_file_writer(train_log)
     val_summary_writer = tf.summary.create_file_writer(val_log)
 
@@ -655,10 +602,8 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
         train_sensitivity, train_specificity, train_acc, train_auc = train_step(
             i_model=i_model, b_model=b_model, c_model=c_model, train_path=train_path,
             i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func, c_optimizer_func=c_optimizer_func,
-            i_loss_func=i_loss_func, b_loss_func=b_loss_func, i_ave_loss_func=i_ave_loss_func,
-            b_ave_loss_func=b_ave_loss_func,
-            t_ave_loss_func=t_ave_loss_func, mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2, learn_rate=learn_rate,
-            l2_decay=l2_decay)
+            i_loss_func=i_loss_func, b_loss_func=b_loss_func, mutual_ex=mutual_ex,
+            n_class=n_class, c1=c1, c2=c2, learn_rate=learn_rate, l2_decay=l2_decay)
 
         with train_summary_writer.as_default():
             tf.summary.scalar('Total Loss', float(train_loss), step=epoch)
@@ -677,7 +622,6 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
         val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, \
         val_sensitivity, val_specificity, val_acc, val_auc = val_step(
             c_model=c_model, val_path=val_path, i_loss_func=i_loss_func, b_loss_func=b_loss_func,
-            i_ave_loss_func=i_ave_loss_func, b_ave_loss_func=b_ave_loss_func, t_ave_loss_func=t_ave_loss_func,
             mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2)
 
         with val_summary_writer.as_default():
@@ -705,27 +649,22 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
 
 def clam_main(train_log, val_log, train_path, val_path, test_path,
               i_model, b_model, c_model, i_optimizer_func, b_optimizer_func,
-              c_optimizer_func, i_loss_func, b_loss_func, i_ave_loss_func,
-              b_ave_loss_func, t_ave_loss_func, mutual_ex, n_class, c1, c2, learn_rate, l2_decay, epochs):
+              c_optimizer_func, i_loss_func, b_loss_func, mutual_ex,
+              n_class, c1, c2, learn_rate, l2_decay, epochs):
     train_eval(train_log=train_log, val_log=val_log, train_path=train_data,
                val_path=val_data, i_model=ins, b_model=s_bag, c_model=s_clam,
                i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
                c_optimizer_func=c_optimizer_func, i_loss_func=i_loss_func,
-               b_loss_func=b_loss_func, i_ave_loss_func=i_ave_loss_func,
-               b_ave_loss_func=b_ave_loss_func, t_ave_loss_func=t_ave_loss_func,
-               mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2,
+               b_loss_func=b_loss_func, mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2,
                learn_rate=learn_rate, l2_decay=l2_decay, epochs=epochs)
 
     test_tn, test_fp, test_fn, test_tp, test_sensitivity, test_specificity, test_acc, test_auc = test(c_model=c_model,
                                                                                                       test_path=test_path)
-
 tf_shut_up(no_warn_op=True)
 
 clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_data,
           val_path=val_data, test_path=test_data, i_model=ins, b_model=s_bag, c_model=s_clam,
-           i_optimizer_func=optimizers['AdamW'], b_optimizer_func=optimizers['AdamW'],
-           c_optimizer_func=optimizers['AdamW'], i_loss_func=losses['binarycrossentropy'],
-           b_loss_func=losses['binarycrossentropy'], i_ave_loss_func=metrics['Mean'],
-           b_ave_loss_func=metrics['Mean'], t_ave_loss_func=metrics['Mean'],
-           mutual_ex=True, n_class=2, c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, epochs=50)
-
+          i_optimizer_func=tfa.optimizers.AdamW, b_optimizer_func=tfa.optimizers.AdamW,
+          c_optimizer_func=tfa.optimizers.AdamW, i_loss_func=tf.keras.losses.hinge,
+          b_loss_func=tf.keras.losses.binary_crossentropy, mutual_ex=True, n_class=2,
+          c1=0.7, c2=0.3, learn_rate=5e-04, l2_decay=1e-06, epochs=200)
