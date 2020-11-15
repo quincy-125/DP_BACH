@@ -477,7 +477,7 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
     return train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, train_sensitivity, train_specificity, train_acc, train_auc
 
 
-def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2):
+def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2):
     loss_t = list()
     loss_i = list()
     loss_b = list()
@@ -495,6 +495,8 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex, n_class, c1
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
         Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
 
+        ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
+
         ins_loss = list()
         for i in range(len(ins_logits)):
             i_loss = i_loss_func(tf.one_hot(ins_labels[i], 2), ins_logits[i])
@@ -503,6 +505,8 @@ def val_step(c_model, val_path, i_loss_func, b_loss_func, mutual_ex, n_class, c1
             I_Loss = tf.math.add_n(ins_loss) / n_class
         else:
             I_Loss = tf.math.add_n(ins_loss)
+
+        slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
 
         B_Loss = b_loss_func(Y_true, Y_prob)
         T_Loss = c1 * B_Loss + c2 * I_Loss
