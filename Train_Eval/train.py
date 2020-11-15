@@ -581,12 +581,27 @@ ins = Ins(dim_compress_features=512, n_class=2, n_ins=8, mut_ex=True)
 s_bag = S_Bag(dim_compress_features=512, n_class=2)
 
 s_clam = S_CLAM(att_gate=True, net_size='big', n_ins=8, n_class=2, mut_ex=False,
-            dropout=True, drop_rate=.5, mil_ins=True, att_only=False)
+                dropout=True, drop_rate=.5, mil_ins=True, att_only=False)
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 train_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/log/' + current_time + '/train'
 val_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/log/' + current_time + '/val'
 
+def lr_scheduler_exp(ini_lr, ds, dr):
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate=ini_lr,
+        decay_steps=ds,
+        decay_rate=dr,
+        staircase=True)
+    return lr_schedule
+
+def lr_scheduler_poly(ini_lr, ds, end_lr):
+    lr_schedule = tf.keras.optimizers.schedules.PolynomialDecay(
+        initial_learning_rate=ini_lr,
+        decay_steps=ds,
+        end_learning_rate=end_lr,
+        power=0.5)
+    return lr_schedule
 
 def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
                c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func, i_loss_func,
@@ -651,8 +666,8 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
               i_model, b_model, c_model, i_optimizer_func, b_optimizer_func,
               c_optimizer_func, i_loss_func, b_loss_func, mutual_ex,
               n_class, c1, c2, learn_rate, l2_decay, epochs):
-    train_eval(train_log=train_log, val_log=val_log, train_path=train_data,
-               val_path=val_data, i_model=ins, b_model=s_bag, c_model=s_clam,
+    train_eval(train_log=train_log, val_log=val_log, train_path=train_path,
+               val_path=val_path, i_model=i_model, b_model=b_model, c_model=c_model,
                i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
                c_optimizer_func=c_optimizer_func, i_loss_func=i_loss_func,
                b_loss_func=b_loss_func, mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2,
@@ -662,9 +677,12 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                                                                                                       test_path=test_path)
 tf_shut_up(no_warn_op=True)
 
+lr_schedule_exp = lr_scheduler_exp(2e-03, 100000, 0.96)
+lr_schedule_poly = lr_scheduler_poly(2e-03, 100000, 2e-06)
+
 clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_data,
           val_path=val_data, test_path=test_data, i_model=ins, b_model=s_bag, c_model=s_clam,
           i_optimizer_func=tfa.optimizers.AdamW, b_optimizer_func=tfa.optimizers.AdamW,
-          c_optimizer_func=tfa.optimizers.AdamW, i_loss_func=tf.keras.losses.hinge,
+          c_optimizer_func=tfa.optimizers.AdamW, i_loss_func=tf.keras.losses.binary_crossentropy,
           b_loss_func=tf.keras.losses.binary_crossentropy, mutual_ex=True, n_class=2,
-          c1=0.7, c2=0.3, learn_rate=5e-04, l2_decay=1e-06, epochs=200)
+          c1=0.7, c2=0.3, learn_rate=lr_schedule_exp, l2_decay=1e-06, epochs=170)
