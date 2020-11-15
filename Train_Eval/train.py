@@ -580,6 +580,7 @@ def test(c_model, test_path):
 
     return test_tn, test_fp, test_fn, test_tp, test_sensitivity, test_specificity, test_acc, test_auc
 
+
 ins = Ins(dim_compress_features=512, n_class=2, n_ins=8, mut_ex=True)
 
 s_bag = S_Bag(dim_compress_features=512, n_class=2)
@@ -640,8 +641,8 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
         # Validation Step
         val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, \
         val_sensitivity, val_specificity, val_acc, val_auc = val_step(
-            c_model=c_model, val_path=val_path, i_loss_func=i_loss_func, b_loss_func=b_loss_func,
-            mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2)
+            i_model=i_model, b_model=b_model, c_model=c_model, val_path=val_path,
+            i_loss_func=i_loss_func, b_loss_func=b_loss_func, mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2)
 
         with val_summary_writer.as_default():
             tf.summary.scalar('Total Loss', float(val_loss), step=epoch)
@@ -657,7 +658,8 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
             tf.summary.histogram('False Negative', int(val_fn), step=epoch)
 
         epoch_run_time = time.time() - start_time
-        template = '\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, Epoch Running Time: {}'
+        template = '\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, Epoch Running ' \
+                   'Time: {} '
         print(template.format(epoch + 1,
                               f"{float(train_loss):.8}",
                               f"{float(train_acc):.4%}",
