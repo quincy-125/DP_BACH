@@ -13,6 +13,7 @@ import shutil
 import statistics
 import time
 
+
 def get_data_from_tf(tf_path):
     feature = {'height': tf.io.FixedLenFeature([], tf.int64),
                'width': tf.io.FixedLenFeature([], tf.int64),
@@ -391,9 +392,11 @@ class S_CLAM(tf.keras.Model):
 
         return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_label
 
+
 train_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/train/'
 val_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/val/'
 test_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/test/'
+
 
 def tf_shut_up(no_warn_op=False):
     if no_warn_op:
@@ -429,8 +432,8 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
 
             ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
             ins_loss = list()
-            for i in range(len(ins_logits)):
-                i_loss = i_loss_func(tf.one_hot(ins_labels[i], 2), ins_logits[i])
+            for j in range(len(ins_logits)):
+                i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
                 ins_loss.append(i_loss)
             if mutual_ex:
                 I_Loss = tf.math.add_n(ins_loss) / n_class
@@ -450,12 +453,12 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
         c_grad = c_tape.gradient(T_Loss, c_model.trainable_weights)
         c_optimizer.apply_gradients(zip(c_grad, c_model.trainable_weights))
 
-        slide_true_label.append(slide_label)
-        slide_predict_label.append(predict_label)
-
         loss_total.append(float(T_Loss))
         loss_ins.append(float(I_Loss))
         loss_bag.append(float(B_Loss))
+
+        slide_true_label.append(slide_label)
+        slide_predict_label.append(predict_label)
 
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(slide_true_label, slide_predict_label).ravel()
     train_tn = int(tn)
@@ -474,7 +477,8 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
     train_ins_loss = statistics.mean(loss_ins)
     train_bag_loss = statistics.mean(loss_bag)
 
-    return train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, train_sensitivity, train_specificity, train_acc, train_auc
+    return train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, train_sensitivity, \
+           train_specificity, train_acc, train_auc
 
 
 def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2):
@@ -487,9 +491,9 @@ def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutu
 
     val_sample_list = os.listdir(val_path)
     val_sample_list = random.sample(val_sample_list, len(val_sample_list))
-    for j in val_sample_list:
+    for i in val_sample_list:
         print('=', end="")
-        single_val_data = val_path + j
+        single_val_data = val_path + i
         img_features, slide_label = get_data_from_tf(single_val_data)
 
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
@@ -498,8 +502,8 @@ def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutu
         ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
 
         ins_loss = list()
-        for i in range(len(ins_logits)):
-            i_loss = i_loss_func(tf.one_hot(ins_labels[i], 2), ins_logits[i])
+        for j in range(len(ins_logits)):
+            i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
             ins_loss.append(i_loss)
         if mutual_ex:
             I_Loss = tf.math.add_n(ins_loss) / n_class
@@ -535,10 +539,11 @@ def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutu
     val_ins_loss = statistics.mean(loss_i)
     val_bag_loss = statistics.mean(loss_b)
 
-    return val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, val_sensitivity, val_specificity, val_acc, val_auc
+    return val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, val_sensitivity, val_specificity, \
+           val_acc, val_auc
 
 
-def test(c_model, test_path):
+def test(i_model, b_model, c_model, test_path):
     start_time = time.time()
 
     slide_true_label = list()
@@ -551,6 +556,9 @@ def test(c_model, test_path):
 
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
         Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
+
+        ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
+        slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
 
         slide_true_label.append(slide_label)
         slide_predict_label.append(predict_label)
@@ -586,27 +594,12 @@ ins = Ins(dim_compress_features=512, n_class=2, n_ins=8, mut_ex=True)
 s_bag = S_Bag(dim_compress_features=512, n_class=2)
 
 s_clam = S_CLAM(att_gate=True, net_size='big', n_ins=8, n_class=2, mut_ex=False,
-                dropout=True, drop_rate=.5, mil_ins=True, att_only=False)
+                dropout=True, drop_rate=.25, mil_ins=True, att_only=False)
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 train_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/log/' + current_time + '/train'
 val_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/log/' + current_time + '/val'
 
-def lr_scheduler_exp(ini_lr, ds, dr):
-    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-        initial_learning_rate=ini_lr,
-        decay_steps=ds,
-        decay_rate=dr,
-        staircase=True)
-    return lr_schedule
-
-def lr_scheduler_poly(ini_lr, ds, end_lr):
-    lr_schedule = tf.keras.optimizers.schedules.PolynomialDecay(
-        initial_learning_rate=ini_lr,
-        decay_steps=ds,
-        end_learning_rate=end_lr,
-        power=0.5)
-    return lr_schedule
 
 def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
                c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func, i_loss_func,
@@ -679,16 +672,16 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                b_loss_func=b_loss_func, mutual_ex=mutual_ex, n_class=n_class, c1=c1, c2=c2,
                learn_rate=learn_rate, l2_decay=l2_decay, epochs=epochs)
 
-    test_tn, test_fp, test_fn, test_tp, test_sensitivity, test_specificity, test_acc, test_auc = test(c_model=c_model,
-                                                                                                      test_path=test_path)
+    test_tn, test_fp, test_fn, test_tp, test_sensitivity, test_specificity, \
+    test_acc, test_auc = test(i_model=i_model, b_model=b_model, c_model=c_model, test_path=test_path)
+
+
 tf_shut_up(no_warn_op=True)
 
-lr_schedule_exp = lr_scheduler_exp(2e-03, 100000, 0.96)
-lr_schedule_poly = lr_scheduler_poly(2e-03, 100000, 2e-06)
 
 clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_data,
           val_path=val_data, test_path=test_data, i_model=ins, b_model=s_bag, c_model=s_clam,
           i_optimizer_func=tfa.optimizers.AdamW, b_optimizer_func=tfa.optimizers.AdamW,
           c_optimizer_func=tfa.optimizers.AdamW, i_loss_func=tf.keras.losses.binary_crossentropy,
           b_loss_func=tf.keras.losses.binary_crossentropy, mutual_ex=True, n_class=2,
-          c1=0.7, c2=0.3, learn_rate=lr_schedule_exp, l2_decay=1e-06, epochs=170)
+          c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, epochs=200)
