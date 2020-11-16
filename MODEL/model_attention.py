@@ -1,8 +1,6 @@
 import tensorflow as tf
 import numpy as np
 
-
-# None-Gated Attention Network Class - assign the same weights of each attention head/layer
 class NG_Att_Net(tf.keras.Model):
     def __init__(self, dim_features=1024, dim_compress_features=512, n_hidden_units=256, n_classes=2,
                  dropout=False, dropout_rate=.25):
@@ -46,23 +44,20 @@ class NG_Att_Net(tf.keras.Model):
     def att_model_no_gate(self):
         return self.model
 
-    def compress(self, x):
+    def call(self, x):
         h = list()
+        A = list()
+
         for i in x:
             c_imf = self.compression_model(i)
             h.append(c_imf)
-        return h
 
-    def forward(self, x):
-        A = list()
         for i in x:
             a = self.model(i)
             A.append(a)
-        return A
+        return h, A
 
 
-# Gated Attention Network Class - scaling the weights of each attention head/layer -> weights of each attention layer
-# would be different
 class G_Att_Net(tf.keras.Model):
     def __init__(self, dim_features=1024, dim_compress_features=512, n_hidden_units=256, n_classes=2,
                  dropout=False, dropout_rate=.25):
@@ -79,7 +74,6 @@ class G_Att_Net(tf.keras.Model):
         self.model2 = tf.keras.models.Sequential()
         self.model = tf.keras.models.Sequential()
 
-        # GlorotNormal <==> Xavier for weights initialization
         self.fc_compress_layer = tf.keras.layers.Dense(units=dim_compress_features, activation='relu',
                                                        input_shape=(dim_features,), kernel_initializer='glorot_normal',
                                                        bias_initializer='zeros', name='Fully_Connected_Layer')
@@ -116,287 +110,244 @@ class G_Att_Net(tf.keras.Model):
         gated_att_net_list = [self.model1, self.model2, self.model]
         return gated_att_net_list
 
-    def compress(self, x):
+    def call(self, x):
         h = list()
+        A = list()
+
         for i in x:
             c_imf = self.compression_model(i)
             h.append(c_imf)
-        return h
 
-    def forward(self, x):
-        A = list()
         for i in x:
-            layer1_output = self.model1(i)  # output from the first dense layer
-            layer2_output = self.model2(i)  # output from the second dense layer
-            a = tf.math.multiply(layer1_output, layer2_output)  # cross product of the outputs from 1st and 2nd layer
-            a = self.model(a)  # pass the output of the product of the outputs from 1st 2 layers to the last layer
+            layer1_output = self.model1(i)
+            layer2_output = self.model2(i)
+            a = tf.math.multiply(layer1_output, layer2_output)
+            a = self.model(a)
             A.append(a)
 
-        return A
+        return h, A
 
 
-# CLAM Class - Attention Network (Gated/None-Gated) + Instance-Level Clustering
-class CLAM(tf.keras.Model):
-    def __init__(self, att_net_gate=False, net_siz_arg='small', n_instance_sample=8, n_classes=2, subtype_prob=False,
-                 dropout=False, dropout_rate=.25, mil_loss_func=tf.keras.losses.CategoricalHinge()):
-        super(CLAM, self).__init__()
-        self.att_net_gate = att_net_gate
-        self.net_size_arg = net_siz_arg
-        self.n_instance_sample = n_instance_sample
-        self.n_classes = n_classes
-        self.subtype_prob = subtype_prob
-        self.dropout = dropout
-        self.dropout_rate = dropout_rate
-        self.mil_loss_func = mil_loss_func
+class Ins(tf.keras.Model):
+    def __init__(self, dim_compress_features=512, n_class=2, n_ins=8, mut_ex=False):
+        super(Ins, self).__init__()
+        self.dim_compress_features = dim_compress_features
+        self.n_class = n_class
+        self.n_ins = n_ins
+        self.mut_ex = mut_ex
 
-        self.size_dictionary = {
-            'small': [1024, 512, 256],
-            'big': [1024, 512, 384]
-        }
-        self.size = self.size_dictionary[net_siz_arg]
+        self.ins_model = list()
+        self.m_ins_model = tf.keras.models.Sequential()
+        self.m_ins_layer = tf.keras.layers.Dense(
+            units=self.n_class, activation='linear', input_shape=(self.dim_compress_features,),
+            name='Instance_Classifier_Layer'
+        )
+        self.m_ins_model.add(self.m_ins_layer)
 
-        if att_net_gate:
-            self.att_net = G_Att_Net(dim_features=self.size[0], dim_compress_features=self.size[1],
-                                     n_hidden_units=self.size[2],
-                                     n_classes=n_classes, dropout=dropout, dropout_rate=dropout_rate)
-        else:
-            self.att_net = NG_Att_Net(dim_features=self.size[0], dim_compress_features=self.size[1],
-                                      n_hidden_units=self.size[2],
-                                      n_classes=n_classes, dropout=dropout, dropout_rate=dropout_rate)
+        for i in range(self.n_class):
+            self.ins_model.append(self.m_ins_model)
 
-        # Multi-Instance Learning - Adding 2 classifier models, one for bag-level, one for instance-level
-        # Bag-level classifier model
-        self.bag_classifiers = list()  # list of keras sequential model w/ single linear dense layer for each class
-        for i in range(n_classes):
-            self.bag_classifier = tf.keras.models.Sequential(
-                tf.keras.layers.Dense(units=1, activation='linear', input_shape=(self.size[1],))
-                # W_[c,m] shape be (1,512)
-            )  # independent sequential model w/ single linear dense layer to do slide-level prediction for each class
-            self.bag_classifiers.append(self.bag_classifier)
+    def ins_classifier(self):
+        return self.ins_model
 
-        # Instance-level classifier model
-        # for each of n classes, take transpose of compressed img feature for kth patch (h_k) with shape (512,1) in,
-        # and return the cluster assignment score predicted for kth patch (P_[m,k]) with shape (2,1)
-        self.instance_classifiers = list()
-        for i in range(n_classes):
-            self.instance_classifier = tf.keras.models.Sequential(
-                tf.keras.layers.Dense(units=self.n_classes, activation='linear', input_shape=(self.size[1],))
-            )  # W_[inst,m] shape (2,512)
-            self.instance_classifiers.append(self.instance_classifier)
-
-    # Generate patch-level pseudo labels with staticmethod [default values -> 1 for positive, 0 for negative]
-    # Generate positive patch-level pseudo labels
     @staticmethod
     def generate_pos_labels(n_pos_sample):
-        return tf.fill(dims=[n_pos_sample, ], value=1.0)
+        return tf.fill(dims=[n_pos_sample, ], value=1)
 
-    # Generate negative patch-level pseudo labels
     @staticmethod
     def generate_neg_labels(n_neg_sample):
-        return tf.fill(dims=[n_neg_sample, ], value=0.0)
+        return tf.fill(dims=[n_neg_sample, ], value=0)
 
-    # Self-defined function equivalent to torch.index_select() with staticmethod
-    # Usage -> get top k pos/neg instances based on the generated indexes by sorting their attention scores
-    @staticmethod
-    def tf_index_select(input, dim, index):
-        """
-        input_(tensor): input tensor
-        dim(int): dimension
-        index (LongTensor)  the 1-D tensor containing the indices to index
-        """
-        shape = input.get_shape().as_list()
-        if dim == -1:
-            dim = len(shape) - 1
-        shape[dim] = 1
+    def in_call(self, ins_classifier, h, A_I):
+        pos_label = self.generate_pos_labels(self.n_ins)
+        neg_label = self.generate_neg_labels(self.n_ins)
+        ins_label_in = tf.concat(values=[pos_label, neg_label], axis=0)
+        A_I = tf.reshape(tf.convert_to_tensor(A_I), (1, len(A_I)))
 
-        tmp = []
-        for idx in index:
-            begin = [0] * len(shape)
-            begin[dim] = idx
-            tmp.append(tf.slice(input, begin, shape))
-        res = tf.concat(tmp, axis=dim)
-
-        return res
-
-    # Apply Multi-Instance Learning to perform in-class and out-class instance-level clustering
-    # In-class attention branch based instance-level clustering
-    def instance_clustering_in_class(self, A, h, classifier):
-        pos_pseudo_labels = self.generate_pos_labels(self.n_instance_sample)
-        neg_pseudo_labels = self.generate_neg_labels(self.n_instance_sample)
-        pseudo_labels = tf.concat(values=[pos_pseudo_labels, neg_pseudo_labels], axis=0)
-        A = tf.reshape(tf.convert_to_tensor(A), (1, len(A) * self.n_classes))
-
-        top_pos_ids = tf.math.top_k(A, self.n_instance_sample)[1][-1]
+        top_pos_ids = tf.math.top_k(A_I, self.n_ins)[1][-1]
         pos_index = list()
         for i in top_pos_ids:
-            if i % 2 == 0:
-                pos_index.append(i // 2)
-            else:
-                pos_index.append((i + 1) // 2)
+            pos_index.append(i)
+
         pos_index = tf.convert_to_tensor(pos_index)
         top_pos = list()
         for i in pos_index:
-            # print(f'Pos index h is, {len(h)}, i is {i}')
-            top_pos.append(h[i - 1])
+            top_pos.append(h[i])
 
-        top_neg_ids = tf.math.top_k(-A, self.n_instance_sample)[1][-1]
+        top_neg_ids = tf.math.top_k(-A_I, self.n_ins)[1][-1]
         neg_index = list()
         for i in top_neg_ids:
-            if i % 2 == 0:
-                neg_index.append(i // 2)
-            else:
-                neg_index.append((i + 1) // 2)
+            neg_index.append(i)
+
         neg_index = tf.convert_to_tensor(neg_index)
         top_neg = list()
         for i in neg_index:
-            # print('shape of h, ', h[i].shape, 'i is ', i)
-            # shape of h,  (1, 512) i is  tf.Tensor(16, shape=(), dtype=int32)
-            # print(f'Neg index h is, {len(h)}, i is {i}')
-            top_neg.append(h[i - 1])
+            top_neg.append(h[i])
 
-        instance_samples = tf.concat(values=[top_pos, top_neg], axis=0)
+        ins_in = tf.concat(values=[top_pos, top_neg], axis=0)
+        logits_unnorm_in = list()
+        logits_in = list()
 
-        logits = list()
-        instance_loss = list()
+        for i in range(self.n_class * self.n_ins):
+            ins_score_unnorm_in = ins_classifier(ins_in[i])
+            logit_in = tf.math.softmax(ins_score_unnorm_in)
+            logits_unnorm_in.append(ins_score_unnorm_in)
+            logits_in.append(logit_in)
 
-        for i in range(self.n_instance_sample):
-            logit = tf.reshape(classifier(instance_samples[i]), (2, 1))
-            ins_loss = self.mil_loss_func(pseudo_labels[i], logit)
-            logits.append(logit)
-            instance_loss.append(ins_loss)
+        return ins_label_in, logits_unnorm_in, logits_in
 
-        instance_predict = tf.sort(logits, direction='ASCENDING')
-        instance_predict = tf.reshape(tf.convert_to_tensor(instance_predict),
-                                      (1, len(instance_predict) * self.n_classes))
-        pos_predict = instance_predict[0][:self.n_instance_sample]
-        neg_predict = instance_predict[0][self.n_instance_sample:]
-        accurate_pos_predict = (pos_predict == tf.constant(pos_pseudo_labels)).numpy().tolist().count(True)
-        accurate_neg_predict = (neg_predict == tf.constant(neg_pseudo_labels)).numpy().tolist().count(True)
-
-        pos_acc = accurate_pos_predict / self.n_instance_sample
-        neg_acc = accurate_neg_predict / self.n_instance_sample
-
-        return instance_loss, pos_acc, neg_acc
-
-    # Out-class attention branch based instance-level clustering [Optional Functionality]
-    def instance_level_clustering_out_class(self, A, h, classifier):
+    def out_call(self, ins_classifier, h, A_O):
         # get compressed 512-dimensional instance-level feature vectors for following use, denoted by h
-        A = tf.reshape(tf.convert_to_tensor(A), (1, len(A) * self.n_classes))
-        top_pos_ids = tf.math.top_k(A, self.n_instance_sample)[1][-1]
+        A_O = tf.reshape(tf.convert_to_tensor(A_O), (1, len(A_O)))
+        top_pos_ids = tf.math.top_k(A_O, self.n_ins)[1][-1]
         pos_index = list()
         for i in top_pos_ids:
-            if i % 2 == 0:
-                pos_index.append(i // 2)
-            else:
-                pos_index.append((i + 1) // 2)
+            pos_index.append(i)
+
         pos_index = tf.convert_to_tensor(pos_index)
         top_pos = list()
         for i in pos_index:
-            top_pos.append(h[i - 1])
+            top_pos.append(h[i])
 
         # mutually-exclusive -> top k instances w/ highest attention scores ==> false pos = neg
-        pos_pseudo_labels = self.generate_neg_labels(self.n_instance_sample)
-        logits = list()
-        instance_loss = list()
+        pos_ins_labels_out = self.generate_neg_labels(self.n_ins)
+        ins_label_out = pos_ins_labels_out
 
-        for i in range(self.n_instance_sample):
-            logit = tf.reshape(classifier(top_pos[i]), (2, 1))
-            ins_loss = self.mil_loss_func(pos_pseudo_labels[i], logit)
-            logits.append(logit)
-            instance_loss.append(ins_loss)
+        logits_unnorm_out = list()
+        logits_out = list()
 
-        pos_predict = tf.sort(logits, direction='ASCENDING')
-        pos_predict = tf.reshape(tf.convert_to_tensor(pos_predict), (1, len(pos_predict) * self.n_classes))
-        pos_predict = pos_predict[0][:self.n_instance_sample]
-        accurate_pos_predict = (pos_predict == tf.constant(pos_pseudo_labels)).numpy().tolist().count(True)
-        pos_acc = accurate_pos_predict / self.n_instance_sample
+        for i in range(self.n_ins):
+            ins_score_unnorm_out = ins_classifier(top_pos[i])
+            logit_out = tf.math.softmax(ins_score_unnorm_out)
+            logits_unnorm_out.append(ins_score_unnorm_out)
+            logits_out.append(logit_out)
 
-        # top k instances w/ lowest attention scores -> false neg != pos ==> excluded
-        neg_acc = -1  # never pick top k neg instances in out-the-class instance-level clustering, set this be -1
+        return ins_label_out, logits_unnorm_out, logits_out
 
-        return instance_loss, pos_acc, neg_acc
+    def call(self, bag_label, h, A):
+        for i in range(self.n_class):
+            ins_classifier = self.ins_classifier()[i]
+            if i == bag_label:
+                A_I = list()
+                for j in range(len(A)):
+                    a_i = A[j][0][i]
+                    A_I.append(a_i)
+                ins_label_in, logits_unnorm_in, logits_in = self.in_call(ins_classifier, h, A_I)
+            else:
+                if self.mut_ex:
+                    A_O = list()
+                    for j in range(len(A)):
+                        a_o = A[j][0][i]
+                        A_O.append(a_o)
+                    ins_label_out, logits_unnorm_out, logits_out = self.out_call(ins_classifier, h, A_O)
+                else:
+                    continue
 
-    def forward(self, img_features, slide_label, mil_op=False, slide_predict_op=False, att_only_op=False):
+        if self.mut_ex:
+            ins_labels = tf.concat(values=[ins_label_in, ins_label_out], axis=0)
+            ins_logits_unnorm = logits_unnorm_in + logits_unnorm_out
+            ins_logits = logits_in + logits_out
+        else:
+            ins_labels = ins_label_in
+            ins_logits_unnorm = logits_unnorm_in
+            ins_logits = logits_in
+
+        return ins_labels, ins_logits_unnorm, ins_logits
+
+
+class S_Bag(tf.keras.Model):
+    def __init__(self, dim_compress_features=512, n_class=2):
+        super(S_Bag, self).__init__()
+        self.dim_compress_features = dim_compress_features
+        self.n_class = n_class
+
+        self.s_bag_model = tf.keras.models.Sequential()
+        self.s_bag_layer = tf.keras.layers.Dense(
+            units=1, activation='linear', input_shape=(self.n_class, self.dim_compress_features),
+            name='Bag_Classifier_Layer'
+        )
+        self.s_bag_model.add(self.s_bag_layer)
+
+    def bag_classifier(self):
+        return self.s_bag_model
+
+    def h_slide(self, A, h):
+        # compute the slide-level representation aggregated per the attention score distribution for the mth class
+        SAR = list()
+        for i in range(len(A)):
+            sar = tf.linalg.matmul(tf.transpose(A[i]), h[i])  # shape be (2,512)
+            SAR.append(sar)
+        slide_agg_rep = tf.math.add_n(SAR)  # return h_[slide,m], shape be (2,512)
+
+        return slide_agg_rep
+
+    def call(self, bag_label, A, h):
+        slide_agg_rep = self.h_slide(A, h)
+        bag_classifier = self.bag_classifier()
+        slide_score_unnorm = bag_classifier(slide_agg_rep)
+        slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, self.n_class))
+        Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
+        Y_prob = tf.math.softmax(
+            tf.reshape(slide_score_unnorm, (1, self.n_class)))  # shape be (1,2), predictions for each of the classes
+        predict_label = np.argmax(Y_prob.numpy())
+
+        Y_true = tf.one_hot([bag_label], 2)
+
+        return slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true
+
+
+class S_CLAM(tf.keras.Model):
+    def __init__(self, att_gate=False, net_size='small', n_ins=8, n_class=2, mut_ex=False,
+                 dropout=False, drop_rate=.25, mil_ins=False, att_only=False):
+        super(S_CLAM, self).__init__()
+        self.att_gate = att_gate
+        self.net_size = net_size
+        self.n_ins = n_ins
+        self.n_class = n_class
+        self.mut_ex = mut_ex
+        self.dropout = dropout
+        self.drop_rate = drop_rate
+        self.mil_ins = mil_ins
+        self.att_only = att_only
+
+        self.net_shape_dict = {
+            'small': [1024, 512, 256],
+            'big': [1024, 512, 384]
+        }
+        self.net_shape = self.net_shape_dict[self.net_size]
+
+        if self.att_gate:
+            self.att_net = G_Att_Net(dim_features=self.net_shape[0], dim_compress_features=self.net_shape[1],
+                                     n_hidden_units=self.net_shape[2],
+                                     n_classes=self.n_class, dropout=self.dropout, dropout_rate=self.drop_rate)
+        else:
+            self.att_net = NG_Att_Net(dim_features=self.net_shape[0], dim_compress_features=self.net_shape[1],
+                                      n_hidden_units=self.net_shape[2],
+                                      n_classes=self.n_class, dropout=self.dropout, dropout_rate=self.drop_rate)
+
+        self.bag_net = S_Bag(dim_compress_features=self.net_shape[1], n_class=self.n_class)
+
+        self.ins_net = Ins(dim_compress_features=self.net_shape[1], n_class=self.n_class, n_ins=self.n_ins,
+                           mut_ex=self.mut_ex)
+
+    def call(self, img_features, slide_label):
         """
         Args:
             img_features -> original 1024-dimensional instance-level feature vectors
-            labels -> mutable entire label set, could be 0 or 1 for binary classification
-            mil_op -> whether or not perform the instance-level clustering, default be False
-            slide_predict_op ->
-            att_only_op -> if only return the attention scores, default be False
+            slide_label -> ground-truth slide label, could be 0 or 1 for binary classification
         """
 
-        # get the compressed 512-dim feature vectors for following use
-        h = self.att_net.compress(img_features)
+        h, A = self.att_net.call(img_features)
+        att_score = A  # output from attention network
+        A = tf.math.softmax(A)  # softmax onattention scores
 
-        A = self.att_net.call(img_features)
-        att_net_out = A  # output from attention network
-        A = tf.math.softmax(A)  # attention scores computed by Eqa#1 in CLAM paper
+        if self.att_only:
+            return att_score
 
-        if att_only_op:
-            CLAM_outcomes = {
-                'Attention_Scores': att_net_out
-            }
-            return CLAM_outcomes  # return attention scores of the kth patch for the mth class (i.e. a_[k,m])
+        if self.mil_ins:
+            ins_labels, ins_logits_unnorm, ins_logits = self.ins_net.call(slide_label, h, A)
 
-        instance_loss_total = 0.0
-        pos_acc_total = 0.0
-        neg_acc_total = 0.0
+        slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = self.bag_net.call(slide_label, A, h)
 
-        if mil_op:
-            for i in range(len(self.instance_classifiers)):
-                classifier = self.instance_classifiers[i]
-                if i == slide_label:
-                    instance_loss, pos_acc, neg_acc = self.instance_clustering_in_class(A, h, classifier)
-                    pos_acc_total += pos_acc
-                    neg_acc_total += neg_acc
-                else:
-                    if self.subtype_prob:  # classes are mutually-exclusive assumption holds
-                        instance_loss, pos_acc, neg_acc = self.instance_level_clustering_out_class(A, h, classifier)
-                        pos_acc += pos_acc
-                    else:  # classes are mutually-exclusive assumption not holds
-                        continue
-                instance_loss_total = sum(instance_loss)
-
-            if self.subtype_prob:
-                pos_acc_total /= len(self.instance_classifiers)
-                instance_loss_total /= len(self.instance_classifiers)
-
-            CLAM_outcomes = {
-                'Instance_Loss': instance_loss_total,
-                'Prediction_Accuracy_Positive': pos_acc_total
-            }
-        else:
-            CLAM_outcomes = {}
-
-        # compute the slide-level representation aggregated per the attention score distribution for the mth class
-        SAR = list()
-        for i in range(len(img_features)):
-            sar = tf.linalg.matmul(tf.transpose(A[i]), h[i])  # return h_[slide,m], shape be (2,512)
-            SAR.append(sar)
-        slide_agg_rep = tf.add_n(SAR)
-
-        if slide_predict_op:
-            CLAM_outcomes.update({
-                'Slide_Level_Representation': slide_agg_rep
-            })
-
-        # unnormalized slide-level score (s_[slide,m]) with uninitialized entries, shape be (1,num_of_classes)
-        slide_score_unnorm = tf.Variable(np.empty((1, self.n_classes)), dtype=tf.float32)
-
-        # return s_[slide,m] (slide-level prediction scores)
-        for j in range(self.n_classes):
-            ssu = self.bag_classifiers[j](tf.reshape(slide_agg_rep[j], (1, self.size[1])))[0, 0]
-            tf.compat.v1.assign(slide_score_unnorm[0, j], ssu)
-
-        Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
-        Y_prob = tf.compat.v1.math.softmax(slide_score_unnorm)  # shape be (1,2), predictions for each of the classes
-
-        # compute slide-level loss
-        slide_loss_func = tf.keras.losses.CategoricalCrossentropy()
-        slide_loss_total = slide_loss_func(slide_label, Y_prob)
-
-        # compute total loss
-        total_loss = slide_loss_total + instance_loss_total
-
-        return att_net_out, slide_score_unnorm, Y_hat, Y_prob, total_loss, CLAM_outcomes
+        return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, \
+               slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_label
