@@ -11,6 +11,7 @@ import os
 import random
 import shutil
 import statistics
+import pandas as pd
 import time
 
 
@@ -396,7 +397,7 @@ class S_CLAM(tf.keras.Model):
 train_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/train/'
 val_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/val/'
 test_data = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/test/'
-
+clam_result_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM'
 
 def tf_shut_up(no_warn_op=False):
     if no_warn_op:
@@ -543,11 +544,12 @@ def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutu
            val_acc, val_auc
 
 
-def test(i_model, b_model, c_model, test_path):
+def test(i_model, b_model, c_model, test_path, result_path):
     start_time = time.time()
 
     slide_true_label = list()
     slide_predict_label = list()
+    sample_names = list()
 
     for k in os.listdir(test_path):
         print('=', end="")
@@ -562,8 +564,13 @@ def test(i_model, b_model, c_model, test_path):
 
         slide_true_label.append(slide_label)
         slide_predict_label.append(predict_label)
+        sample_names.append(k)
 
-        print(slide_label, '\t', predict_label, '\t', Y_prob)
+        test_results = pd.DataFrame(list(zip(sample_names, slide_true_label, slide_predict_label)),
+                                    columns=['Sample Names', 'Slide True Label', 'Slide Predict Label'])
+        test_results.to_csv(os.path.join(result_path, 'test_results.tsv'), sep='\t', index=False)
+
+        print(k, '\t', slide_label, '\t', predict_label, '\t', Y_prob)
 
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(slide_true_label, slide_predict_label).ravel()
     test_tn = int(tn)
@@ -661,7 +668,7 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
                               "--- %s mins ---" % int(epoch_run_time / 60)))
 
 
-def clam_main(train_log, val_log, train_path, val_path, test_path,
+def clam_main(train_log, val_log, train_path, val_path, test_path, result_path,
               i_model, b_model, c_model, i_optimizer_func, b_optimizer_func,
               c_optimizer_func, i_loss_func, b_loss_func, mutual_ex,
               n_class, c1, c2, learn_rate, l2_decay, epochs):
@@ -673,15 +680,16 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                learn_rate=learn_rate, l2_decay=l2_decay, epochs=epochs)
 
     test_tn, test_fp, test_fn, test_tp, test_sensitivity, test_specificity, \
-    test_acc, test_auc = test(i_model=i_model, b_model=b_model, c_model=c_model, test_path=test_path)
+    test_acc, test_auc = test(i_model=i_model, b_model=b_model, c_model=c_model,
+                              test_path=test_path, result_path=result_path)
 
 
 tf_shut_up(no_warn_op=True)
 
 
 clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_data,
-          val_path=val_data, test_path=test_data, i_model=ins, b_model=s_bag, c_model=s_clam,
-          i_optimizer_func=tfa.optimizers.AdamW, b_optimizer_func=tfa.optimizers.AdamW,
-          c_optimizer_func=tfa.optimizers.AdamW, i_loss_func=tf.keras.losses.binary_crossentropy,
-          b_loss_func=tf.keras.losses.binary_crossentropy, mutual_ex=True, n_class=2,
-          c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, epochs=200)
+          val_path=val_data, test_path=test_data, result_path=clam_result_dir,
+          i_model=ins, b_model=s_bag, c_model=s_clam, i_optimizer_func=tfa.optimizers.AdamW,
+          b_optimizer_func=tfa.optimizers.AdamW, c_optimizer_func=tfa.optimizers.AdamW,
+          i_loss_func=tf.keras.losses.binary_crossentropy, b_loss_func=tf.keras.losses.binary_crossentropy,
+          mutual_ex=True, n_class=2, c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, epochs=200)
