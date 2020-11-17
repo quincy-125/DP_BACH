@@ -1,8 +1,3 @@
-# !/usr/local/biotools/python/3.4.3/bin/python3
-__author__ = "Naresh Prodduturi"
-__email__ = "prodduturi.naresh@mayo.edu"
-__status__ = "Dev"
-
 import openslide
 import tensorflow as tf
 import os
@@ -67,8 +62,13 @@ def argument_parse():
     return parser
 
 '''creating binary mask to inspect areas with tissue and performance of threshold''' 
-def create_binary_mask_new(rgb2hed_thresh,svs_file,patch_dir,samp):			
+def create_binary_mask_new(rgb2lab_thresh,svs_file,patch_dir,samp):			
+    #img = Image.open(top_level_file_path)
     OSobj = openslide.OpenSlide(svs_file)
+    #toplevel=OSobj.level_count-1
+    #patch_sub_size_x=OSobj.level_dimensions[toplevel][0]
+    #patch_sub_size_y=OSobj.level_dimensions[toplevel][1]
+    #img = OSobj.read_region((0,0), toplevel, (patch_sub_size_x, patch_sub_size_y))
     divisor = int(OSobj.level_dimensions[0][0]/500)
     patch_sub_size_x=int(OSobj.level_dimensions[0][0]/divisor)
     patch_sub_size_y=int(OSobj.level_dimensions[0][1]/divisor)
@@ -76,15 +76,32 @@ def create_binary_mask_new(rgb2hed_thresh,svs_file,patch_dir,samp):
     toplevel=[patch_sub_size_x,patch_sub_size_y,divisor]
     img = img.convert('RGB')
     np_img = np.array(img)
+    #binary_img= (np_img==[254,0,0] or np_img==[255,0,0]).all(axis=2)
+    #binary_img=binary_img.astype(int)
+    #print(binary_img.shape)
+    #np_img[binary_img == 1] = [255, 255, 255]
+    #img = Image.fromarray(np_img)
     img.save(patch_dir+'/'+samp+"_original.png", "png")
+    #sys.exit(0)
+    # lab_img = rgb2lab(np_img)
+    # l_img = lab_img[:, :, 0]
+    # patch_max=round(np.amax(l_img),2)
+    # patch_min=round(np.amin(l_img),2)
+    # print(patch_min,patch_max)
+    # print(l_img)
+    # #
+    # lab_img = rgb2hed(np_img)
+    # l_img = lab_img[:, :, 0]
+    # patch_max = round(np.amax(l_img), 2)
+    # patch_min = round(np.amin(l_img), 2)
+    # print(patch_min, patch_max)
+    # print(l_img)
+    # #
     lab_img = rgb2hed(np_img)
-    l_img = lab_img[:, :, 1]
+    l_img = lab_img[:, :, 2]
     patch_max = round(np.amax(l_img), 2)
     patch_min = round(np.amin(l_img), 2)
-    #print(patch_min, patch_max)
-    #print(l_img)
-    #rgb2hed_thresh=0.18
-    binary_img = l_img >float(rgb2hed_thresh)
+    binary_img = l_img >float(rgb2lab_thresh)
     binary_img=binary_img.astype(int)
     np_img[binary_img == 0] = [0, 0, 0]
     np_img[binary_img == 1] = [255, 255, 255]
@@ -186,7 +203,7 @@ def create_summary_img(patch_start_x_list,patch_stop_x_list,patch_start_y_list,p
     return True
 
 '''Quincy code to extract feature vector'''
-def patch_feature_extraction_resnet(input_shape=(512, 512, 3)):
+def patch_feature_extraction_resnet(input_shape=(256, 256, 3)):
     ## Load the ResNet50 model
     resnet50_model = tf.keras.applications.resnet50.ResNet50(include_top=False,weights='imagenet',input_shape=input_shape)
     #print("Model loaded sucessful")
@@ -199,7 +216,7 @@ def patch_feature_extraction_resnet(input_shape=(512, 512, 3)):
     ## Add adaptive mean-spatial pooling after the new model
     adaptive_mean_spatial_layer = tf.keras.layers.GlobalAvgPool2D()
     return res50, adaptive_mean_spatial_layer
-def patch_feature_extraction(image_string, res50, adaptive_mean_spatial_layer, input_shape=(512, 512, 3)):
+def patch_feature_extraction(image_string, res50, adaptive_mean_spatial_layer, input_shape=(256, 256, 3)):
     """
     Args:
         image_string:  bytes(PIL_image)
