@@ -15,6 +15,7 @@ import shutil
 import statistics
 import time
 
+
 def get_data_from_tf(tf_path):
     feature = {'height': tf.io.FixedLenFeature([], tf.int64),
                'width': tf.io.FixedLenFeature([], tf.int64),
@@ -391,28 +392,37 @@ class S_CLAM(tf.keras.Model):
 
         slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = self.bag_net.call(slide_label, A, h)
 
-        return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_label
+        return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
+               Y_prob, Y_hat, Y_true, predict_label
 
-train_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/train/'
-val_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/val/'
-test_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/BACH/test/'
 
-train_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/TCGA/train/'
-val_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/TCGA/val/'
-test_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/TCGA/test/'
+train_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+             'Quincy/Data/CLAM/BACH/train/'
+val_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+           'Quincy/Data/CLAM/BACH/val/'
+test_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+            'Quincy/Data/CLAM/BACH/test/'
+
+train_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+             'Quincy/Data/CLAM/TCGA/train/'
+val_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+           'Quincy/Data/CLAM/TCGA/val/'
+test_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+            'Quincy/Data/CLAM/TCGA/test/'
+
 
 def tf_shut_up(no_warn_op=False):
     if no_warn_op:
         tf.get_logger().setLevel('ERROR')
     else:
-        print('Are you sure you want to receive the annoying TensorFlow Warning Messages?', \
-              '\n', 'If not, check the value of your input prameter for this function and re-run it.')
+        print('Are you sure you want to receive the annoying TensorFlow Warning Messages?', '\n',
+              'If not, check the value of your input prameter for this function and re-run it.')
 
 
 def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimizer, b_optimizer, c_optimizer,
                 i_loss_func, b_loss_func, n_class, c1, c2, mutual_ex):
-    with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
 
+    with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
         Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
 
@@ -515,6 +525,7 @@ def b_optimize(batch_size, n_samples, n_ins, img_features, slide_label, i_model,
 def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimizer_func,
                c_optimizer_func, i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2,
                learn_rate, l2_decay, n_ins, batch_size, batch_op):
+
     loss_total = list()
     loss_ins = list()
     loss_bag = list()
@@ -580,6 +591,7 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
 
 def nb_val(img_features, slide_label, i_model, b_model, c_model,
            i_loss_func, b_loss_func, n_class, c1, c2, mutual_ex):
+
     att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
     Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
 
@@ -706,6 +718,7 @@ def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutu
     return val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, val_sensitivity, val_specificity, \
            val_acc, val_auc
 
+
 def test(i_model, b_model, c_model, test_path, result_path, result_file_name):
     start_time = time.time()
 
@@ -756,24 +769,28 @@ def test(i_model, b_model, c_model, test_path, result_path, result_file_name):
 
     return test_tn, test_fp, test_fn, test_tp, test_sensitivity, test_specificity, test_acc, test_auc
 
+
 ins = Ins(dim_compress_features=512, n_class=2, n_ins=8, mut_ex=True)
 
 s_bag = S_Bag(dim_compress_features=512, n_class=2)
 
 s_clam = S_CLAM(att_gate=True, net_size='big', n_ins=8, n_class=2, mut_ex=False,
-            dropout=True, drop_rate=.25, mil_ins=True, att_only=False)
+                dropout=True, drop_rate=.25, mil_ins=True, att_only=False)
 
 clam_result_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM'
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-train_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/log/' + current_time + '/train'
-val_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/log/' + current_time + '/val'
+train_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+                'Quincy/Data/CLAM/log/' + current_time + '/train'
+val_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+              'Quincy/Data/CLAM/log/' + current_time + '/val'
 
 
 def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
                c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func,
                i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2, learn_rate,
                l2_decay, n_ins, batch_size, batch_op, epochs):
+
     train_summary_writer = tf.summary.create_file_writer(train_log)
     val_summary_writer = tf.summary.create_file_writer(val_log)
 
@@ -782,13 +799,13 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
         start_time = time.time()
 
         train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, \
-        train_sensitivity, train_specificity, train_acc, train_auc = train_step(
-            i_model=i_model, b_model=b_model, c_model=c_model, train_path=train_path,
-            i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
-            c_optimizer_func=c_optimizer_func, i_loss_func=i_loss_func,
-            b_loss_func=b_loss_func, mutual_ex=mutual_ex, n_class=n_class,
-            c1=c1, c2=c2, learn_rate=learn_rate, l2_decay=l2_decay,
-            n_ins=n_ins, batch_size=batch_size, batch_op=batch_op)
+        train_sensitivity, train_specificity, train_acc, \
+        train_auc = train_step(i_model=i_model, b_model=b_model, c_model=c_model, train_path=train_path,
+                               i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
+                               c_optimizer_func=c_optimizer_func, i_loss_func=i_loss_func,
+                               b_loss_func=b_loss_func, mutual_ex=mutual_ex, n_class=n_class,
+                               c1=c1, c2=c2, learn_rate=learn_rate, l2_decay=l2_decay,
+                               n_ins=n_ins, batch_size=batch_size, batch_op=batch_op)
 
         with train_summary_writer.as_default():
             tf.summary.scalar('Total Loss', float(train_loss), step=epoch)
@@ -805,10 +822,13 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
 
         # Validation Step
         val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, \
-        val_sensitivity, val_specificity, val_acc, val_auc = val_step(
-            i_model=i_model, b_model=b_model, c_model=c_model, val_path=val_path,
-            i_loss_func=i_loss_func, b_loss_func=b_loss_func, mutual_ex=mutual_ex,
-            n_class=n_class, c1=c1, c2=c2, n_ins=n_ins, batch_size=batch_size, batch_op=batch_op)
+        val_sensitivity, val_specificity, val_acc, val_auc = val_step(i_model=i_model, b_model=b_model,
+                                                                      c_model=c_model, val_path=val_path,
+                                                                      i_loss_func=i_loss_func,
+                                                                      b_loss_func=b_loss_func,
+                                                                      mutual_ex=mutual_ex, n_class=n_class,
+                                                                      c1=c1, c2=c2, n_ins=n_ins,
+                                                                      batch_size=batch_size, batch_op=batch_op)
 
         with val_summary_writer.as_default():
             tf.summary.scalar('Total Loss', float(val_loss), step=epoch)
@@ -838,6 +858,7 @@ def clam_main(train_log, val_log, train_path, val_path, test_path, result_path, 
               i_model, b_model, c_model, i_optimizer_func, b_optimizer_func,
               c_optimizer_func, i_loss_func, b_loss_func, mutual_ex,
               n_class, c1, c2, learn_rate, l2_decay, n_ins, batch_size, batch_op, epochs):
+
     train_eval(train_log=train_log, val_log=val_log, train_path=train_path,
                val_path=val_path, i_model=i_model, b_model=b_model, c_model=c_model,
                i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
@@ -851,13 +872,13 @@ def clam_main(train_log, val_log, train_path, val_path, test_path, result_path, 
                               test_path=test_path, result_path=result_path,
                               result_file_name=result_file_name)
 
+
 tf_shut_up(no_warn_op=True)
 
-clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_bach,
-          val_path=val_bach, test_path=test_bach, result_path=clam_result_dir,
-          result_file_name='bach_clam_test_no_batch.tsv', i_model=ins, b_model=s_bag, c_model=s_clam,
+clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_tcga,
+          val_path=val_tcga, test_path=test_tcga, result_path=clam_result_dir,
+          result_file_name='tcga_clam_test_batch_size_50.tsv', i_model=ins, b_model=s_bag, c_model=s_clam,
           i_optimizer_func=tfa.optimizers.AdamW, b_optimizer_func=tfa.optimizers.AdamW,
           c_optimizer_func=tfa.optimizers.AdamW, i_loss_func=tf.keras.losses.binary_crossentropy,
           b_loss_func=tf.keras.losses.binary_crossentropy, mutual_ex=True, n_class=2,
-          c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, n_ins=8, batch_size=500, batch_op=False, epochs=200)
-
+          c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, n_ins=8, batch_size=50, batch_op=True, epochs=200)
