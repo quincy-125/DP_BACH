@@ -1,4 +1,5 @@
-tfrecord_dir='/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/tfrecord_level_quincy/'
+tfrecord_dir='/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+	'Quincy/Data/CLAM/BACH/'
 import tensorflow as tf
 import io
 import sys
