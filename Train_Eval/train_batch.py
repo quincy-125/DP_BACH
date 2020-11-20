@@ -488,35 +488,6 @@ def b_optimize(batch_size, n_samples, n_ins, img_features, slide_label, i_model,
             c_grad = c_tape.gradient(T_Loss, c_model.trainable_weights)
             c_optimizer.apply_gradients(zip(c_grad, c_model.trainable_weights))
 
-        else:
-            with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
-                att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-                Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features=img_features[(step_size - n_ins):],
-                                                                    slide_label=slide_label)
-
-                ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
-                ins_loss = list()
-                for j in range(len(ins_logits)):
-                    i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
-                    ins_loss.append(i_loss)
-                if mutual_ex:
-                    I_Loss = tf.math.add_n(ins_loss) / n_class
-                else:
-                    I_Loss = tf.math.add_n(ins_loss)
-
-                slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
-                B_Loss = b_loss_func(Y_true, Y_prob)
-                T_Loss = c1 * B_Loss + c2 * I_Loss
-
-            i_grad = i_tape.gradient(I_Loss, i_model.trainable_weights)
-            i_optimizer.apply_gradients(zip(i_grad, i_model.trainable_weights))
-
-            b_grad = b_tape.gradient(B_Loss, b_model.trainable_weights)
-            b_optimizer.apply_gradients(zip(b_grad, b_model.trainable_weights))
-
-            c_grad = c_tape.gradient(T_Loss, c_model.trainable_weights)
-            c_optimizer.apply_gradients(zip(c_grad, c_model.trainable_weights))
-
         step_size += batch_size
 
     return I_Loss, B_Loss, T_Loss, predict_label
@@ -543,6 +514,7 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
         print('=', end="")
         single_train_data = train_path + i
         img_features, slide_label = get_data_from_tf(single_train_data)
+        img_features = random.sample(img_features, len(img_features))
 
         if batch_op:
             I_Loss, B_Loss, T_Loss, predict_label = b_optimize(batch_size=batch_size, n_samples=len(img_features),
@@ -638,24 +610,6 @@ def b_val(batch_size, n_samples, n_ins, img_features, slide_label, i_model, b_mo
             slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
             B_Loss = b_loss_func(Y_true, Y_prob)
             T_Loss = c1 * B_Loss + c2 * I_Loss
-        else:
-            att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-            Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features=img_features[(step_size - n_ins):],
-                                                                slide_label=slide_label)
-
-            ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
-            ins_loss = list()
-            for j in range(len(ins_logits)):
-                i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
-                ins_loss.append(i_loss)
-            if mutual_ex:
-                I_Loss = tf.math.add_n(ins_loss) / n_class
-            else:
-                I_Loss = tf.math.add_n(ins_loss)
-
-            slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
-            B_Loss = b_loss_func(Y_true, Y_prob)
-            T_Loss = c1 * B_Loss + c2 * I_Loss
 
         step_size += batch_size
 
@@ -677,6 +631,7 @@ def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutu
         print('=', end="")
         single_val_data = val_path + i
         img_features, slide_label = get_data_from_tf(single_val_data)
+        img_features = random.sample(img_features, len(img_features))
 
         if batch_op:
             I_Loss, B_Loss, T_Loss, predict_label = b_val(batch_size=batch_size, n_samples=len(img_features),
@@ -881,4 +836,4 @@ clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_tcga,
           i_optimizer_func=tfa.optimizers.AdamW, b_optimizer_func=tfa.optimizers.AdamW,
           c_optimizer_func=tfa.optimizers.AdamW, i_loss_func=tf.keras.losses.binary_crossentropy,
           b_loss_func=tf.keras.losses.binary_crossentropy, mutual_ex=True, n_class=2,
-          c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, n_ins=8, batch_size=50, batch_op=True, epochs=200)
+          c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, n_ins=8, batch_size=1000, batch_op=True, epochs=200)
