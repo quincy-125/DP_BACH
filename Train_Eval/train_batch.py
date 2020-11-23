@@ -421,7 +421,6 @@ def tf_shut_up(no_warn_op=False):
 
 def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimizer, b_optimizer, c_optimizer,
                 i_loss_func, b_loss_func, n_class, c1, c2, mutual_ex):
-
     with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
         Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
@@ -453,10 +452,14 @@ def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimize
     return I_Loss, B_Loss, T_Loss, predict_label
 
 
+def most_frequent(List):
+    mf = max(set(List), key=List.count)
+    return mf
+
+
 def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_model,
                c_model, i_optimizer, b_optimizer, c_optimizer, i_loss_func, b_loss_func,
                n_class, c1, c2, mutual_ex):
-
     step_size = 0
 
     Ins_Loss = list()
@@ -539,7 +542,7 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
     B_Loss = statistics.mean(Bag_Loss)
     T_Loss = statistics.mean(Total_Loss)
 
-    predict_label = statistics.mode(label_predict)
+    predict_label = most_frequent(label_predict)
 
     return I_Loss, B_Loss, T_Loss, predict_label
 
@@ -547,7 +550,6 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
 def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimizer_func,
                c_optimizer_func, i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2,
                learn_rate, l2_decay, n_ins, batch_size, batch_op):
-
     loss_total = list()
     loss_ins = list()
     loss_bag = list()
@@ -570,20 +572,20 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
         if batch_op:
             I_Loss, B_Loss, T_Loss, \
             predict_label = b_optimize(batch_size=batch_size, n_ins=n_ins, n_samples=len(img_features),
-                                             img_features=img_features, slide_label=slide_label,
-                                             i_model=i_model, b_model=b_model, c_model=c_model,
-                                             i_optimizer=i_optimizer, b_optimizer=b_optimizer,
-                                             c_optimizer=c_optimizer, i_loss_func=i_loss_func,
-                                             b_loss_func=b_loss_func, n_class=n_class,
-                                             c1=c1, c2=c2, mutual_ex=mutual_ex)
+                                       img_features=img_features, slide_label=slide_label,
+                                       i_model=i_model, b_model=b_model, c_model=c_model,
+                                       i_optimizer=i_optimizer, b_optimizer=b_optimizer,
+                                       c_optimizer=c_optimizer, i_loss_func=i_loss_func,
+                                       b_loss_func=b_loss_func, n_class=n_class,
+                                       c1=c1, c2=c2, mutual_ex=mutual_ex)
         else:
             I_Loss, B_Loss, T_Loss, \
             predict_label = nb_optimize(img_features=img_features, slide_label=slide_label,
-                                              i_model=i_model, b_model=b_model, c_model=c_model,
-                                              i_optimizer=i_optimizer, b_optimizer=b_optimizer,
-                                              c_optimizer=c_optimizer, i_loss_func=i_loss_func,
-                                              b_loss_func=b_loss_func, n_class=n_class,
-                                              c1=c1, c2=c2, mutual_ex=mutual_ex)
+                                        i_model=i_model, b_model=b_model, c_model=c_model,
+                                        i_optimizer=i_optimizer, b_optimizer=b_optimizer,
+                                        c_optimizer=c_optimizer, i_loss_func=i_loss_func,
+                                        b_loss_func=b_loss_func, n_class=n_class,
+                                        c1=c1, c2=c2, mutual_ex=mutual_ex)
 
         loss_total.append(float(T_Loss))
         loss_ins.append(float(I_Loss))
@@ -615,7 +617,6 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
 
 def nb_val(img_features, slide_label, i_model, b_model, c_model,
            i_loss_func, b_loss_func, n_class, c1, c2, mutual_ex):
-
     att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
     Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
 
@@ -702,7 +703,7 @@ def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_mo
     B_Loss = statistics.mean(Bag_Loss)
     T_Loss = statistics.mean(Total_Loss)
 
-    predict_label = statistics.mode(label_predict)
+    predict_label = most_frequent(label_predict)
 
     return I_Loss, B_Loss, T_Loss, predict_label
 
@@ -727,16 +728,16 @@ def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutu
         if batch_op:
             I_Loss, B_Loss, T_Loss, \
             predict_label = b_val(batch_size=batch_size, n_ins=n_ins, n_samples=len(img_features),
-                                        img_features=img_features, slide_label=slide_label,
-                                        i_model=i_model, b_model=b_model, c_model=c_model,
-                                        i_loss_func=i_loss_func, b_loss_func=b_loss_func,
-                                        n_class=n_class, c1=c1, c2=c2, mutual_ex=mutual_ex)
+                                  img_features=img_features, slide_label=slide_label,
+                                  i_model=i_model, b_model=b_model, c_model=c_model,
+                                  i_loss_func=i_loss_func, b_loss_func=b_loss_func,
+                                  n_class=n_class, c1=c1, c2=c2, mutual_ex=mutual_ex)
         else:
             I_Loss, B_Loss, T_Loss, \
             predict_label = nb_val(img_features=img_features, slide_label=slide_label,
-                                         i_model=i_model, b_model=b_model, c_model=c_model,
-                                         i_loss_func=i_loss_func, b_loss_func=b_loss_func,
-                                         n_class=n_class, c1=c1, c2=c2, mutual_ex=mutual_ex)
+                                   i_model=i_model, b_model=b_model, c_model=c_model,
+                                   i_loss_func=i_loss_func, b_loss_func=b_loss_func,
+                                   n_class=n_class, c1=c1, c2=c2, mutual_ex=mutual_ex)
 
         loss_t.append(float(T_Loss))
         loss_i.append(float(I_Loss))
@@ -837,7 +838,6 @@ def train_eval(train_log, val_log, train_path, val_path, i_model, b_model,
                c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func,
                i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2, learn_rate,
                l2_decay, n_ins, batch_size, batch_op, epochs):
-
     train_summary_writer = tf.summary.create_file_writer(train_log)
     val_summary_writer = tf.summary.create_file_writer(val_log)
 
@@ -906,7 +906,6 @@ def clam_main(train_log, val_log, train_path, val_path, test_path, result_path, 
               i_model, b_model, c_model, i_optimizer_func, b_optimizer_func,
               c_optimizer_func, i_loss_func, b_loss_func, mutual_ex,
               n_class, c1, c2, learn_rate, l2_decay, n_ins, batch_size, batch_op, epochs):
-
     train_eval(train_log=train_log, val_log=val_log, train_path=train_path,
                val_path=val_path, i_model=i_model, b_model=b_model, c_model=c_model,
                i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
@@ -925,8 +924,8 @@ tf_shut_up(no_warn_op=True)
 
 clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_tcga,
           val_path=val_tcga, test_path=test_tcga, result_path=clam_result_dir,
-          result_file_name='tcga_clam_test_batch_size_1000.tsv', i_model=ins, b_model=s_bag, c_model=s_clam,
+          result_file_name='tcga_clam_test_batch_size_500.tsv', i_model=ins, b_model=s_bag, c_model=s_clam,
           i_optimizer_func=tfa.optimizers.AdamW, b_optimizer_func=tfa.optimizers.AdamW,
           c_optimizer_func=tfa.optimizers.AdamW, i_loss_func=tf.keras.losses.binary_crossentropy,
           b_loss_func=tf.keras.losses.binary_crossentropy, mutual_ex=True, n_class=2,
-          c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, n_ins=8, batch_size=1000, batch_op=True, epochs=200)
+          c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, n_ins=8, batch_size=500, batch_op=True, epochs=200)
