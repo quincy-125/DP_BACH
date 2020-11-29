@@ -5,7 +5,7 @@ import os
 import random
 import statistics
 
-from UTILITY.util import get_data_from_tf
+from UTILITY.util import get_data_from_tf, most_frequent
 
 
 def nb_val(img_features, slide_label, i_model, b_model, c_model,
@@ -101,7 +101,7 @@ def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_mo
     B_Loss = statistics.mean(Bag_Loss)
     T_Loss = statistics.mean(Total_Loss)
 
-    predict_slide_label = statistics.mode(label_predict)
+    predict_slide_label = most_frequent(label_predict)
 
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 

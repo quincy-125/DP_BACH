@@ -162,12 +162,7 @@ def make_arg_parser():
                         required=False,
                         help='number of instances needs to be applied for instance level clustering')
 
-    parser.add_argument('M', '--m_bag_op',
-                        default=False,
-                        required=False,
-                        help='whether or not applying multi-bag classifiers')
-
-    parser.add_argument('A', '--m_clam_op',
+    parser.add_argument('M', '--m_clam_op',
                         default=False,
                         required=False,
                         help='whether or not applying multi-clam models with multi-bag classifiers included')
@@ -201,3 +196,33 @@ def make_arg_parser():
                         default=True,
                         required=False,
                         help='whether or not performing instance level clustering')
+
+    parser.add_argument('E', '--net_size',
+                        default='big',
+                        required=False,
+                        help='attention network size which will determine the number of hidden units')
+
+    parser.add_argument('D', '--dropout',
+                        default=True,
+                        required=False,
+                        help='whether or not enabling dropout layer in the attention network')
+
+    parser.add_argument('R', '--dropout_rate',
+                        default=0.25,
+                        required=False,
+                        help='dropout rate for the attention network dropout layer if it is enabled')
+
+    parser.add_argument('F', '--dim_features',
+                        default=1024,
+                        required=False,
+                        help='dimensionality of image feature vectors, default be 1024')
+
+    parser.add_argument('A', '--dim_compress_features',
+                        default=512,
+                        required=False,
+                        help='dimensionality of compressed image feature vectors, default be 512')
+
+    parser.add_argument('H', '--n_hidden_units',
+                        default=256,
+                        required=False,
+                        help='number of hidden unites of each layers in the attention network')

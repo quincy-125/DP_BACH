@@ -306,12 +306,12 @@ def m_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
 
 
 def model_save(i_model, b_model, c_model, i_model_dir, b_model_dir,
-               c_model_dir, n_class, m_bag_op, m_clam_op, att_gate):
+               c_model_dir, n_class, m_clam_op, att_gate):
 
     for i in range(n_class):
         i_model.ins_classifier()[i].save(os.path.join(i_model_dir, 'M_Ins', 'Class_' + str(i)))
 
-    if m_bag_op:
+    if m_clam_op:
         for j in range(n_class):
             b_model.bag_classifier()[j].save(os.path.join(b_model_dir, 'M_Bag', 'Class_' + str(j)))
     else:
@@ -353,7 +353,7 @@ def model_save(i_model, b_model, c_model, i_model_dir, b_model_dir,
 
 
 def restore_model(i_model_dir, b_model_dir, c_model_dir, n_class,
-                  m_bag_op, m_clam_op, att_gate):
+                  m_clam_op, att_gate):
 
     i_trained_model = list()
     for i in range(n_class):
@@ -363,7 +363,7 @@ def restore_model(i_model_dir, b_model_dir, c_model_dir, n_class,
         m_ins_model = tf.keras.models.load_model(os.path.join(i_model_dir, 'M_Ins', m_ins_name))
         i_trained_model.append(m_ins_model)
 
-    if m_bag_op:
+    if m_clam_op:
         b_trained_model = list()
         for j in range(n_class):
             m_bag_names = os.listdir(os.path.join(b_model_dir, 'M_Bag'))

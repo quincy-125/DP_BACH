@@ -1,6 +1,10 @@
 import tensorflow as tf
 import time
 
+from MODEL.model_attention import NG_Att_Net, G_Att_Net
+from MODEL.model_bag_classifier import S_Bag, M_Bag
+from MODEL.model_clam import S_CLAM, M_CLAM
+from MODEL.model_ins_classifier import Ins
 from UTILITY.model_train import train_step
 from UTILITY.model_val import val_step
 from UTILITY.model_test import test_step
@@ -79,7 +83,7 @@ def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
                   i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
                   i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
                   c_l2_decay, n_ins, batch_size, batch_op, i_model_dir, b_model_dir,
-                  c_model_dir, m_bag_op, m_clam_op, att_gate, epochs):
+                  c_model_dir, m_clam_op, att_gate, epochs):
 
     train_val(train_log=train_log, val_log=val_log, train_path=train_path,
               val_path=val_path, i_model=i_model, b_model=b_model, c_model=c_model,
@@ -93,18 +97,18 @@ def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
 
     model_save(i_model=i_model, b_model=b_model, c_model=c_model,
                i_model_dir=i_model_dir, b_model_dir=b_model_dir,
-               c_model_dir=c_model_dir, n_class=n_class, m_bag_op=m_bag_op,
+               c_model_dir=c_model_dir, n_class=n_class,
                m_clam_op=m_clam_op, att_gate=att_gate)
 
 def clam_test(n_class, n_ins, att_gate, att_only, mil_ins, mut_ex, test_path,
-              result_path, result_file_name, i_model_dir, b_model_dir, c_model_dir,
-              m_bag_op, m_clam_op):
+              result_path, result_file_name, i_model_dir, b_model_dir, c_model_dir, m_clam_op):
 
     i_trained_model, b_trained_model, c_trained_model = restore_model(i_model_dir=i_model_dir,
                                                                       b_model_dir=b_model_dir,
                                                                       c_model_dir=c_model_dir,
-                                                                      n_class=n_class, m_bag_op=m_bag_op,
-                                                                      m_clam_op=m_clam_op, att_gate=att_gate)
+                                                                      n_class=n_class,
+                                                                      m_clam_op=m_clam_op,
+                                                                      att_gate=att_gate)
 
     test_step(n_class=n_class, n_ins=n_ins,
               att_gate=att_gate, att_only=att_only,
@@ -116,45 +120,149 @@ def clam_test(n_class, n_ins, att_gate, att_only, mil_ins, mut_ex, test_path,
               result_path=result_path,
               result_file_name=result_file_name)
 
+def load_model(dim_features, dim_compress_features, n_hidden_units,
+               n_class, n_ins, net_size, mut_ex, att_gate, att_only,
+               mil_ins, dropout, dropout_rate):
+
+    ng_att = NG_Att_Net(dim_features=dim_features,
+                        dim_compress_features=dim_compress_features,
+                        n_hidden_units=n_hidden_units,
+                        n_class=n_class,
+                        dropout=dropout,
+                        dropout_rate=dropout_rate)
+
+    g_att = G_Att_Net(dim_features=dim_features,
+                      dim_compress_features=dim_compress_features,
+                      n_hidden_units=n_hidden_units,
+                      n_class=n_class,
+                      dropout=dropout,
+                      dropout_rate=dropout_rate)
+
+    ins = Ins(dim_compress_features=dim_compress_features,
+              n_class=n_class,
+              n_ins=n_ins,
+              mut_ex=mut_ex)
+
+    s_bag = S_Bag(dim_compress_features=dim_compress_features,
+                  n_class=n_class)
+
+    m_bag = M_Bag(dim_compress_features=dim_compress_features,
+                  n_class=n_class)
+
+    s_clam = S_CLAM(att_gate=att_gate,
+                    net_size=net_size,
+                    n_ins=n_ins,
+                    n_class=n_class,
+                    mut_ex=mut_ex,
+                    dropout=dropout,
+                    drop_rate=dropout_rate,
+                    mil_ins=mil_ins,
+                    att_only=att_only)
+
+    m_clam = M_CLAM(att_gate=att_gate,
+                    net_size=net_size,
+                    n_ins=n_ins,
+                    n_class=n_class,
+                    mut_ex=mut_ex,
+                    dropout=dropout,
+                    drop_rate=dropout_rate,
+                    mil_ins=mil_ins,
+                    att_only=att_only)
+
+    a_model = [ng_att, g_att]
+    i_model = ins
+    b_model = [s_bag, m_bag]
+    c_model = [s_clam, m_clam]
+
+    return a_model, i_model, b_model, c_model
+
 def clam_main(train_log, val_log, train_path, val_path, test_path,
               result_path, result_file_name,
-              i_model, b_model, c_model,
+              dim_features, dim_compress_features, n_hidden_units,
+              net_size, dropout, dropout_rate,
               i_optimizer_func, b_optimizer_func, c_optimizer_func,
               i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
               i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
               c_l2_decay, n_ins, batch_size, batch_op, i_model_dir, b_model_dir,
-              att_only, mil_ins, c_model_dir, m_bag_op, m_clam_op, att_gate,
-              epochs, no_warn_op, is_training=False):
+              c_model_dir, att_only, mil_ins, att_gate,
+              epochs, no_warn_op, m_clam_op=False, is_training=False):
 
     if is_training:
+        a_model, i_model, b_model, c_model = load_model(dim_features=dim_features,
+                                                        dim_compress_features=dim_compress_features,
+                                                        n_hidden_units=n_hidden_units,
+                                                        n_class=n_class,
+                                                        n_ins=n_ins,
+                                                        net_size=net_size,
+                                                        mut_ex=mut_ex,
+                                                        att_gate=att_gate,
+                                                        att_only=att_only,
+                                                        mil_ins=mil_ins,
+                                                        dropout=dropout,
+                                                        dropout_rate=dropout_rate)
+
         tf_shut_up(no_warn_op=no_warn_op)
 
-        clam_optimize(train_log=train_log, val_log=val_log,
-                      train_path=train_path, val_path=val_path,
-                      i_model=i_model, b_model=b_model, c_model=c_model,
-                      i_optimizer_func=i_optimizer_func,
-                      b_optimizer_func=b_optimizer_func,
-                      c_optimizer_func=c_optimizer_func,
-                      i_loss_func=i_loss_func,
-                      b_loss_func=b_loss_func,
-                      mut_ex=mut_ex,
-                      n_class=n_class,
-                      c1=c1, c2=c2,
-                      i_learn_rate=i_learn_rate,
-                      b_learn_rate=b_learn_rate,
-                      c_learn_rate=c_learn_rate,
-                      i_l2_decay=i_l2_decay,
-                      b_l2_decay=b_l2_decay,
-                      c_l2_decay=c_l2_decay,
-                      n_ins=n_ins,
-                      batch_size=batch_size, batch_op=batch_op,
-                      i_model_dir=i_model_dir,
-                      b_model_dir=b_model_dir,
-                      c_model_dir=c_model_dir,
-                      m_bag_op=m_bag_op,
-                      m_clam_op=m_clam_op,
-                      att_gate=att_gate,
-                      epochs=epochs)
+        if m_clam_op:
+            b_c_model_index = 1
+
+            clam_optimize(train_log=train_log, val_log=val_log,
+                          train_path=train_path, val_path=val_path,
+                          i_model=i_model,
+                          b_model=b_model[b_c_model_index],
+                          c_model=c_model[b_c_model_index],
+                          i_optimizer_func=i_optimizer_func,
+                          b_optimizer_func=b_optimizer_func,
+                          c_optimizer_func=c_optimizer_func,
+                          i_loss_func=i_loss_func,
+                          b_loss_func=b_loss_func,
+                          mut_ex=mut_ex,
+                          n_class=n_class,
+                          c1=c1, c2=c2,
+                          i_learn_rate=i_learn_rate,
+                          b_learn_rate=b_learn_rate,
+                          c_learn_rate=c_learn_rate,
+                          i_l2_decay=i_l2_decay,
+                          b_l2_decay=b_l2_decay,
+                          c_l2_decay=c_l2_decay,
+                          n_ins=n_ins,
+                          batch_size=batch_size, batch_op=batch_op,
+                          i_model_dir=i_model_dir,
+                          b_model_dir=b_model_dir,
+                          c_model_dir=c_model_dir,
+                          m_clam_op=m_clam_op,
+                          att_gate=att_gate,
+                          epochs=epochs)
+        else:
+            b_c_model_index = 0
+
+            clam_optimize(train_log=train_log, val_log=val_log,
+                          train_path=train_path, val_path=val_path,
+                          i_model=i_model,
+                          b_model=b_model[b_c_model_index],
+                          c_model=c_model[b_c_model_index],
+                          i_optimizer_func=i_optimizer_func,
+                          b_optimizer_func=b_optimizer_func,
+                          c_optimizer_func=c_optimizer_func,
+                          i_loss_func=i_loss_func,
+                          b_loss_func=b_loss_func,
+                          mut_ex=mut_ex,
+                          n_class=n_class,
+                          c1=c1, c2=c2,
+                          i_learn_rate=i_learn_rate,
+                          b_learn_rate=b_learn_rate,
+                          c_learn_rate=c_learn_rate,
+                          i_l2_decay=i_l2_decay,
+                          b_l2_decay=b_l2_decay,
+                          c_l2_decay=c_l2_decay,
+                          n_ins=n_ins,
+                          batch_size=batch_size, batch_op=batch_op,
+                          i_model_dir=i_model_dir,
+                          b_model_dir=b_model_dir,
+                          c_model_dir=c_model_dir,
+                          m_clam_op=m_clam_op,
+                          att_gate=att_gate,
+                          epochs=epochs)
     else:
         clam_test(n_class=n_class, n_ins=n_ins,
                   att_gate=att_gate, att_only=att_only,
@@ -165,4 +273,4 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                   i_model_dir=i_model_dir,
                   b_model_dir=b_model_dir,
                   c_model_dir=c_model_dir,
-                  m_bag_op=m_bag_op, m_clam_op=m_clam_op)
+                  m_clam_op=m_clam_op)

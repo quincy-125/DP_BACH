@@ -2,13 +2,13 @@ import tensorflow as tf
 
 
 class NG_Att_Net(tf.keras.Model):
-    def __init__(self, dim_features=1024, dim_compress_features=512, n_hidden_units=256, n_classes=2,
+    def __init__(self, dim_features=1024, dim_compress_features=512, n_hidden_units=256, n_class=2,
                  dropout=False, dropout_rate=.25):
         super(NG_Att_Net, self).__init__()
         self.dim_features = dim_features
         self.dim_compress_features = dim_compress_features
         self.n_hidden_units = n_hidden_units
-        self.n_classes = n_classes
+        self.n_class = n_class
         self.dropout = dropout
         self.dropout_rate = dropout_rate
 
@@ -27,7 +27,7 @@ class NG_Att_Net(tf.keras.Model):
                                                 kernel_initializer='glorot_normal', bias_initializer='zeros',
                                                 name='Attention_Layer1')
 
-        self.att_layer2 = tf.keras.layers.Dense(units=n_classes, activation='linear', input_shape=(n_hidden_units,),
+        self.att_layer2 = tf.keras.layers.Dense(units=n_class, activation='linear', input_shape=(n_hidden_units,),
                                                 kernel_initializer='glorot_normal', bias_initializer='zeros',
                                                 name='Attention_Layer2')
 
@@ -57,13 +57,13 @@ class NG_Att_Net(tf.keras.Model):
 
 
 class G_Att_Net(tf.keras.Model):
-    def __init__(self, dim_features=1024, dim_compress_features=512, n_hidden_units=256, n_classes=2,
+    def __init__(self, dim_features=1024, dim_compress_features=512, n_hidden_units=256, n_class=2,
                  dropout=False, dropout_rate=.25):
         super(G_Att_Net, self).__init__()
         self.dim_features = dim_features
         self.dim_compress_features = dim_compress_features
         self.n_hidden_units = n_hidden_units
-        self.n_classes = n_classes
+        self.n_class = n_class
         self.dropout = dropout
         self.dropout_rate = dropout_rate
 
@@ -88,7 +88,7 @@ class G_Att_Net(tf.keras.Model):
                                                 kernel_initializer='glorot_normal', bias_initializer='zeros',
                                                 name='Attention_Layer2')
 
-        self.att_layer3 = tf.keras.layers.Dense(units=n_classes, activation='linear', input_shape=(n_hidden_units,),
+        self.att_layer3 = tf.keras.layers.Dense(units=n_class, activation='linear', input_shape=(n_hidden_units,),
                                                 kernel_initializer='glorot_normal', bias_initializer='zeros',
                                                 name='Attention_Layer3')
 
