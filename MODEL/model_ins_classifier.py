@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 class Ins(tf.keras.Model):
-    def __init__(self, dim_compress_features=512, n_class=2, top_k_percent=0.4, mut_ex=False):
+    def __init__(self, dim_compress_features=512, n_class=2, top_k_percent=0.2, mut_ex=False):
         super(Ins, self).__init__()
         self.dim_compress_features = dim_compress_features
         self.n_class = n_class

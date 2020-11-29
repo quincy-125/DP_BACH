@@ -6,7 +6,7 @@ from MODEL.model_ins_classifier import Ins
 
 
 class S_CLAM(tf.keras.Model):
-    def __init__(self, att_gate=False, net_size='small', top_k_percent=0.4, n_class=2, mut_ex=False,
+    def __init__(self, att_gate=False, net_size='small', top_k_percent=0.2, n_class=2, mut_ex=False,
                  dropout=False, drop_rate=.25, mil_ins=False, att_only=False):
         super(S_CLAM, self).__init__()
         self.att_gate = att_gate
@@ -77,7 +77,7 @@ class S_CLAM(tf.keras.Model):
 
 
 class M_CLAM(tf.keras.Model):
-    def __init__(self, att_gate=False, net_size='small', top_k_percent=0.4, n_class=2, mut_ex=False,
+    def __init__(self, att_gate=False, net_size='small', top_k_percent=0.2, n_class=2, mut_ex=False,
                  dropout=False, drop_rate=.25, mil_ins=False, att_only=False):
         super(M_CLAM, self).__init__()
         self.att_gate = att_gate

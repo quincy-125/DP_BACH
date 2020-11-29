@@ -49,17 +49,17 @@ def make_arg_parser():
 
     parser.add_argument('e', '--i_model_dir',
                         dest='i_model_dir',
-                        required=False,
+                        required=True,
                         help='path to where the well-trained instance classifier stored')
 
     parser.add_argument('s', '--b_model_dir',
                         dest='b_model_dir',
-                        required=False,
+                        required=True,
                         help='path to where the well-trained bag classifier stored')
 
     parser.add_argument('m', '--c_model_dir',
                         dest='c_model_dir',
-                        required=False,
+                        required=True,
                         help='path to where the well-trained clam model stored')
 
     parser.add_argument('o', '--i_model_optimizer',
@@ -99,12 +99,12 @@ def make_arg_parser():
 
     parser.add_argument('x', '--att_gate',
                         default=True,
-                        required=False,
+                        required=True,
                         help='whether or not applying gate attention network')
 
     parser.add_argument('u', '--mut_ex',
                         default=False,
-                        required=False,
+                        required=True,
                         help='whether or not the mutually exclusive assumption holds')
 
     parser.add_argument('h', '--i_learn_rate',
@@ -139,17 +139,17 @@ def make_arg_parser():
 
     parser.add_argument('S', '--n_class',
                         default=2,
-                        required=False,
+                        required=True,
                         help='number of classes need to be classified, default be 2 for binary classification')
 
     parser.add_argument('K', '--top_k_percent',
-                        default=0.4,
-                        required=False,
+                        default=0.2,
+                        required=True,
                         help='percentage of the number of instances from one slide to determine the value of top k')
 
     parser.add_argument('M', '--m_clam_op',
                         default=False,
-                        required=False,
+                        required=True,
                         help='whether or not applying multi-clam models with multi-bag classifiers included')
 
     parser.add_argument('B', '--batch_op',
@@ -169,17 +169,17 @@ def make_arg_parser():
 
     parser.add_argument('W', '--no_warn_op',
                         default=True,
-                        required=False,
+                        required=True,
                         help='whether or not preventing tensorflow from returning warning messages')
 
     parser.add_argument('O', '--att_only',
                         default=False,
-                        required=False,
+                        required=True,
                         help='if only returned attention score from well-trained model for visualization purposes')
 
     parser.add_argument('N', '--mil_ins',
                         default=True,
-                        required=False,
+                        required=True,
                         help='whether or not performing instance level clustering')
 
     parser.add_argument('S', '--net_size',

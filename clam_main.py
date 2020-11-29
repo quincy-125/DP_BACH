@@ -2,36 +2,8 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import datetime
 
-from MODEL.model_attention import NG_Att_Net, G_Att_Net
-from MODEL.model_bag_classifier import S_Bag, M_Bag
-from MODEL.model_clam import S_CLAM, M_CLAM
-from MODEL.model_ins_classifier import Ins
 from UTILITY.model_main import clam_main
 
-
-ng_att = NG_Att_Net(dim_features=1024, dim_compress_features=512,
-                    n_hidden_units=256, n_class=2,
-                    dropout=False, dropout_rate=.25)
-
-g_att = G_Att_Net(dim_features=1024, dim_compress_features=512,
-                  n_hidden_units=256, n_class=2,
-                  dropout=False, dropout_rate=.25)
-
-ins = Ins(dim_compress_features=512, n_class=2, top_k_percent=0.4, mut_ex=True)
-
-s_bag = S_Bag(dim_compress_features=512, n_class=2)
-
-m_bag = M_Bag(dim_compress_features=512, n_class=2)
-
-s_clam = S_CLAM(att_gate=True, net_size='big', top_k_percent=0.4,
-                n_class=2, mut_ex=False,
-                dropout=True, drop_rate=.25,
-                mil_ins=True, att_only=False)
-
-m_clam = M_CLAM(att_gate=True, net_size='big', top_k_percent=0.4,
-                n_class=2, mut_ex=False,
-                dropout=True, drop_rate=.25,
-                mil_ins=True, att_only=False)
 
 train_nis_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
                  'Quincy/Data/CLAM/BACH/No_Image_Standardization/train/'
