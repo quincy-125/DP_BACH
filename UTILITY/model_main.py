@@ -79,7 +79,7 @@ def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
                   i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2,
                   i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
                   c_l2_decay, n_ins, batch_size, batch_op, i_model_dir, b_model_dir,
-                  c_model_dir, m_bag_op, m_clam_op, g_att_op, epochs):
+                  c_model_dir, m_bag_op, m_clam_op, att_gate, epochs):
     train_val(train_log=train_log, val_log=val_log, train_path=train_path,
               val_path=val_path, i_model=i_model, b_model=b_model, c_model=c_model,
               i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
@@ -93,7 +93,7 @@ def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
     model_save(i_model=i_model, b_model=b_model, c_model=c_model,
                i_model_dir=i_model_dir, b_model_dir=b_model_dir,
                c_model_dir=c_model_dir, n_class=n_class, m_bag_op=m_bag_op,
-               m_clam_op=m_clam_op, g_att_op=g_att_op)
+               m_clam_op=m_clam_op, att_gate=att_gate)
 
 def clam_test(n_class, n_ins, att_gate, att_only, mil_ins, mut_ex, test_path,
               result_path, result_file_name, i_model_dir, b_model_dir, c_model_dir,
@@ -102,7 +102,7 @@ def clam_test(n_class, n_ins, att_gate, att_only, mil_ins, mut_ex, test_path,
                                                                       b_model_dir=b_model_dir,
                                                                       c_model_dir=c_model_dir,
                                                                       n_class=n_class, m_bag_op=m_bag_op,
-                                                                      m_clam_op=m_clam_op, g_att_op=att_gate)
+                                                                      m_clam_op=m_clam_op, att_gate=att_gate)
 
     test_step(n_class=n_class, n_ins=n_ins,
               att_gate=att_gate, att_only=att_only,

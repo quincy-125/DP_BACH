@@ -306,7 +306,7 @@ def m_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
 
 
 def model_save(i_model, b_model, c_model, i_model_dir, b_model_dir,
-               c_model_dir, n_class, m_bag_op, m_clam_op, g_att_op):
+               c_model_dir, n_class, m_bag_op, m_clam_op, att_gate):
 
     for i in range(n_class):
         i_model.ins_classifier()[i].save(os.path.join(i_model_dir, 'M_Ins', 'Class_' + str(i)))
@@ -320,7 +320,7 @@ def model_save(i_model, b_model, c_model, i_model_dir, b_model_dir,
     clam_model_names = ['_Att', '_Ins', '_Bag']
 
     if m_clam_op:
-        if g_att_op:
+        if att_gate:
             att_nets = c_model.clam_model()[0]
             for m in range(len(att_nets)):
                 att_nets[m].save(os.path.join(c_model_dir, 'G' + clam_model_names[0], 'Model_' + str(m + 1)))
@@ -336,7 +336,7 @@ def model_save(i_model, b_model, c_model, i_model_dir, b_model_dir,
             ins_nets[n].save(os.path.join(c_model_dir, 'M' + clam_model_names[1], 'Class_' + str(n)))
             bag_nets[n].save(os.path.join(c_model_dir, 'M' + clam_model_names[2], 'Class_' + str(n)))
     else:
-        if g_att_op:
+        if att_gate:
             att_nets = c_model.clam_model()[0]
             for m in range(len(att_nets)):
                 att_nets[m].save(os.path.join(c_model_dir, 'G' + clam_model_names[0], 'Model_' + str(m + 1)))
@@ -353,7 +353,7 @@ def model_save(i_model, b_model, c_model, i_model_dir, b_model_dir,
 
 
 def restore_model(i_model_dir, b_model_dir, c_model_dir, n_class,
-                  m_bag_op, m_clam_op, g_att_op):
+                  m_bag_op, m_clam_op, att_gate):
 
     i_trained_model = list()
     for i in range(n_class):
@@ -384,7 +384,7 @@ def restore_model(i_model_dir, b_model_dir, c_model_dir, n_class,
     c_trained_model = list()
 
     if m_clam_op:
-        if g_att_op:
+        if att_gate:
             att_nets_dir = os.path.join(c_model_dir, 'G' + clam_model_names[0])
             for k in range(len(os.listdir(att_nets_dir))):
                 att_net = tf.keras.models.load_model(os.path.join(att_nets_dir, 'Model_' + str(k + 1)))
@@ -407,7 +407,7 @@ def restore_model(i_model_dir, b_model_dir, c_model_dir, n_class,
 
         c_trained_model = [trained_att_net, trained_ins_classifier, trained_bag_classifier]
     else:
-        if g_att_op:
+        if att_gate:
             att_nets_dir = os.path.join(c_model_dir, 'G' + clam_model_names[0])
             for k in range(len(os.listdir(att_nets_dir))):
                 att_net = tf.keras.models.load_model(os.path.join(att_nets_dir, 'Model_' + str(k + 1)))
