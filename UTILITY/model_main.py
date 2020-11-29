@@ -8,7 +8,7 @@ from MODEL.model_ins_classifier import Ins
 from UTILITY.model_train import train_step
 from UTILITY.model_val import val_step
 from UTILITY.model_test import test_step
-from UTILITY.util import model_save, restore_model, tf_shut_up
+from UTILITY.util import model_save, restore_model, tf_shut_up, tf_func_options
 
 
 def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
@@ -185,8 +185,8 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
               result_path, result_file_name,
               dim_features, dim_compress_features, n_hidden_units,
               net_size, dropout, dropout_rate,
-              i_optimizer_func, b_optimizer_func, c_optimizer_func,
-              i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
+              i_optimizer_name, b_optimizer_name, c_optimizer_name,
+              i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
               i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
               c_l2_decay, top_k_percent, batch_size, batch_op,
               i_model_dir, b_model_dir,
@@ -194,6 +194,15 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
               epochs, no_warn_op, m_clam_op=False, is_training=False):
 
     if is_training:
+        tf_func_dic = tf_func_options()
+
+        i_optimizer_func = tf_func_dic[i_optimizer_name]
+        b_optimizer_func = tf_func_dic[b_optimizer_name]
+        c_optimizer_func = tf_func_dic[c_optimizer_name]
+
+        i_loss_func = tf_func_dic[i_loss_name]
+        b_loss_func = tf_func_dic[b_loss_name]
+
         a_model, i_model, b_model, c_model = load_model(dim_features=dim_features,
                                                         dim_compress_features=dim_compress_features,
                                                         n_hidden_units=n_hidden_units,
