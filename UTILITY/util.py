@@ -47,10 +47,10 @@ def tf_shut_up(no_warn_op=False):
               '\n', 'If not, check the value of your input prameter for this function and re-run it.')
 
 def tf_func_options():
-    tf_func_dic = {'AdamW': tfa.optimizers.AdamW,
-                   'Adam': tf.keras.optimizers.Adam,
-                   'binary_cross_entropy': tf.keras.losses.binary_crossentropy,
-                   'hinge': tf.keras.losses.hinge}
+    tf_func_dic = {"AdamW": tfa.optimizers.AdamW,
+                   "Adam": tf.keras.optimizers.Adam,
+                   "binary_cross_entropy": tf.keras.losses.binary_crossentropy,
+                   "hinge": tf.keras.losses.hinge}
 
     return tf_func_dic
 

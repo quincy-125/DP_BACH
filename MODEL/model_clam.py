@@ -20,8 +20,8 @@ class S_CLAM(tf.keras.Model):
         self.att_only = att_only
 
         self.net_shape_dict = {
-            'small': [1024, 512, 256],
-            'big': [1024, 512, 384]
+            "small": [1024, 512, 256],
+            "big": [1024, 512, 384]
         }
         self.net_shape = self.net_shape_dict[self.net_size]
 
@@ -91,8 +91,8 @@ class M_CLAM(tf.keras.Model):
         self.att_only = att_only
 
         self.net_shape_dict = {
-            'small': [1024, 512, 256],
-            'big': [1024, 512, 384]
+            "small": [1024, 512, 256],
+            "big": [1024, 512, 384]
         }
         self.net_shape = self.net_shape_dict[self.net_size]
 

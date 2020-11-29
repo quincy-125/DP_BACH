@@ -28,6 +28,7 @@ def make_arg_parser():
                         help='directory of testing result files')
 
     parser.add_argument('-f', '--test_result_file_name',
+                        type=str,
                         default='clam_test_result_file.tsv',
                         required=False,
                         help='testing result file name')
