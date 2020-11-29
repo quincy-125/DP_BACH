@@ -87,12 +87,12 @@ def make_arg_parser():
                         required=False,
                         help='loss function option for bag classifier')
 
-    parser.add_argument('c', '--c1',
+    parser.add_argument('c', '--c_1',
                         default=0.7,
                         required=False,
                         help='scalar of instance loss values')
 
-    parser.add_argument('a', '--c2',
+    parser.add_argument('a', '--c_2',
                         default=0.3,
                         required=False,
                         help='scalar of bag loss values')
@@ -182,7 +182,7 @@ def make_arg_parser():
                         required=True,
                         help='whether or not performing instance level clustering')
 
-    parser.add_argument('S', '--net_size',
+    parser.add_argument('T', '--net_size',
                         default='big',
                         required=False,
                         help='attention network size which will determine the number of hidden units')
@@ -212,6 +212,4 @@ def make_arg_parser():
                         required=False,
                         help='number of hidden unites of each layers in the attention network')
 
-    args = parser.parse_args()
-
-    return args
+    return parser
