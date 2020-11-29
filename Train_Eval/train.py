@@ -381,7 +381,7 @@ class S_CLAM(tf.keras.Model):
 
         h, A = self.att_net.call(img_features)
         att_score = A  # output from attention network
-        A = tf.math.softmax(A)  # softmax onattention scores
+        A = tf.math.softmax(A)  # softmax on attention scores
 
         if self.att_only:
             return att_score
@@ -703,4 +703,4 @@ clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_bach,
           i_model=ins, b_model=s_bag, c_model=s_clam, i_optimizer_func=tfa.optimizers.AdamW,
           b_optimizer_func=tfa.optimizers.AdamW, c_optimizer_func=tfa.optimizers.AdamW,
           i_loss_func=tf.keras.losses.binary_crossentropy, b_loss_func=tf.keras.losses.binary_crossentropy,
-          mutual_ex=True, n_class=2, c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, epochs=200)
+          mutual_ex=False, n_class=2, c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, epochs=200)

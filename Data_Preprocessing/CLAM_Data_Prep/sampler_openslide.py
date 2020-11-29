@@ -206,7 +206,7 @@ def create_summary_img(patch_start_x_list,patch_stop_x_list,patch_start_y_list,p
 def patch_feature_extraction_resnet(input_shape=(256, 256, 3)):
     ## Load the ResNet50 model
     resnet50_model = tf.keras.applications.resnet50.ResNet50(include_top=False,weights='imagenet',input_shape=input_shape)
-    #print("Model loaded sucessful")
+
     resnet50_model.trainable = False  ## Free Training
 
     ## Create a new Model based on original resnet50 model ended after the 3rd residual block
@@ -216,38 +216,25 @@ def patch_feature_extraction_resnet(input_shape=(256, 256, 3)):
     ## Add adaptive mean-spatial pooling after the new model
     adaptive_mean_spatial_layer = tf.keras.layers.GlobalAvgPool2D()
     return res50, adaptive_mean_spatial_layer
+
 def patch_feature_extraction(image_string, res50, adaptive_mean_spatial_layer, input_shape=(256, 256, 3)):
     """
     Args:
         image_string:  bytes(PIL_image)
     :return: features:  Feature Vectors, float32
     """
-    ## Load the ResNet50 model
-    ##resnet50_model = tf.keras.applications.resnet50.ResNet50(include_top=False,weights='imagenet',input_shape=input_shape)
-    #print("Model loaded sucessful")
-    ##resnet50_model.trainable = False  ## Free Training
 
-    ## Create a new Model based on original resnet50 model ended after the 3rd residual block
-    ##layer_name = 'conv4_block1_0_conv'
-    ##res50 = tf.keras.Model(inputs=resnet50_model.input, outputs=resnet50_model.get_layer(layer_name).output)
-
-    ## Add adaptive mean-spatial pooling after the new model
-    ##adaptive_mean_spatial_layer = tf.keras.layers.GlobalAvgPool2D()
-
-    ## Load Images and prep for feature extraction
-    #image_np = np.array(Image.open(io.BytesIO(image_string)))
     image_np = np.array(image_string)
-    #print(image_np.shape)
+
     image_batch = np.expand_dims(image_np, axis=0)
     image_patch = tf.keras.applications.resnet50.preprocess_input(image_batch.copy())
-
+    image_patch = tf.image.per_image_standardization(image_patch).numpy()
     ## Return the feature vectors
     predicts = res50.predict(image_patch)
     features = adaptive_mean_spatial_layer(predicts)
     features = tf.io.serialize_tensor(features)
     img_features = features.numpy()
-    #print(img_features)
-    #sys.exit(0)
+
     return img_features
 
 '''TF2 helper functions for TF Records'''    

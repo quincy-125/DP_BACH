@@ -396,19 +396,33 @@ class S_CLAM(tf.keras.Model):
                Y_prob, Y_hat, Y_true, predict_label
 
 
-train_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
-             'Quincy/Data/CLAM/BACH/train/'
-val_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
-           'Quincy/Data/CLAM/BACH/val/'
-test_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
-            'Quincy/Data/CLAM/BACH/test/'
+train_nis_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+             'Quincy/Data/CLAM/BACH/No_Image_Standardization/train/'
+val_nis_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+           'Quincy/Data/CLAM/BACH/No_Image_Standardization/val/'
+test_nis_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+            'Quincy/Data/CLAM/BACH/No_Image_Standardization/test/'
 
-train_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
-             'Quincy/Data/CLAM/TCGA/train/'
-val_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
-           'Quincy/Data/CLAM/TCGA/val/'
-test_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
-            'Quincy/Data/CLAM/TCGA/test/'
+train_is_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+             'Quincy/Data/CLAM/BACH/Image_Standardization/train/'
+val_is_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+           'Quincy/Data/CLAM/BACH/Image_Standardization/val/'
+test_is_bach = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+            'Quincy/Data/CLAM/BACH/Image_Standardization/test/'
+
+train_nis_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+             'Quincy/Data/CLAM/TCGA/No_Image_Standardization/train/'
+val_nis_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+           'Quincy/Data/CLAM/TCGA/No_Image_Standardization/val/'
+test_nis_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+            'Quincy/Data/CLAM/TCGA/No_Image_Standardization/test/'
+
+train_is_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+             'Quincy/Data/CLAM/TCGA/Image_Standardization/train/'
+val_is_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+           'Quincy/Data/CLAM/TCGA/Image_Standardization/val/'
+test_is_tcga = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
+            'Quincy/Data/CLAM/TCGA/Image_Standardization/test/'
 
 
 def tf_shut_up(no_warn_op=False):
@@ -423,7 +437,7 @@ def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimize
                 i_loss_func, b_loss_func, n_class, c1, c2, mutual_ex):
     with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-        Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
+        Y_prob, Y_hat, Y_true, predict_slide_label = c_model.call(img_features, slide_label)
 
         ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
         ins_loss = list()
@@ -449,7 +463,7 @@ def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimize
     c_grad = c_tape.gradient(T_Loss, c_model.trainable_weights)
     c_optimizer.apply_gradients(zip(c_grad, c_model.trainable_weights))
 
-    return I_Loss, B_Loss, T_Loss, predict_label
+    return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
 def most_frequent(List):
@@ -472,7 +486,7 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
         if step_size < (n_samples - batch_size):
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
                 att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-                Y_prob, Y_hat, Y_true, predict_label = c_model.call(
+                Y_prob, Y_hat, Y_true, predict_label_batch = c_model.call(
                     img_features=img_features[step_size:(step_size + batch_size)],
                     slide_label=slide_label)
 
@@ -486,7 +500,7 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
                 else:
                     Loss_I = tf.math.add_n(ins_loss)
 
-                slide_score_unnorm, Y_hat, Y_prob, predict_label_batch, Y_true = b_model.call(slide_label, A, h)
+                slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
 
                 Loss_B = b_loss_func(Y_true, Y_prob)
                 Loss_T = c1 * Loss_B + c2 * Loss_I
@@ -503,7 +517,7 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
         else:
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
                 att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-                Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features=img_features[(step_size - n_ins):],
+                Y_prob, Y_hat, Y_true, predict_label_batch = c_model.call(img_features=img_features[(step_size - n_ins):],
                                                                     slide_label=slide_label)
 
                 ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
@@ -516,7 +530,7 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
                 else:
                     Loss_I = tf.math.add_n(ins_loss)
 
-                slide_score_unnorm, Y_hat, Y_prob, predict_label_batch, Y_true = b_model.call(slide_label, A, h)
+                slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
 
                 Loss_B = b_loss_func(Y_true, Y_prob)
                 Loss_T = c1 * Loss_B + c2 * Loss_I
@@ -542,9 +556,9 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
     B_Loss = statistics.mean(Bag_Loss)
     T_Loss = statistics.mean(Total_Loss)
 
-    predict_label = most_frequent(label_predict)
+    predict_slide_label = most_frequent(label_predict)
 
-    return I_Loss, B_Loss, T_Loss, predict_label
+    return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
 def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimizer_func,
@@ -571,28 +585,28 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
 
         if batch_op:
             I_Loss, B_Loss, T_Loss, \
-            predict_label = b_optimize(batch_size=batch_size, n_ins=n_ins, n_samples=len(img_features),
-                                       img_features=img_features, slide_label=slide_label,
-                                       i_model=i_model, b_model=b_model, c_model=c_model,
-                                       i_optimizer=i_optimizer, b_optimizer=b_optimizer,
-                                       c_optimizer=c_optimizer, i_loss_func=i_loss_func,
-                                       b_loss_func=b_loss_func, n_class=n_class,
-                                       c1=c1, c2=c2, mutual_ex=mutual_ex)
+            predict_slide_label = b_optimize(batch_size=batch_size, n_ins=n_ins, n_samples=len(img_features),
+                                             img_features=img_features, slide_label=slide_label,
+                                             i_model=i_model, b_model=b_model, c_model=c_model,
+                                             i_optimizer=i_optimizer, b_optimizer=b_optimizer,
+                                             c_optimizer=c_optimizer, i_loss_func=i_loss_func,
+                                             b_loss_func=b_loss_func, n_class=n_class,
+                                             c1=c1, c2=c2, mutual_ex=mutual_ex)
         else:
             I_Loss, B_Loss, T_Loss, \
-            predict_label = nb_optimize(img_features=img_features, slide_label=slide_label,
-                                        i_model=i_model, b_model=b_model, c_model=c_model,
-                                        i_optimizer=i_optimizer, b_optimizer=b_optimizer,
-                                        c_optimizer=c_optimizer, i_loss_func=i_loss_func,
-                                        b_loss_func=b_loss_func, n_class=n_class,
-                                        c1=c1, c2=c2, mutual_ex=mutual_ex)
+            predict_slide_label = nb_optimize(img_features=img_features, slide_label=slide_label,
+                                              i_model=i_model, b_model=b_model, c_model=c_model,
+                                              i_optimizer=i_optimizer, b_optimizer=b_optimizer,
+                                              c_optimizer=c_optimizer, i_loss_func=i_loss_func,
+                                              b_loss_func=b_loss_func, n_class=n_class,
+                                              c1=c1, c2=c2, mutual_ex=mutual_ex)
 
         loss_total.append(float(T_Loss))
         loss_ins.append(float(I_Loss))
         loss_bag.append(float(B_Loss))
 
         slide_true_label.append(slide_label)
-        slide_predict_label.append(predict_label)
+        slide_predict_label.append(predict_slide_label)
 
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(slide_true_label, slide_predict_label).ravel()
     train_tn = int(tn)
@@ -618,7 +632,7 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
 def nb_val(img_features, slide_label, i_model, b_model, c_model,
            i_loss_func, b_loss_func, n_class, c1, c2, mutual_ex):
     att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-    Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
+    Y_prob, Y_hat, Y_true, predict_slide_label = c_model.call(img_features, slide_label)
 
     ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
 
@@ -636,7 +650,7 @@ def nb_val(img_features, slide_label, i_model, b_model, c_model,
     B_Loss = b_loss_func(Y_true, Y_prob)
     T_Loss = c1 * B_Loss + c2 * I_Loss
 
-    return I_Loss, B_Loss, T_Loss, predict_label
+    return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
 def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_model,
@@ -652,7 +666,7 @@ def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_mo
     for n_step in range(0, (n_samples // batch_size + 1)):
         if step_size < (n_samples - batch_size):
             att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-            Y_prob, Y_hat, Y_true, predict_label = c_model.call(
+            Y_prob, Y_hat, Y_true, predict_label_batch = c_model.call(
                 img_features=img_features[step_size:(step_size + batch_size)],
                 slide_label=slide_label)
 
@@ -666,14 +680,14 @@ def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_mo
             else:
                 Loss_I = tf.math.add_n(ins_loss)
 
-            slide_score_unnorm, Y_hat, Y_prob, predict_label_batch, Y_true = b_model.call(slide_label, A, h)
+            slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
 
             Loss_B = b_loss_func(Y_true, Y_prob)
             Loss_T = c1 * Loss_B + c2 * Loss_I
 
         else:
             att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-            Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features=img_features[(step_size - n_ins):],
+            Y_prob, Y_hat, Y_true, predict_label_batch = c_model.call(img_features=img_features[(step_size - n_ins):],
                                                                 slide_label=slide_label)
 
             ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
@@ -686,7 +700,7 @@ def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_mo
             else:
                 Loss_I = tf.math.add_n(ins_loss)
 
-            slide_score_unnorm, Y_hat, Y_prob, predict_label_batch, Y_true = b_model.call(slide_label, A, h)
+            slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
 
             Loss_B = b_loss_func(Y_true, Y_prob)
             Loss_T = c1 * Loss_B + c2 * Loss_I
@@ -703,9 +717,9 @@ def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_mo
     B_Loss = statistics.mean(Bag_Loss)
     T_Loss = statistics.mean(Total_Loss)
 
-    predict_label = most_frequent(label_predict)
+    predict_slide_label = most_frequent(label_predict)
 
-    return I_Loss, B_Loss, T_Loss, predict_label
+    return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
 def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutual_ex,
@@ -727,24 +741,24 @@ def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutu
 
         if batch_op:
             I_Loss, B_Loss, T_Loss, \
-            predict_label = b_val(batch_size=batch_size, n_ins=n_ins, n_samples=len(img_features),
-                                  img_features=img_features, slide_label=slide_label,
-                                  i_model=i_model, b_model=b_model, c_model=c_model,
-                                  i_loss_func=i_loss_func, b_loss_func=b_loss_func,
-                                  n_class=n_class, c1=c1, c2=c2, mutual_ex=mutual_ex)
+            predict_slide_label = b_val(batch_size=batch_size, n_ins=n_ins, n_samples=len(img_features),
+                                        img_features=img_features, slide_label=slide_label,
+                                        i_model=i_model, b_model=b_model, c_model=c_model,
+                                        i_loss_func=i_loss_func, b_loss_func=b_loss_func,
+                                        n_class=n_class, c1=c1, c2=c2, mutual_ex=mutual_ex)
         else:
             I_Loss, B_Loss, T_Loss, \
-            predict_label = nb_val(img_features=img_features, slide_label=slide_label,
-                                   i_model=i_model, b_model=b_model, c_model=c_model,
-                                   i_loss_func=i_loss_func, b_loss_func=b_loss_func,
-                                   n_class=n_class, c1=c1, c2=c2, mutual_ex=mutual_ex)
+            predict_slide_label = nb_val(img_features=img_features, slide_label=slide_label,
+                                         i_model=i_model, b_model=b_model, c_model=c_model,
+                                         i_loss_func=i_loss_func, b_loss_func=b_loss_func,
+                                         n_class=n_class, c1=c1, c2=c2, mutual_ex=mutual_ex)
 
         loss_t.append(float(T_Loss))
         loss_i.append(float(I_Loss))
         loss_b.append(float(B_Loss))
 
         slide_true_label.append(slide_label)
-        slide_predict_label.append(predict_label)
+        slide_predict_label.append(predict_slide_label)
 
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(slide_true_label, slide_predict_label).ravel()
     val_tn = int(tn)
@@ -779,13 +793,13 @@ def test(i_model, b_model, c_model, test_path, result_path, result_file_name):
         img_features, slide_label = get_data_from_tf(single_test_data)
 
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-        Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features, slide_label)
+        Y_prob, Y_hat, Y_true, predict_slide_label = c_model.call(img_features, slide_label)
 
         ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
         slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
 
         slide_true_label.append(slide_label)
-        slide_predict_label.append(predict_label)
+        slide_predict_label.append(predict_slide_label)
         sample_names.append(k)
 
         test_results = pd.DataFrame(list(zip(sample_names, slide_true_label, slide_predict_label)),
@@ -922,10 +936,10 @@ def clam_main(train_log, val_log, train_path, val_path, test_path, result_path, 
 
 tf_shut_up(no_warn_op=True)
 
-clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_tcga,
-          val_path=val_tcga, test_path=test_tcga, result_path=clam_result_dir,
-          result_file_name='tcga_clam_test_batch_size_500.tsv', i_model=ins, b_model=s_bag, c_model=s_clam,
+clam_main(train_log=train_log_dir, val_log=val_log_dir, train_path=train_is_bach,
+          val_path=val_is_bach, test_path=test_is_bach, result_path=clam_result_dir,
+          result_file_name='bach_clam_test_no_batch_size.tsv', i_model=ins, b_model=s_bag, c_model=s_clam,
           i_optimizer_func=tfa.optimizers.AdamW, b_optimizer_func=tfa.optimizers.AdamW,
           c_optimizer_func=tfa.optimizers.AdamW, i_loss_func=tf.keras.losses.binary_crossentropy,
-          b_loss_func=tf.keras.losses.binary_crossentropy, mutual_ex=True, n_class=2,
-          c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, n_ins=8, batch_size=500, batch_op=True, epochs=200)
+          b_loss_func=tf.keras.losses.binary_crossentropy, mutual_ex=False, n_class=2,
+          c1=0.7, c2=0.3, learn_rate=2e-04, l2_decay=1e-05, n_ins=8, batch_size=500, batch_op=False, epochs=200)
