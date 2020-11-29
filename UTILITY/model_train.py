@@ -43,7 +43,7 @@ def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimize
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
-def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_model,
+def b_optimize(batch_size, top_k_percent, n_samples, img_features, slide_label, i_model, b_model,
                c_model, i_optimizer, b_optimizer, c_optimizer, i_loss_func, b_loss_func,
                n_class, c1, c2, mut_ex):
     step_size = 0
@@ -53,6 +53,9 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
     Total_Loss = list()
 
     label_predict = list()
+
+    n_ins = top_k_percent * n_samples
+    n_ins = int(n_ins)
 
     for n_step in range(0, (n_samples // batch_size + 1)):
         if step_size < (n_samples - batch_size):
@@ -140,7 +143,7 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
 def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimizer_func,
                c_optimizer_func, i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
                i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay, c_l2_decay,
-               n_ins, batch_size, batch_op):
+               top_k_percent, batch_size, batch_op):
     loss_total = list()
     loss_ins = list()
     loss_bag = list()
@@ -163,7 +166,8 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
         img_features = random.sample(img_features, len(img_features))
 
         if batch_op:
-            I_Loss, B_Loss, T_Loss, predict_slide_label = b_optimize(batch_size=batch_size, n_ins=n_ins,
+            I_Loss, B_Loss, T_Loss, predict_slide_label = b_optimize(batch_size=batch_size,
+                                                                     top_k_percent=top_k_percent,
                                                                      n_samples=len(img_features),
                                                                      img_features=img_features,
                                                                      slide_label=slide_label,

@@ -1,7 +1,7 @@
-import  tensorflow as tf
+import tensorflow as tf
 import tensorflow_addons as tfa
 import argparse
-import sys
+
 
 def make_arg_parser():
     parser = argparse.ArgumentParser(description='clam command line arguments description',
@@ -137,37 +137,22 @@ def make_arg_parser():
                         required=False,
                         help='L2 weight decay rate for clam model')
 
-    parser.add_argument('I', '--i_model',
-                        dest='i_model',
-                        required=False,
-                        help='loaded instance classifier')
-
-    parser.add_argument('B', '--b_model',
-                        dest='b_model',
-                        required=False,
-                        help='loaded bag classifier')
-
-    parser.add_argument('C', '--c_model',
-                        dest='c_model',
-                        required=False,
-                        help='loaded clam model')
-
     parser.add_argument('S', '--n_class',
                         default=2,
                         required=False,
                         help='number of classes need to be classified, default be 2 for binary classification')
 
-    parser.add_argument('K', '--n_ins',
-                        default=8,
+    parser.add_argument('K', '--top_k_percent',
+                        default=0.4,
                         required=False,
-                        help='number of instances needs to be applied for instance level clustering')
+                        help='percentage of the number of instances from one slide to determine the value of top k')
 
     parser.add_argument('M', '--m_clam_op',
                         default=False,
                         required=False,
                         help='whether or not applying multi-clam models with multi-bag classifiers included')
 
-    parser.add_argument('P', '--batch_op',
+    parser.add_argument('B', '--batch_op',
                         default=False,
                         required=False,
                         help='whether or not set batch size during model optimization process')
@@ -197,7 +182,7 @@ def make_arg_parser():
                         required=False,
                         help='whether or not performing instance level clustering')
 
-    parser.add_argument('E', '--net_size',
+    parser.add_argument('S', '--net_size',
                         default='big',
                         required=False,
                         help='attention network size which will determine the number of hidden units')
@@ -226,3 +211,7 @@ def make_arg_parser():
                         default=256,
                         required=False,
                         help='number of hidden unites of each layers in the attention network')
+
+    args = parser.parse_args()
+
+    return args

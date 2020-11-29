@@ -34,7 +34,7 @@ def nb_val(img_features, slide_label, i_model, b_model, c_model,
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
-def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_model,
+def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, i_model, b_model,
           c_model, i_loss_func, b_loss_func, n_class, c1, c2, mut_ex):
     step_size = 0
 
@@ -43,6 +43,9 @@ def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_mo
     Total_Loss = list()
 
     label_predict = list()
+
+    n_ins = top_k_percent * n_samples
+    n_ins = int(n_ins)
 
     for n_step in range(0, (n_samples // batch_size + 1)):
         if step_size < (n_samples - batch_size):
@@ -107,7 +110,7 @@ def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_mo
 
 
 def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mut_ex,
-             n_class, c1, c2, n_ins, batch_size, batch_op):
+             n_class, c1, c2, top_k_percent, batch_size, batch_op):
     loss_t = list()
     loss_i = list()
     loss_b = list()
@@ -125,7 +128,8 @@ def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mut_
         img_features = random.sample(img_features, len(img_features))  # follow the training loop, see details there
 
         if batch_op:
-            I_Loss, B_Loss, T_Loss, predict_slide_label = b_val(batch_size=batch_size, n_ins=n_ins,
+            I_Loss, B_Loss, T_Loss, predict_slide_label = b_val(batch_size=batch_size,
+                                                                top_k_percent=top_k_percent,
                                                                 n_samples=len(img_features),
                                                                 img_features=img_features,
                                                                 slide_label=slide_label,

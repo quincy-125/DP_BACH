@@ -84,7 +84,10 @@ def generate_neg_labels(n_neg_sample):
     return tf.fill(dims=[n_neg_sample, ], value=0)
 
 
-def ins_in_call(ins_classifier, h, A_I, n_ins, n_class):
+def ins_in_call(ins_classifier, h, A_I, top_k_percent, n_class):
+    n_ins = top_k_percent * len(h)
+    n_ins = int(n_ins)
+
     pos_label = generate_pos_labels(n_pos_sample=n_ins)
     neg_label = generate_neg_labels(n_neg_sample=n_ins)
     ins_label_in = tf.concat(values=[pos_label, neg_label], axis=0)
@@ -124,7 +127,10 @@ def ins_in_call(ins_classifier, h, A_I, n_ins, n_class):
     return ins_label_in, logits_unnorm_in, logits_in
 
 
-def ins_out_call(ins_classifier, h, A_O, n_ins):
+def ins_out_call(ins_classifier, h, A_O, top_k_percent):
+    n_ins = top_k_percent * len(h)
+    n_ins = int(n_ins)
+
     # get compressed 512-dimensional instance-level feature vectors for following use, denoted by h
     A_O = tf.reshape(tf.convert_to_tensor(A_O), (1, len(A_O)))
 
@@ -154,7 +160,7 @@ def ins_out_call(ins_classifier, h, A_O, n_ins):
     return ins_label_out, logits_unnorm_out, logits_out
 
 
-def ins_call(m_ins_classifier, bag_label, h, A, n_class, n_ins, mut_ex):
+def ins_call(m_ins_classifier, bag_label, h, A, n_class, top_k_percent, mut_ex):
     for i in range(n_class):
         ins_classifier = m_ins_classifier[i]
         if i == bag_label:
@@ -163,7 +169,8 @@ def ins_call(m_ins_classifier, bag_label, h, A, n_class, n_ins, mut_ex):
                 a_i = A[j][0][i]
                 A_I.append(a_i)
             ins_label_in, logits_unnorm_in, logits_in = ins_in_call(ins_classifier=ins_classifier,
-                                                                    h=h, A_I=A_I, n_ins=n_ins,
+                                                                    h=h, A_I=A_I,
+                                                                    top_k_percent=top_k_percent,
                                                                     n_class=n_class)
         else:
             if mut_ex:
@@ -172,7 +179,8 @@ def ins_call(m_ins_classifier, bag_label, h, A, n_class, n_ins, mut_ex):
                     a_o = A[j][0][i]
                     A_O.append(a_o)
                 ins_label_out, logits_unnorm_out, logits_out = ins_out_call(ins_classifier=ins_classifier,
-                                                                            h=h, A_O=A_O, n_ins=n_ins)
+                                                                            h=h, A_O=A_O,
+                                                                            top_k_percent=top_k_percent)
             else:
                 continue
 
@@ -258,7 +266,7 @@ def m_bag_call(m_bag_classifier, bag_label, A, h, n_class, dim_compress_features
     return slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true
 
 def s_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
-                n_class, n_ins, att_gate, att_only, mil_ins, mut_ex):
+                n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex):
     if att_gate:
         h, A = g_att_call(g_att_net=att_net, img_features=img_features)
     else:
@@ -270,8 +278,12 @@ def s_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
         return att_score
 
     if mil_ins:
-        ins_labels, ins_logits_unnorm, ins_logits = ins_call(m_ins_classifier=ins_net, bag_label=slide_label,
-                                                             h=h, A=A, n_class=n_class, n_ins=n_ins, mut_ex=mut_ex)
+        ins_labels, ins_logits_unnorm, ins_logits = ins_call(m_ins_classifier=ins_net,
+                                                             bag_label=slide_label,
+                                                             h=h, A=A,
+                                                             n_class=n_class,
+                                                             top_k_percent=top_k_percent,
+                                                             mut_ex=mut_ex)
 
     slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = s_bag_call(bag_classifier=bag_net,
                                                                                 bag_label=slide_label,
@@ -281,7 +293,7 @@ def s_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
            slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_slide_label
 
 def m_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
-                n_class, dim_compress_features, n_ins, att_gate, att_only, mil_ins, mut_ex):
+                n_class, dim_compress_features, top_k_percent, att_gate, att_only, mil_ins, mut_ex):
     if att_gate:
         h, A = g_att_call(g_att_net=att_net, img_features=img_features)
     else:
@@ -293,8 +305,12 @@ def m_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
         return att_score
 
     if mil_ins:
-        ins_labels, ins_logits_unnorm, ins_logits = ins_call(m_ins_classifier=ins_net, bag_label=slide_label,
-                                                             h=h, A=A, n_class=n_class, n_ins=n_ins, mut_ex=mut_ex)
+        ins_labels, ins_logits_unnorm, ins_logits = ins_call(m_ins_classifier=ins_net,
+                                                             bag_label=slide_label,
+                                                             h=h, A=A,
+                                                             n_class=n_class,
+                                                             top_k_percent=top_k_percent,
+                                                             mut_ex=mut_ex)
 
     slide_score_unnorm, Y_hat, Y_prob, \
     predict_slide_label, Y_true = m_bag_call(m_bag_classifier=bag_net, bag_label=slide_label,

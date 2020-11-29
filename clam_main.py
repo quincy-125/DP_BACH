@@ -6,8 +6,7 @@ from MODEL.model_attention import NG_Att_Net, G_Att_Net
 from MODEL.model_bag_classifier import S_Bag, M_Bag
 from MODEL.model_clam import S_CLAM, M_CLAM
 from MODEL.model_ins_classifier import Ins
-from UTILITY.model_main import clam_optimize, clam_test, clam_main
-from UTILITY.util import tf_shut_up
+from UTILITY.model_main import clam_main
 
 
 ng_att = NG_Att_Net(dim_features=1024, dim_compress_features=512,
@@ -18,18 +17,18 @@ g_att = G_Att_Net(dim_features=1024, dim_compress_features=512,
                   n_hidden_units=256, n_class=2,
                   dropout=False, dropout_rate=.25)
 
-ins = Ins(dim_compress_features=512, n_class=2, n_ins=8, mut_ex=True)
+ins = Ins(dim_compress_features=512, n_class=2, top_k_percent=0.4, mut_ex=True)
 
 s_bag = S_Bag(dim_compress_features=512, n_class=2)
 
 m_bag = M_Bag(dim_compress_features=512, n_class=2)
 
-s_clam = S_CLAM(att_gate=True, net_size='big', n_ins=8,
+s_clam = S_CLAM(att_gate=True, net_size='big', top_k_percent=0.4,
                 n_class=2, mut_ex=False,
                 dropout=True, drop_rate=.25,
                 mil_ins=True, att_only=False)
 
-m_clam = M_CLAM(att_gate=True, net_size='big', n_ins=8,
+m_clam = M_CLAM(att_gate=True, net_size='big', top_k_percent=0.4,
                 n_class=2, mut_ex=False,
                 dropout=True, drop_rate=.25,
                 mil_ins=True, att_only=False)
@@ -102,11 +101,11 @@ val_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.Di
 
 clam_main(train_log=train_log_dir,
           val_log=val_log_dir,
-          train_path=train_is_tcga,
-          val_path=val_is_tcga,
-          test_path=test_is_tcga,
+          train_path=train_is_bach,
+          val_path=val_is_bach,
+          test_path=test_is_bach,
           result_path=clam_result_dir,
-          result_file_name='tcga_batch_size_2000.tsv',
+          result_file_name='bach_all_default_hyper_parameters.tsv',
           dim_features=1024,
           dim_compress_features=512,
           n_hidden_units=256,
@@ -127,9 +126,9 @@ clam_main(train_log=train_log_dir,
           i_l2_decay=1e-05,
           b_l2_decay=1e-05,
           c_l2_decay=1e-05,
-          n_ins=8,
+          top_k_percent=0.2,
           batch_size=2000,
-          batch_op=True,
+          batch_op=False,
           i_model_dir=i_trained_model_dir,
           b_model_dir=b_trained_model_dir,
           c_model_dir=c_trained_model_dir,
@@ -139,4 +138,4 @@ clam_main(train_log=train_log_dir,
           epochs=200,
           no_warn_op=True,
           m_clam_op=False,
-          is_training=False)
+          is_training=True)

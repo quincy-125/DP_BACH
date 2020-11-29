@@ -6,12 +6,12 @@ from MODEL.model_ins_classifier import Ins
 
 
 class S_CLAM(tf.keras.Model):
-    def __init__(self, att_gate=False, net_size='small', n_ins=8, n_class=2, mut_ex=False,
+    def __init__(self, att_gate=False, net_size='small', top_k_percent=0.4, n_class=2, mut_ex=False,
                  dropout=False, drop_rate=.25, mil_ins=False, att_only=False):
         super(S_CLAM, self).__init__()
         self.att_gate = att_gate
         self.net_size = net_size
-        self.n_ins = n_ins
+        self.top_k_percent = top_k_percent
         self.n_class = n_class
         self.mut_ex = mut_ex
         self.dropout = dropout
@@ -26,15 +26,21 @@ class S_CLAM(tf.keras.Model):
         self.net_shape = self.net_shape_dict[self.net_size]
 
         if self.att_gate:
-            self.att_net = G_Att_Net(dim_features=self.net_shape[0], dim_compress_features=self.net_shape[1],
+            self.att_net = G_Att_Net(dim_features=self.net_shape[0],
+                                     dim_compress_features=self.net_shape[1],
                                      n_hidden_units=self.net_shape[2],
-                                     n_class=self.n_class, dropout=self.dropout, dropout_rate=self.drop_rate)
+                                     n_class=self.n_class,
+                                     dropout=self.dropout, dropout_rate=self.drop_rate)
         else:
-            self.att_net = NG_Att_Net(dim_features=self.net_shape[0], dim_compress_features=self.net_shape[1],
+            self.att_net = NG_Att_Net(dim_features=self.net_shape[0],
+                                      dim_compress_features=self.net_shape[1],
                                       n_hidden_units=self.net_shape[2],
-                                      n_class=self.n_class, dropout=self.dropout, dropout_rate=self.drop_rate)
+                                      n_class=self.n_class, dropout=self.dropout,
+                                      dropout_rate=self.drop_rate)
 
-        self.ins_net = Ins(dim_compress_features=self.net_shape[1], n_class=self.n_class, n_ins=self.n_ins,
+        self.ins_net = Ins(dim_compress_features=self.net_shape[1],
+                           n_class=self.n_class,
+                           top_k_percent=self.top_k_percent,
                            mut_ex=self.mut_ex)
 
         self.bag_net = S_Bag(dim_compress_features=self.net_shape[1], n_class=self.n_class)
@@ -71,12 +77,12 @@ class S_CLAM(tf.keras.Model):
 
 
 class M_CLAM(tf.keras.Model):
-    def __init__(self, att_gate=False, net_size='small', n_ins=8, n_class=2, mut_ex=False,
+    def __init__(self, att_gate=False, net_size='small', top_k_percent=0.4, n_class=2, mut_ex=False,
                  dropout=False, drop_rate=.25, mil_ins=False, att_only=False):
         super(M_CLAM, self).__init__()
         self.att_gate = att_gate
         self.net_size = net_size
-        self.n_ins = n_ins
+        self.top_k_percent = top_k_percent
         self.n_class = n_class
         self.mut_ex = mut_ex
         self.dropout = dropout
@@ -91,16 +97,24 @@ class M_CLAM(tf.keras.Model):
         self.net_shape = self.net_shape_dict[self.net_size]
 
         if self.att_gate:
-            self.att_net = G_Att_Net(dim_features=self.net_shape[0], dim_compress_features=self.net_shape[1],
-                                     n_hidden_units=self.net_shape[2], n_class=self.n_class,
-                                     dropout=self.dropout, dropout_rate=self.drop_rate)
+            self.att_net = G_Att_Net(dim_features=self.net_shape[0],
+                                     dim_compress_features=self.net_shape[1],
+                                     n_hidden_units=self.net_shape[2],
+                                     n_class=self.n_class,
+                                     dropout=self.dropout,
+                                     dropout_rate=self.drop_rate)
         else:
-            self.att_net = NG_Att_Net(dim_features=self.net_shape[0], dim_compress_features=self.net_shape[1],
-                                      n_hidden_units=self.net_shape[2], n_class=self.n_class,
-                                      dropout=self.dropout, dropout_rate=self.drop_rate)
+            self.att_net = NG_Att_Net(dim_features=self.net_shape[0],
+                                      dim_compress_features=self.net_shape[1],
+                                      n_hidden_units=self.net_shape[2],
+                                      n_class=self.n_class,
+                                      dropout=self.dropout,
+                                      dropout_rate=self.drop_rate)
 
-        self.ins_net = Ins(dim_compress_features=self.net_shape[1], n_class=self.n_class,
-                           n_ins=self.n_ins, mut_ex=self.mut_ex)
+        self.ins_net = Ins(dim_compress_features=self.net_shape[1],
+                           n_class=self.n_class,
+                           top_k_percent=self.top_k_percent,
+                           mut_ex=self.mut_ex)
 
         self.bag_net = M_Bag(dim_compress_features=self.net_shape[1], n_class=self.n_class)
 

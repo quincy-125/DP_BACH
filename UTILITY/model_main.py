@@ -15,7 +15,7 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
               c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func,
               i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
               i_learn_rate, b_learn_rate, c_learn_rate,
-              i_l2_decay, b_l2_decay, c_l2_decay, n_ins,
+              i_l2_decay, b_l2_decay, c_l2_decay, top_k_percent,
               batch_size, batch_op, epochs):
     train_summary_writer = tf.summary.create_file_writer(train_log)
     val_summary_writer = tf.summary.create_file_writer(val_log)
@@ -32,7 +32,8 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
             b_loss_func=b_loss_func, mut_ex=mut_ex, n_class=n_class,
             c1=c1, c2=c2, i_learn_rate=i_learn_rate, b_learn_rate=b_learn_rate,
             c_learn_rate=c_learn_rate, i_l2_decay=i_l2_decay, b_l2_decay=b_l2_decay,
-            c_l2_decay=c_l2_decay, n_ins=n_ins, batch_size=batch_size, batch_op=batch_op)
+            c_l2_decay=c_l2_decay, top_k_percent=top_k_percent,
+            batch_size=batch_size, batch_op=batch_op)
 
         with train_summary_writer.as_default():
             tf.summary.scalar('Total Loss', float(train_loss), step=epoch)
@@ -52,7 +53,8 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
         val_sensitivity, val_specificity, val_acc, val_auc = val_step(
             i_model=i_model, b_model=b_model, c_model=c_model, val_path=val_path,
             i_loss_func=i_loss_func, b_loss_func=b_loss_func, mut_ex=mut_ex,
-            n_class=n_class, c1=c1, c2=c2, n_ins=n_ins, batch_size=batch_size, batch_op=batch_op)
+            n_class=n_class, c1=c1, c2=c2, top_k_percent=top_k_percent,
+            batch_size=batch_size, batch_op=batch_op)
 
         with val_summary_writer.as_default():
             tf.summary.scalar('Total Loss', float(val_loss), step=epoch)
@@ -82,7 +84,7 @@ def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
                   c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func,
                   i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
                   i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
-                  c_l2_decay, n_ins, batch_size, batch_op, i_model_dir, b_model_dir,
+                  c_l2_decay, top_k_percent, batch_size, batch_op, i_model_dir, b_model_dir,
                   c_model_dir, m_clam_op, att_gate, epochs):
 
     train_val(train_log=train_log, val_log=val_log, train_path=train_path,
@@ -92,15 +94,15 @@ def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
               b_loss_func=b_loss_func, mut_ex=mut_ex, n_class=n_class,
               c1=c1, c2=c2, i_learn_rate=i_learn_rate, b_learn_rate=b_learn_rate,
               c_learn_rate=c_learn_rate, i_l2_decay=i_l2_decay, b_l2_decay=b_l2_decay,
-              c_l2_decay=c_l2_decay, n_ins=n_ins, batch_size=batch_size,
-              batch_op=batch_op, epochs=epochs)
+              c_l2_decay=c_l2_decay, top_k_percent=top_k_percent,
+              batch_size=batch_size, batch_op=batch_op, epochs=epochs)
 
     model_save(i_model=i_model, b_model=b_model, c_model=c_model,
                i_model_dir=i_model_dir, b_model_dir=b_model_dir,
                c_model_dir=c_model_dir, n_class=n_class,
                m_clam_op=m_clam_op, att_gate=att_gate)
 
-def clam_test(n_class, n_ins, att_gate, att_only, mil_ins, mut_ex, test_path,
+def clam_test(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, test_path,
               result_path, result_file_name, i_model_dir, b_model_dir, c_model_dir, m_clam_op):
 
     i_trained_model, b_trained_model, c_trained_model = restore_model(i_model_dir=i_model_dir,
@@ -110,9 +112,12 @@ def clam_test(n_class, n_ins, att_gate, att_only, mil_ins, mut_ex, test_path,
                                                                       m_clam_op=m_clam_op,
                                                                       att_gate=att_gate)
 
-    test_step(n_class=n_class, n_ins=n_ins,
-              att_gate=att_gate, att_only=att_only,
-              mil_ins=mil_ins, mut_ex=mut_ex,
+    test_step(n_class=n_class,
+              top_k_percent=top_k_percent,
+              att_gate=att_gate,
+              att_only=att_only,
+              mil_ins=mil_ins,
+              mut_ex=mut_ex,
               i_model=i_trained_model,
               b_model=b_trained_model,
               c_model=c_trained_model,
@@ -121,7 +126,7 @@ def clam_test(n_class, n_ins, att_gate, att_only, mil_ins, mut_ex, test_path,
               result_file_name=result_file_name)
 
 def load_model(dim_features, dim_compress_features, n_hidden_units,
-               n_class, n_ins, net_size, mut_ex, att_gate, att_only,
+               n_class, top_k_percent, net_size, mut_ex, att_gate, att_only,
                mil_ins, dropout, dropout_rate):
 
     ng_att = NG_Att_Net(dim_features=dim_features,
@@ -140,7 +145,7 @@ def load_model(dim_features, dim_compress_features, n_hidden_units,
 
     ins = Ins(dim_compress_features=dim_compress_features,
               n_class=n_class,
-              n_ins=n_ins,
+              top_k_percent=top_k_percent,
               mut_ex=mut_ex)
 
     s_bag = S_Bag(dim_compress_features=dim_compress_features,
@@ -151,7 +156,7 @@ def load_model(dim_features, dim_compress_features, n_hidden_units,
 
     s_clam = S_CLAM(att_gate=att_gate,
                     net_size=net_size,
-                    n_ins=n_ins,
+                    top_k_percent=top_k_percent,
                     n_class=n_class,
                     mut_ex=mut_ex,
                     dropout=dropout,
@@ -161,7 +166,7 @@ def load_model(dim_features, dim_compress_features, n_hidden_units,
 
     m_clam = M_CLAM(att_gate=att_gate,
                     net_size=net_size,
-                    n_ins=n_ins,
+                    top_k_percent=top_k_percent,
                     n_class=n_class,
                     mut_ex=mut_ex,
                     dropout=dropout,
@@ -183,7 +188,8 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
               i_optimizer_func, b_optimizer_func, c_optimizer_func,
               i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
               i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
-              c_l2_decay, n_ins, batch_size, batch_op, i_model_dir, b_model_dir,
+              c_l2_decay, top_k_percent, batch_size, batch_op,
+              i_model_dir, b_model_dir,
               c_model_dir, att_only, mil_ins, att_gate,
               epochs, no_warn_op, m_clam_op=False, is_training=False):
 
@@ -192,7 +198,7 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                                                         dim_compress_features=dim_compress_features,
                                                         n_hidden_units=n_hidden_units,
                                                         n_class=n_class,
-                                                        n_ins=n_ins,
+                                                        top_k_percent=top_k_percent,
                                                         net_size=net_size,
                                                         mut_ex=mut_ex,
                                                         att_gate=att_gate,
@@ -225,7 +231,7 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                           i_l2_decay=i_l2_decay,
                           b_l2_decay=b_l2_decay,
                           c_l2_decay=c_l2_decay,
-                          n_ins=n_ins,
+                          top_k_percent=top_k_percent,
                           batch_size=batch_size, batch_op=batch_op,
                           i_model_dir=i_model_dir,
                           b_model_dir=b_model_dir,
@@ -255,7 +261,7 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                           i_l2_decay=i_l2_decay,
                           b_l2_decay=b_l2_decay,
                           c_l2_decay=c_l2_decay,
-                          n_ins=n_ins,
+                          top_k_percent=top_k_percent,
                           batch_size=batch_size, batch_op=batch_op,
                           i_model_dir=i_model_dir,
                           b_model_dir=b_model_dir,
@@ -264,9 +270,12 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                           att_gate=att_gate,
                           epochs=epochs)
     else:
-        clam_test(n_class=n_class, n_ins=n_ins,
-                  att_gate=att_gate, att_only=att_only,
-                  mil_ins=mil_ins, mut_ex=mut_ex,
+        clam_test(n_class=n_class,
+                  top_k_percent=top_k_percent,
+                  att_gate=att_gate,
+                  att_only=att_only,
+                  mil_ins=mil_ins,
+                  mut_ex=mut_ex,
                   test_path=test_path,
                   result_path=result_path,
                   result_file_name=result_file_name,

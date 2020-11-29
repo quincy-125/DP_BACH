@@ -7,7 +7,7 @@ import time
 from UTILITY.util import get_data_from_tf, s_clam_call, ins_call, s_bag_call
 
 
-def test_step(n_class, n_ins, att_gate, att_only, mil_ins, mut_ex, i_model, b_model, c_model,
+def test_step(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, i_model, b_model, c_model,
               test_path, result_path, result_file_name):
     start_time = time.time()
 
@@ -26,14 +26,18 @@ def test_step(n_class, n_ins, att_gate, att_only, mil_ins, mut_ex, i_model, b_mo
                                                                  bag_net=c_model[2],
                                                                  img_features=img_features,
                                                                  slide_label=slide_label,
-                                                                 n_class=n_class, n_ins=n_ins,
-                                                                 att_gate=att_gate, att_only=att_only,
-                                                                 mil_ins=mil_ins, mut_ex=mut_ex)
+                                                                 n_class=n_class,
+                                                                 top_k_percent=top_k_percent,
+                                                                 att_gate=att_gate,
+                                                                 att_only=att_only,
+                                                                 mil_ins=mil_ins,
+                                                                 mut_ex=mut_ex)
 
         ins_labels, ins_logits_unnorm, ins_logits = ins_call(m_ins_classifier=i_model,
                                                              bag_label=slide_label,
                                                              h=h, A=A, n_class=n_class,
-                                                             n_ins=n_ins, mut_ex=mut_ex)
+                                                             top_k_percent=top_k_percent,
+                                                             mut_ex=mut_ex)
 
         slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = s_bag_call(bag_classifier=b_model,
                                                                                     bag_label=slide_label,
