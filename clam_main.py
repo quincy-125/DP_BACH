@@ -2,13 +2,13 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import datetime
 
-
 from MODEL.model_attention import NG_Att_Net, G_Att_Net
 from MODEL.model_bag_classifier import S_Bag, M_Bag
 from MODEL.model_clam import S_CLAM, M_CLAM
 from MODEL.model_ins_classifier import Ins
 from UTILITY.model_main import clam_optimize, clam_test
 from UTILITY.util import tf_shut_up
+
 
 ng_att = NG_Att_Net(dim_features=1024, dim_compress_features=512, n_hidden_units=256, n_classes=2,
                  dropout=False, dropout_rate=.25)

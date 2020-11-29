@@ -4,7 +4,7 @@ import time
 from UTILITY.model_train import train_step
 from UTILITY.model_val import val_step
 from UTILITY.model_test import test_step
-from UTILITY.util import model_save, restore_model
+from UTILITY.util import model_save, restore_model, tf_shut_up
 
 
 def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
@@ -124,9 +124,11 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
               i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
               c_l2_decay, n_ins, batch_size, batch_op, i_model_dir, b_model_dir,
               att_only, mil_ins, c_model_dir, m_bag_op, m_clam_op, att_gate,
-              epochs, is_training=False):
+              epochs, no_warn_op, is_training=False):
 
     if is_training:
+        tf_shut_up(no_warn_op=no_warn_op)
+
         clam_optimize(train_log=train_log, val_log=val_log,
                       train_path=train_path, val_path=val_path,
                       i_model=i_model, b_model=b_model, c_model=c_model,

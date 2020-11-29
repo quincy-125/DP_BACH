@@ -187,6 +187,11 @@ def make_arg_parser():
                         required=False,
                         help='number of epochs for model optimization process')
 
+    parser.add_argument('W', '--no_warn_op',
+                        default=True,
+                        required=False,
+                        help='whether or not preventing tensorflow from returning warning messages')
+
     parser.add_argument('O', '--att_only',
                         default=False,
                         required=False,
