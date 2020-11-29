@@ -11,10 +11,10 @@
 set -x
 
 train_log='/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/'\
-'Quincy/Data/CLAM/log/'+current_time+'/train'
+'Quincy/Data/CLAM/log/bach_cli/train'
 
 val_log='/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/'\
-'Quincy/Data/CLAM/log/'+current_time+'/val'
+'Quincy/Data/CLAM/log/bach_cli/val'
 
 train_path='/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/'\
 'Quincy/Data/CLAM/BACH/Image_Standardization/train/'
@@ -81,15 +81,15 @@ epochs=200
 
 is_training=False
 
-/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/\
-Anaconda/conda_env/clam/bin/python3 /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/\
-s211408.DigitalPathology/Quincy/Code/DigiPath_CLAM_TF/main.py -g $train_log -l $val_log\
--t $train_path -v $val_path -d $test_path -r $result_path -f $result_file_name\
--F $dim_features -A $dim_compress_features -H $n_hidden_units -T $net_size\
--D $dropout -R $dropout_rate -o $i_optimizer_func -p $b_optimizer_func\
--z $c_optimizer_func -y $i_loss_func -b $b_loss_func -u $mut_ex -S $n_class\
--c $c1 -a $c2 -h $i_learn_rate -j $b_learn_rate -k $c_learn_rate\
--n $i_l2_decay -q $b_l2_decay -w $c_l2_decay -K $top_k_percent\
--Z $batch_size -B $batch_op -e $i_model_dir -s $b_model_dir -m $c_model_dir\
--O $att_only -N $mil_ins -x $att_gate -E $epochs -W $no_warn_op -M $m_clam_op\
+/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Anaconda/conda_env/clam/bin/python3 \
+/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Code/DigiPath_CLAM_TF/main.py \
+-g $train_log -l $val_log \
+-t $train_path -v $val_path -d $test_path -r $result_path -f $result_file_name \
+-F $dim_features -A $dim_compress_features -H $n_hidden_units -T $net_size \
+-D $dropout -R $dropout_rate -o $i_optimizer_func -p $b_optimizer_func \
+-z $c_optimizer_func -y $i_loss_func -b $b_loss_func -u $mut_ex -S $n_class \
+-c $c1 -a $c2 -h $i_learn_rate -j $b_learn_rate -k $c_learn_rate \
+-n $i_l2_decay -q $b_l2_decay -w $c_l2_decay -K $top_k_percent \
+-Z $batch_size -B $batch_op -e $i_model_dir -s $b_model_dir -m $c_model_dir \
+-O $att_only -N $mil_ins -x $att_gate -E $epochs -W $no_warn_op -M $m_clam_op \
 -i $is_training
