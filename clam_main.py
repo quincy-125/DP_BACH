@@ -82,13 +82,13 @@ extra_is_tcga = 'research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.D
 clam_result_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM'
 
 i_trained_model_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/' \
-                      's211408.DigitalPathology/Quincy/Data/CLAM/Saved_Model/Ins_Classifier'
+                      's211408.DigitalPathology/Quincy/Data/CLAM/Saved_Model/dynamic_k/Ins_Classifier'
 
 b_trained_model_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/' \
-                      's211408.DigitalPathology/Quincy/Data/CLAM/Saved_Model/Bag_Classifier'
+                      's211408.DigitalPathology/Quincy/Data/CLAM/Saved_Model/dynamic_k/Bag_Classifier'
 
 c_trained_model_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/' \
-                      's211408.DigitalPathology/Quincy/Data/CLAM/Saved_Model/CLAM_Model'
+                      's211408.DigitalPathology/Quincy/Data/CLAM/Saved_Model/dynamic_k/CLAM_Model'
 
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
