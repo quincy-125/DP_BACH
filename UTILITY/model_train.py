@@ -9,7 +9,7 @@ from UTILITY.util import most_frequent, get_data_from_tf
 
 
 def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimizer, b_optimizer, c_optimizer,
-                i_loss_func, b_loss_func, n_class, c1, c2, mutual_ex):
+                i_loss_func, b_loss_func, n_class, c1, c2, mut_ex):
     with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
 
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
@@ -20,7 +20,7 @@ def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimize
         for j in range(len(ins_logits)):
             i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
             ins_loss.append(i_loss)
-        if mutual_ex:
+        if mut_ex:
             I_Loss = tf.math.add_n(ins_loss) / n_class
         else:
             I_Loss = tf.math.add_n(ins_loss)
@@ -45,7 +45,7 @@ def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimize
 
 def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_model,
                c_model, i_optimizer, b_optimizer, c_optimizer, i_loss_func, b_loss_func,
-               n_class, c1, c2, mutual_ex):
+               n_class, c1, c2, mut_ex):
     step_size = 0
 
     Ins_Loss = list()
@@ -68,7 +68,7 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
                 for j in range(len(ins_logits)):
                     i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
                     ins_loss.append(i_loss)
-                if mutual_ex:
+                if mut_ex:
                     Loss_I = tf.math.add_n(ins_loss) / n_class
                 else:
                     Loss_I = tf.math.add_n(ins_loss)
@@ -100,7 +100,7 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
                 for j in range(len(ins_logits)):
                     i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
                     ins_loss.append(i_loss)
-                if mutual_ex:
+                if mut_ex:
                     Loss_I = tf.math.add_n(ins_loss) / n_class
                 else:
                     Loss_I = tf.math.add_n(ins_loss)
@@ -138,7 +138,7 @@ def b_optimize(batch_size, n_ins, n_samples, img_features, slide_label, i_model,
 
 
 def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimizer_func,
-               c_optimizer_func, i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2,
+               c_optimizer_func, i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
                i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay, c_l2_decay,
                n_ins, batch_size, batch_op):
     loss_total = list()
@@ -176,7 +176,7 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
                                                                      i_loss_func=i_loss_func,
                                                                      b_loss_func=b_loss_func,
                                                                      n_class=n_class,
-                                                                     c1=c1, c2=c2, mutual_ex=mutual_ex)
+                                                                     c1=c1, c2=c2, mut_ex=mut_ex)
         else:
             I_Loss, B_Loss, T_Loss, predict_slide_label = nb_optimize(img_features=img_features,
                                                                       slide_label=slide_label,
@@ -189,7 +189,7 @@ def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimi
                                                                       i_loss_func=i_loss_func,
                                                                       b_loss_func=b_loss_func,
                                                                       n_class=n_class,
-                                                                      c1=c1, c2=c2, mutual_ex=mutual_ex)
+                                                                      c1=c1, c2=c2, mut_ex=mut_ex)
 
         loss_total.append(float(T_Loss))
         loss_ins.append(float(I_Loss))

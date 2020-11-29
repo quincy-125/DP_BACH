@@ -97,15 +97,15 @@ val_log_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.Di
 tf_shut_up(no_warn_op=True)
 
 clam_optimize(train_log=train_log_dir, val_log=val_log_dir,
-              train_path=train_is_tcga, val_path=val_is_tcga,
+              train_path=train_is_bach, val_path=val_is_bach,
               i_model=ins, b_model=s_bag, c_model=s_clam,
               i_optimizer_func=tfa.optimizers.AdamW,
               b_optimizer_func=tfa.optimizers.AdamW,
               c_optimizer_func=tfa.optimizers.AdamW,
               i_loss_func=tf.keras.losses.binary_crossentropy,
               b_loss_func=tf.keras.losses.binary_crossentropy,
-              mutual_ex=False, n_class=2, c1=0.7, c2=0.3,
-              i_learn_rate=9e-04, b_learn_rate=2e-04, c_learn_rate=2e-04,
+              mut_ex=False, n_class=2, c1=0.7, c2=0.3,
+              i_learn_rate=2e-04, b_learn_rate=2e-04, c_learn_rate=2e-04,
               i_l2_decay=1e-05, b_l2_decay=1e-05, c_l2_decay=1e-05,
               n_ins=8, batch_size=2000, batch_op=True,
               i_model_dir=i_trained_model_dir,

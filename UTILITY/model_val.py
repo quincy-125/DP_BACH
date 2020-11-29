@@ -9,7 +9,7 @@ from UTILITY.util import get_data_from_tf
 
 
 def nb_val(img_features, slide_label, i_model, b_model, c_model,
-           i_loss_func, b_loss_func, n_class, c1, c2, mutual_ex):
+           i_loss_func, b_loss_func, n_class, c1, c2, mut_ex):
 
     att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
     Y_prob, Y_hat, Y_true, predict_slide_label = c_model.call(img_features, slide_label)
@@ -20,7 +20,7 @@ def nb_val(img_features, slide_label, i_model, b_model, c_model,
     for j in range(len(ins_logits)):
         i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
         ins_loss.append(i_loss)
-    if mutual_ex:
+    if mut_ex:
         I_Loss = tf.math.add_n(ins_loss) / n_class
     else:
         I_Loss = tf.math.add_n(ins_loss)
@@ -35,7 +35,7 @@ def nb_val(img_features, slide_label, i_model, b_model, c_model,
 
 
 def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_model,
-          c_model, i_loss_func, b_loss_func, n_class, c1, c2, mutual_ex):
+          c_model, i_loss_func, b_loss_func, n_class, c1, c2, mut_ex):
     step_size = 0
 
     Ins_Loss = list()
@@ -57,7 +57,7 @@ def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_mo
             for j in range(len(ins_logits)):
                 i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
                 ins_loss.append(i_loss)
-            if mutual_ex:
+            if mut_ex:
                 Loss_I = tf.math.add_n(ins_loss) / n_class
             else:
                 Loss_I = tf.math.add_n(ins_loss)
@@ -78,7 +78,7 @@ def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_mo
             for j in range(len(ins_logits)):
                 i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
                 ins_loss.append(i_loss)
-            if mutual_ex:
+            if mut_ex:
                 Loss_I = tf.math.add_n(ins_loss) / n_class
             else:
                 Loss_I = tf.math.add_n(ins_loss)
@@ -106,7 +106,7 @@ def b_val(batch_size, n_ins, n_samples, img_features, slide_label, i_model, b_mo
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
-def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutual_ex,
+def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mut_ex,
              n_class, c1, c2, n_ins, batch_size, batch_op):
     loss_t = list()
     loss_i = list()
@@ -135,7 +135,7 @@ def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutu
                                                                 i_loss_func=i_loss_func,
                                                                 b_loss_func=b_loss_func,
                                                                 n_class=n_class, c1=c1, c2=c2,
-                                                                mutual_ex=mutual_ex)
+                                                                mut_ex=mut_ex)
         else:
             I_Loss, B_Loss, T_Loss, predict_slide_label = nb_val(img_features=img_features,
                                                                  slide_label=slide_label,
@@ -145,7 +145,7 @@ def val_step(i_model, b_model, c_model, val_path, i_loss_func, b_loss_func, mutu
                                                                  i_loss_func=i_loss_func,
                                                                  b_loss_func=b_loss_func,
                                                                  n_class=n_class, c1=c1, c2=c2,
-                                                                 mutual_ex=mutual_ex)
+                                                                 mut_ex=mut_ex)
 
         loss_t.append(float(T_Loss))
         loss_i.append(float(I_Loss))

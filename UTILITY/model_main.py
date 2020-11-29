@@ -9,7 +9,7 @@ from UTILITY.util import model_save, restore_model
 
 def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
               c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func,
-              i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2,
+              i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
               i_learn_rate, b_learn_rate, c_learn_rate,
               i_l2_decay, b_l2_decay, c_l2_decay, n_ins,
               batch_size, batch_op, epochs):
@@ -25,7 +25,7 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
             i_model=i_model, b_model=b_model, c_model=c_model, train_path=train_path,
             i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
             c_optimizer_func=c_optimizer_func, i_loss_func=i_loss_func,
-            b_loss_func=b_loss_func, mutual_ex=mutual_ex, n_class=n_class,
+            b_loss_func=b_loss_func, mut_ex=mut_ex, n_class=n_class,
             c1=c1, c2=c2, i_learn_rate=i_learn_rate, b_learn_rate=b_learn_rate,
             c_learn_rate=c_learn_rate, i_l2_decay=i_l2_decay, b_l2_decay=b_l2_decay,
             c_l2_decay=c_l2_decay, n_ins=n_ins, batch_size=batch_size, batch_op=batch_op)
@@ -47,7 +47,7 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
         val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, \
         val_sensitivity, val_specificity, val_acc, val_auc = val_step(
             i_model=i_model, b_model=b_model, c_model=c_model, val_path=val_path,
-            i_loss_func=i_loss_func, b_loss_func=b_loss_func, mutual_ex=mutual_ex,
+            i_loss_func=i_loss_func, b_loss_func=b_loss_func, mut_ex=mut_ex,
             n_class=n_class, c1=c1, c2=c2, n_ins=n_ins, batch_size=batch_size, batch_op=batch_op)
 
         with val_summary_writer.as_default():
@@ -76,15 +76,16 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
 
 def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
                   c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func,
-                  i_loss_func, b_loss_func, mutual_ex, n_class, c1, c2,
+                  i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
                   i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
                   c_l2_decay, n_ins, batch_size, batch_op, i_model_dir, b_model_dir,
                   c_model_dir, m_bag_op, m_clam_op, att_gate, epochs):
+
     train_val(train_log=train_log, val_log=val_log, train_path=train_path,
               val_path=val_path, i_model=i_model, b_model=b_model, c_model=c_model,
               i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
               c_optimizer_func=c_optimizer_func, i_loss_func=i_loss_func,
-              b_loss_func=b_loss_func, mutual_ex=mutual_ex, n_class=n_class,
+              b_loss_func=b_loss_func, mut_ex=mut_ex, n_class=n_class,
               c1=c1, c2=c2, i_learn_rate=i_learn_rate, b_learn_rate=b_learn_rate,
               c_learn_rate=c_learn_rate, i_l2_decay=i_l2_decay, b_l2_decay=b_l2_decay,
               c_l2_decay=c_l2_decay, n_ins=n_ins, batch_size=batch_size,
@@ -98,6 +99,7 @@ def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
 def clam_test(n_class, n_ins, att_gate, att_only, mil_ins, mut_ex, test_path,
               result_path, result_file_name, i_model_dir, b_model_dir, c_model_dir,
               m_bag_op, m_clam_op):
+
     i_trained_model, b_trained_model, c_trained_model = restore_model(i_model_dir=i_model_dir,
                                                                       b_model_dir=b_model_dir,
                                                                       c_model_dir=c_model_dir,
@@ -113,3 +115,52 @@ def clam_test(n_class, n_ins, att_gate, att_only, mil_ins, mut_ex, test_path,
               test_path=test_path,
               result_path=result_path,
               result_file_name=result_file_name)
+
+def clam_main(train_log, val_log, train_path, val_path, test_path,
+              result_path, result_file_name,
+              i_model, b_model, c_model,
+              i_optimizer_func, b_optimizer_func, c_optimizer_func,
+              i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
+              i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
+              c_l2_decay, n_ins, batch_size, batch_op, i_model_dir, b_model_dir,
+              att_only, mil_ins, c_model_dir, m_bag_op, m_clam_op, att_gate,
+              epochs, is_training=False):
+
+    if is_training:
+        clam_optimize(train_log=train_log, val_log=val_log,
+                      train_path=train_path, val_path=val_path,
+                      i_model=i_model, b_model=b_model, c_model=c_model,
+                      i_optimizer_func=i_optimizer_func,
+                      b_optimizer_func=b_optimizer_func,
+                      c_optimizer_func=c_optimizer_func,
+                      i_loss_func=i_loss_func,
+                      b_loss_func=b_loss_func,
+                      mut_ex=mut_ex,
+                      n_class=n_class,
+                      c1=c1, c2=c2,
+                      i_learn_rate=i_learn_rate,
+                      b_learn_rate=b_learn_rate,
+                      c_learn_rate=c_learn_rate,
+                      i_l2_decay=i_l2_decay,
+                      b_l2_decay=b_l2_decay,
+                      c_l2_decay=c_l2_decay,
+                      n_ins=n_ins,
+                      batch_size=batch_size, batch_op=batch_op,
+                      i_model_dir=i_model_dir,
+                      b_model_dir=b_model_dir,
+                      c_model_dir=c_model_dir,
+                      m_bag_op=m_bag_op,
+                      m_clam_op=m_clam_op,
+                      att_gate=att_gate,
+                      epochs=epochs)
+    else:
+        clam_test(n_class=n_class, n_ins=n_ins,
+                  att_gate=att_gate, att_only=att_only,
+                  mil_ins=mil_ins, mut_ex=mut_ex,
+                  test_path=test_path,
+                  result_path=result_path,
+                  result_file_name=result_file_name,
+                  i_model_dir=i_model_dir,
+                  b_model_dir=b_model_dir,
+                  c_model_dir=c_model_dir,
+                  m_bag_op=m_bag_op, m_clam_op=m_clam_op)
