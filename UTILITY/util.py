@@ -1,5 +1,7 @@
 import tensorflow as tf
 import numpy as np
+import shutil
+import random
 import os
 
 
@@ -43,6 +45,48 @@ def tf_shut_up(no_warn_op=False):
         print('Are you sure you want to receive the annoying TensorFlow Warning Messages?', \
               '\n', 'If not, check the value of your input prameter for this function and re-run it.')
 
+
+def dataset_shuffle(dataset, path, percent=[0.8, 0.1, 0.1]):
+    """
+    Input Arg:
+        dataset -> path where all tfrecord data stored
+        path -> path where you want to save training, testing, and validation data folder
+    """
+
+    # return training, validation, and testing path name
+    train = path + '/train'
+    valid = path + '/valid'
+    test = path + '/test'
+
+    # create training, validation, and testing directory only if it is not existed
+    if not os.path.exists(train):
+        os.mkdir(os.path.join(path, 'train'))
+
+    if not os.path.exists(valid):
+        os.mkdir(os.path.join(path, 'valid'))
+
+    if not os.path.exists(test):
+        os.mkdir(os.path.join(path, 'test'))
+
+    total_num_data = len(os.listdir(dataset))
+
+    # only shuffle the data when train, validation, and test directory are all empty
+    if len(os.listdir(train)) == 0 & len(os.listdir(valid)) == 0 & len(os.listdir(test)) == 0:
+        train_names = random.sample(os.listdir(dataset), int(total_num_data * percent[0]))
+        for i in train_names:
+            train_srcpath = os.path.join(dataset, i)
+            shutil.copy(train_srcpath, train)
+
+        valid_names = random.sample(list(set(os.listdir(dataset)) - set(os.listdir(train))),
+                                    int(total_num_data * percent[1]))
+        for j in valid_names:
+            valid_srcpath = os.path.join(dataset, j)
+            shutil.copy(valid_srcpath, valid)
+
+        test_names = list(set(os.listdir(dataset)) - set(os.listdir(train)) - set(os.listdir(valid)))
+        for k in test_names:
+            test_srcpath = os.path.join(dataset, k)
+            shutil.copy(test_srcpath, test)
 
 def ng_att_call(ng_att_net, img_features):
     h = list()
