@@ -12,7 +12,6 @@ i_model_dir=$dir/Saved_Model/cli/Ins_Classifier/
 b_model_dir=$dir/Saved_Model/cli/Bag_Classifier/
 c_model_dir=$dir/Saved_Model/cli/CLAM_Model/
 result_file_name='bach_clam_all_default_cli.tsv'
-mkdir -p $train_log $val_log $i_model_dir $b_model_dir $c_model_dir
 dim_features=1024
 dim_compress_features=512
 n_hidden_units=256
