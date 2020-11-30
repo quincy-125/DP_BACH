@@ -1,17 +1,17 @@
 set -x
-QSUB_OPTIONS='-q gpu -l gpu=1 -l h_vmem=100G -M Gu.Qiangqiang@mayo.edu -m abe -V -cwd -j y -o /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/job_out'
+QSUB_OPTIONS='-q gpu -l gpu=1 -l h_vmem=100G -M Gu.Qiangqiang@mayo.edu -m abe -V -cwd -j y -o /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/LOG'
 
 dir=/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM
-train_log=$dir/log/bach_cli/train/
-val_log=$dir/log/bach_cli/val/
+train_log=$dir/log/multi_gpu_bach/train/
+val_log=$dir/log/multi_gpu_bach/val/
 train_path=$dir/BACH/Image_Standardization/train/
 val_path=$dir/BACH/Image_Standardization/val/
 test_path=$dir/BACH/Image_Standardization/test/
 result_path=$dir/test_result_file/
-i_model_dir=$dir/Saved_Model/cli/Ins_Classifier/
-b_model_dir=$dir/Saved_Model/cli/Bag_Classifier/
-c_model_dir=$dir/Saved_Model/cli/CLAM_Model/
-result_file_name='bach_clam_all_default_cli.tsv'
+i_model_dir=$dir/Saved_Model/multi_gpu_bach/Ins_Classifier/
+b_model_dir=$dir/Saved_Model/multi_gpu_bach/Bag_Classifier/
+c_model_dir=$dir/Saved_Model/multi_gpu_bach/CLAM_Model/
+result_file_name='multi_gpu_bach.tsv'
 dim_features=1024
 dim_compress_features=512
 n_hidden_units=256
