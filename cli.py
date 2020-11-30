@@ -9,9 +9,14 @@ def make_arg_parser():
 
     parser.add_argument('-i', '--is_training_name',
                         type=str,
-                        default=True,
+                        default='True',
                         required=True,
                         help='whether to train the model or not, only executing testing when it is False')
+
+    parser.add_argument('-G', '--multi_gpu_name',
+                        type=str,
+                        default='False',
+                        help='whether or not enabling multiple GPU for model optimization process')
 
     parser.add_argument('-t', '--train_data_dir',
                         required=False,
@@ -99,13 +104,13 @@ def make_arg_parser():
 
     parser.add_argument('-x', '--att_gate_name',
                         type=str,
-                        default=True,
+                        default='True',
                         required=True,
                         help='whether or not applying gate attention network')
 
     parser.add_argument('-u', '--mut_ex_name',
                         type=str,
-                        default=False,
+                        default='False',
                         required=True,
                         help='whether or not the mutually exclusive assumption holds')
 
@@ -159,13 +164,13 @@ def make_arg_parser():
 
     parser.add_argument('-M', '--m_clam_op_name',
                         type=str,
-                        default=False,
+                        default='False',
                         required=True,
                         help='whether or not applying multi-clam models with multi-bag classifiers included')
 
     parser.add_argument('-B', '--batch_op_name',
                         type=str,
-                        default=False,
+                        default='False',
                         required=False,
                         help='whether or not set batch size during model optimization process')
 
@@ -182,19 +187,20 @@ def make_arg_parser():
                         help='number of epochs for model optimization process')
 
     parser.add_argument('-W', '--no_warn_op_name',
-                        default=True,
+                        type=str,
+                        default='True',
                         required=True,
                         help='whether or not preventing tensorflow from returning warning messages')
 
     parser.add_argument('-O', '--att_only_name',
                         type=str,
-                        default=False,
+                        default='False',
                         required=True,
                         help='if only returned attention score from well-trained model for visualization purposes')
 
     parser.add_argument('-N', '--mil_ins_name',
                         type=str,
-                        default=True,
+                        default='True',
                         required=True,
                         help='whether or not performing instance level clustering')
 
@@ -280,4 +286,5 @@ def main():
               epochs=args.epochs,
               no_warn_op_name=args.no_warn_op_name,
               m_clam_op_name=args.m_clam_op_name,
+              m_gpu_name=args.multi_gpu_name,
               is_training_name=args.is_training_name)

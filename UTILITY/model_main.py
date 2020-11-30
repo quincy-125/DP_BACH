@@ -8,7 +8,7 @@ from MODEL.model_ins_classifier import Ins
 from UTILITY.model_train import train_step
 from UTILITY.model_val import val_step
 from UTILITY.model_test import test_step
-from UTILITY.util import model_save, restore_model, tf_shut_up, tf_func_options, str_to_bool
+from UTILITY.util import model_save, restore_model, tf_shut_up, tf_func_options, str_to_bool, multi_gpu_train
 
 
 def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
@@ -127,7 +127,7 @@ def clam_test(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, test_
 
 def load_model(dim_features, dim_compress_features, n_hidden_units,
                n_class, top_k_percent, net_size, mut_ex, att_gate, att_only,
-               mil_ins, dropout, dropout_rate):
+               mil_ins, dropout, dropout_rate, m_gpu):
 
     ng_att = NG_Att_Net(dim_features=dim_features,
                         dim_compress_features=dim_compress_features,
@@ -174,10 +174,27 @@ def load_model(dim_features, dim_compress_features, n_hidden_units,
                     mil_ins=mil_ins,
                     att_only=att_only)
 
-    a_model = [ng_att, g_att]
-    i_model = ins
-    b_model = [s_bag, m_bag]
-    c_model = [s_clam, m_clam]
+    if m_gpu:
+        ng_att_model = multi_gpu_train(ng_att)
+        g_att_model = multi_gpu_train(g_att)
+        ins_model = multi_gpu_train(ins)
+        s_bag_model = multi_gpu_train(s_bag)
+        m_bag_model = multi_gpu_train(m_bag)
+        s_clam_model = multi_gpu_train(s_clam)
+        m_clam_model = multi_gpu_train(m_clam)
+    else:
+        ng_att_model = ng_att
+        g_att_model = g_att
+        ins_model = ins
+        s_bag_model = s_bag
+        m_bag_model = m_bag
+        s_clam_model = s_clam
+        m_clam_model = m_clam
+
+    a_model = [ng_att_model, g_att_model]
+    i_model = ins_model
+    b_model = [s_bag_model, m_bag_model]
+    c_model = [s_clam_model, m_clam_model]
 
     return a_model, i_model, b_model, c_model
 
@@ -187,14 +204,19 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
               net_size, dropout_name, dropout_rate,
               i_optimizer_name, b_optimizer_name, c_optimizer_name,
               i_loss_name, b_loss_name, mut_ex_name, n_class, c1, c2,
-              i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
-              c_l2_decay, top_k_percent, batch_size, batch_op_name,
-              i_model_dir, b_model_dir,
-              c_model_dir, att_only_name, mil_ins_name, att_gate_name,
-              epochs, no_warn_op_name, m_clam_op_name='False', is_training_name='True'):
+              i_learn_rate, b_learn_rate, c_learn_rate,
+              i_l2_decay, b_l2_decay, c_l2_decay,
+              top_k_percent, batch_size, batch_op_name,
+              i_model_dir, b_model_dir, c_model_dir,
+              att_only_name, mil_ins_name, att_gate_name,
+              epochs, no_warn_op_name,
+              m_clam_op_name='False',
+              m_gpu_name='False',
+              is_training_name='True'):
 
     str_bool_dic = str_to_bool()
 
+    m_gpu = str_bool_dic(m_gpu_name)
     dropout = str_bool_dic[dropout_name]
     mut_ex = str_bool_dic[mut_ex_name]
     batch_op = str_bool_dic[batch_op_name]
@@ -226,7 +248,8 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                                                         att_only=att_only,
                                                         mil_ins=mil_ins,
                                                         dropout=dropout,
-                                                        dropout_rate=dropout_rate)
+                                                        dropout_rate=dropout_rate,
+                                                        m_gpu=m_gpu)
 
         tf_shut_up(no_warn_op=no_warn_op)
 

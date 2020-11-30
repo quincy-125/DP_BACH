@@ -378,6 +378,16 @@ def m_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
     return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, \
            slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_slide_label
 
+def multi_gpu_train(model):
+    # In TF V2.0, eager_execution will prevent from enabling multi-gpu for training
+    tf.compat.v1.disable_eager_execution()
+
+    strategy = tf.distribute.MirroredStrategy()
+
+    with strategy.scope():
+        parallel_model = model
+
+    return parallel_model
 
 def model_save(i_model, b_model, c_model, i_model_dir, b_model_dir,
                c_model_dir, n_class, m_clam_op, att_gate):
