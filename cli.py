@@ -50,15 +50,15 @@ def make_arg_parser():
 
     parser.add_argument('-e', '--i_model_dir',
                         required=True,
-                        help='path to where the well-trained instance classifier stored')
+                        help='path to where the trained instance classifier stored')
 
     parser.add_argument('-s', '--b_model_dir',
                         required=True,
-                        help='path to where the well-trained bag classifier stored')
+                        help='path to where the trained bag classifier stored')
 
     parser.add_argument('-m', '--c_model_dir',
                         required=True,
-                        help='path to where the well-trained clam model stored')
+                        help='path to where the trained clam model stored')
 
     parser.add_argument('-o', '--i_optimizer_name',
                         type=str,
@@ -186,6 +186,12 @@ def make_arg_parser():
                         required=False,
                         help='number of epochs for model optimization process')
 
+    parser.add_argument('-X', '--test_steps',
+                        type=int,
+                        default=1,
+                        required=False,
+                        help='number of times to test the trained model performances on test samples')
+
     parser.add_argument('-W', '--no_warn_op_name',
                         type=str,
                         default='True',
@@ -196,7 +202,7 @@ def make_arg_parser():
                         type=str,
                         default='False',
                         required=True,
-                        help='if only returned attention score from well-trained model for visualization purposes')
+                        help='if only returned attention score from trained model for visualization purposes')
 
     parser.add_argument('-N', '--mil_ins_name',
                         type=str,
@@ -284,6 +290,7 @@ def main():
               mil_ins_name=args.mil_ins_name,
               att_gate_name=args.att_gate_name,
               epochs=args.epochs,
+              n_test_steps=args.test_steps,
               no_warn_op_name=args.no_warn_op_name,
               m_clam_op_name=args.m_clam_op_name,
               m_gpu_name=args.multi_gpu_name,

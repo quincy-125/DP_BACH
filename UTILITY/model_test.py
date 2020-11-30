@@ -2,26 +2,21 @@ import pandas as pd
 import sklearn
 from sklearn import metrics
 import os
+import random
 import time
 
-from UTILITY.util import get_data_from_tf, s_clam_call, ins_call, s_bag_call
+from UTILITY.util import get_data_from_tf, s_clam_call, ins_call, s_bag_call, most_frequent
 
 
-def test_step(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, i_model, b_model, c_model,
-              test_path, result_path, result_file_name):
-    start_time = time.time()
+def m_test_per_sample(n_class, top_k_percent, att_gate, att_only,
+                      mil_ins, mut_ex, i_model, b_model, c_model,
+                      img_features, slide_label, n_test_steps):
 
-    slide_true_label = list()
-    slide_predict_label = list()
-    sample_names = list()
+    slide_pred_per_sample = list()
 
-    for i in os.listdir(test_path):
-        print('>', end="")
-        single_test_data = test_path + i
-        img_features, slide_label = get_data_from_tf(single_test_data)
-
+    for i in range(n_test_steps):
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-        Y_prob, Y_hat, Y_true, predict_slide_label = s_clam_call(att_net=c_model[0],
+        Y_prob, Y_hat, Y_true, predict_label = s_clam_call(att_net=c_model[0],
                                                                  ins_net=c_model[1],
                                                                  bag_net=c_model[2],
                                                                  img_features=img_features,
@@ -39,9 +34,45 @@ def test_step(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, i_mod
                                                              top_k_percent=top_k_percent,
                                                              mut_ex=mut_ex)
 
-        slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = s_bag_call(bag_classifier=b_model,
-                                                                                    bag_label=slide_label,
-                                                                                    A=A, h=h, n_class=n_class)
+        slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = s_bag_call(bag_classifier=b_model,
+                                                                              bag_label=slide_label,
+                                                                              A=A, h=h, n_class=n_class)
+
+        slide_pred_per_sample.append(predict_label)
+        predict_slide_label = most_frequent(slide_pred_per_sample)
+
+        return predict_slide_label
+
+
+def test_step(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, i_model, b_model, c_model,
+              test_path, result_path, result_file_name, n_test_steps):
+
+    start_time = time.time()
+
+    slide_true_label = list()
+    slide_predict_label = list()
+    sample_names = list()
+
+    test_sample_list = os.listdir(test_path)
+    test_sample_list = random.sample(test_sample_list, len(test_sample_list))
+
+    for i in test_sample_list:
+        print('>', end="")
+        single_test_data = test_path + i
+        img_features, slide_label = get_data_from_tf(single_test_data)
+
+        predict_slide_label = m_test_per_sample(n_class=n_class,
+                                                top_k_percent=top_k_percent,
+                                                att_gate=att_gate,
+                                                att_only=att_only,
+                                                mil_ins=mil_ins,
+                                                mut_ex=mut_ex,
+                                                i_model=i_model,
+                                                b_model=b_model,
+                                                c_model=c_model,
+                                                img_features=img_features,
+                                                slide_label=slide_label,
+                                                n_test_steps=n_test_steps)
 
         slide_true_label.append(slide_label)
         slide_predict_label.append(predict_slide_label)

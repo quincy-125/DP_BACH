@@ -103,7 +103,8 @@ def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
                m_clam_op=m_clam_op, att_gate=att_gate)
 
 def clam_test(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, test_path,
-              result_path, result_file_name, i_model_dir, b_model_dir, c_model_dir, m_clam_op):
+              result_path, result_file_name, i_model_dir, b_model_dir, c_model_dir,
+              m_clam_op, n_test_steps):
 
     i_trained_model, b_trained_model, c_trained_model = restore_model(i_model_dir=i_model_dir,
                                                                       b_model_dir=b_model_dir,
@@ -123,7 +124,8 @@ def clam_test(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, test_
               c_model=c_trained_model,
               test_path=test_path,
               result_path=result_path,
-              result_file_name=result_file_name)
+              result_file_name=result_file_name,
+              n_test_steps=n_test_steps)
 
 def load_model(dim_features, dim_compress_features, n_hidden_units,
                n_class, top_k_percent, net_size, mut_ex, att_gate, att_only,
@@ -209,14 +211,15 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
               top_k_percent, batch_size, batch_op_name,
               i_model_dir, b_model_dir, c_model_dir,
               att_only_name, mil_ins_name, att_gate_name,
-              epochs, no_warn_op_name,
+              epochs, n_test_steps,
+              no_warn_op_name,
               m_clam_op_name='False',
               m_gpu_name='False',
               is_training_name='True'):
 
     str_bool_dic = str_to_bool()
 
-    m_gpu = str_bool_dic(m_gpu_name)
+    m_gpu = str_bool_dic[m_gpu_name]
     dropout = str_bool_dic[dropout_name]
     mut_ex = str_bool_dic[mut_ex_name]
     batch_op = str_bool_dic[batch_op_name]
@@ -326,4 +329,5 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                   i_model_dir=i_model_dir,
                   b_model_dir=b_model_dir,
                   c_model_dir=c_model_dir,
-                  m_clam_op=m_clam_op)
+                  m_clam_op=m_clam_op,
+                  n_test_steps=n_test_steps)
