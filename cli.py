@@ -5,8 +5,8 @@ def make_arg_parser():
     parser = argparse.ArgumentParser(description='clam command line arguments description',
                                      epilog='epilog')
 
-    parser.add_argument('-i', '--is_training',
-                        type=bool,
+    parser.add_argument('-i', '--is_training_name',
+                        type=str,
                         default=True,
                         required=True,
                         help='whether to train the model or not, only executing testing when it is False')
@@ -95,14 +95,14 @@ def make_arg_parser():
                         required=False,
                         help='scalar of bag loss values')
 
-    parser.add_argument('-x', '--att_gate',
-                        type=bool,
+    parser.add_argument('-x', '--att_gate_name',
+                        type=str,
                         default=True,
                         required=True,
                         help='whether or not applying gate attention network')
 
-    parser.add_argument('-u', '--mut_ex',
-                        type=bool,
+    parser.add_argument('-u', '--mut_ex_name',
+                        type=str,
                         default=False,
                         required=True,
                         help='whether or not the mutually exclusive assumption holds')
@@ -155,14 +155,14 @@ def make_arg_parser():
                         required=True,
                         help='percentage of the number of instances from one slide to determine the value of top k')
 
-    parser.add_argument('-M', '--m_clam_op',
-                        type=bool,
+    parser.add_argument('-M', '--m_clam_op_name',
+                        type=str,
                         default=False,
                         required=True,
                         help='whether or not applying multi-clam models with multi-bag classifiers included')
 
-    parser.add_argument('-B', '--batch_op',
-                        type=bool,
+    parser.add_argument('-B', '--batch_op_name',
+                        type=str,
                         default=False,
                         required=False,
                         help='whether or not set batch size during model optimization process')
@@ -179,19 +179,19 @@ def make_arg_parser():
                         required=False,
                         help='number of epochs for model optimization process')
 
-    parser.add_argument('-W', '--no_warn_op',
+    parser.add_argument('-W', '--no_warn_op_name',
                         default=True,
                         required=True,
                         help='whether or not preventing tensorflow from returning warning messages')
 
-    parser.add_argument('-O', '--att_only',
-                        type=bool,
+    parser.add_argument('-O', '--att_only_name',
+                        type=str,
                         default=False,
                         required=True,
                         help='if only returned attention score from well-trained model for visualization purposes')
 
-    parser.add_argument('-N', '--mil_ins',
-                        type=bool,
+    parser.add_argument('-N', '--mil_ins_name',
+                        type=str,
                         default=True,
                         required=True,
                         help='whether or not performing instance level clustering')
@@ -202,8 +202,8 @@ def make_arg_parser():
                         required=False,
                         help='attention network size which will determine the number of hidden units')
 
-    parser.add_argument('-D', '--dropout',
-                        type=bool,
+    parser.add_argument('-D', '--dropout_name',
+                        type=str,
                         default=True,
                         required=False,
                         help='whether or not enabling dropout layer in the attention network')

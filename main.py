@@ -1,3 +1,4 @@
+import sys
 import tensorflow as tf
 
 from UTILITY.model_main import clam_main
@@ -24,14 +25,14 @@ if __name__ == '__main__':
               dim_compress_features=args.dim_compress_features,
               n_hidden_units=args.n_hidden_units,
               net_size=args.net_size,
-              dropout=args.dropout,
+              dropout_name=args.dropout_name,
               dropout_rate=args.dropout_rate,
               i_optimizer_name=args.i_optimizer_name,
               b_optimizer_name=args.b_optimizer_name,
               c_optimizer_name=args.c_optimizer_name,
               i_loss_name=args.i_loss_name,
               b_loss_name=args.b_loss_name,
-              mut_ex=args.mut_ex,
+              mut_ex_name=args.mut_ex_name,
               n_class=args.n_class,
               c1=args.c_1,
               c2=args.c_2,
@@ -43,15 +44,16 @@ if __name__ == '__main__':
               c_l2_decay=args.c_weight_decay,
               top_k_percent=args.top_k_percent,
               batch_size=args.batch_size,
-              batch_op=args.batch_op,
+              batch_op_name=args.batch_op_name,
               i_model_dir=args.i_model_dir,
               b_model_dir=args.b_model_dir,
               c_model_dir=args.c_model_dir,
-              att_only=args.att_only,
-              mil_ins=args.mil_ins,
-              att_gate=args.att_gate,
+              att_only_name=args.att_only_name,
+              mil_ins_name=args.mil_ins_name,
+              att_gate_name=args.att_gate_name,
               epochs=args.epochs,
-              no_warn_op=args.no_warn_op,
-              m_clam_op=args.m_clam_op,
-              is_training=args.is_training)
+              no_warn_op_name=args.no_warn_op_name,
+              m_clam_op_name=args.m_clam_op_name,
+              is_training_name=args.is_training_name)
 
+    sys.exit(clam_main())

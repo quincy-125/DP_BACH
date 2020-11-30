@@ -8,7 +8,7 @@ from MODEL.model_ins_classifier import Ins
 from UTILITY.model_train import train_step
 from UTILITY.model_val import val_step
 from UTILITY.model_test import test_step
-from UTILITY.util import model_save, restore_model, tf_shut_up, tf_func_options
+from UTILITY.util import model_save, restore_model, tf_shut_up, tf_func_options, str_to_bool
 
 
 def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
@@ -184,14 +184,26 @@ def load_model(dim_features, dim_compress_features, n_hidden_units,
 def clam_main(train_log, val_log, train_path, val_path, test_path,
               result_path, result_file_name,
               dim_features, dim_compress_features, n_hidden_units,
-              net_size, dropout, dropout_rate,
+              net_size, dropout_name, dropout_rate,
               i_optimizer_name, b_optimizer_name, c_optimizer_name,
-              i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
+              i_loss_name, b_loss_name, mut_ex_name, n_class, c1, c2,
               i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
-              c_l2_decay, top_k_percent, batch_size, batch_op,
+              c_l2_decay, top_k_percent, batch_size, batch_op_name,
               i_model_dir, b_model_dir,
-              c_model_dir, att_only, mil_ins, att_gate,
-              epochs, no_warn_op, m_clam_op=False, is_training=False):
+              c_model_dir, att_only_name, mil_ins_name, att_gate_name,
+              epochs, no_warn_op_name, m_clam_op_name='False', is_training_name='True'):
+
+    str_bool_dic = str_to_bool()
+
+    dropout = str_bool_dic[dropout_name]
+    mut_ex = str_bool_dic[mut_ex_name]
+    batch_op = str_bool_dic[batch_op_name]
+    att_only = str_bool_dic[att_only_name]
+    mil_ins = str_bool_dic[mil_ins_name]
+    att_gate = str_bool_dic[att_gate_name]
+    no_warn_op = str_bool_dic[no_warn_op_name]
+    m_clam_op = str_bool_dic[m_clam_op_name]
+    is_training = str_bool_dic[is_training_name]
 
     if is_training:
         tf_func_dic = tf_func_options()

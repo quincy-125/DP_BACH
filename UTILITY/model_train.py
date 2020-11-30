@@ -10,6 +10,7 @@ from UTILITY.util import most_frequent, get_data_from_tf
 
 def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimizer, b_optimizer, c_optimizer,
                 i_loss_func, b_loss_func, n_class, c1, c2, mut_ex):
+
     with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as c_tape:
 
         att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
@@ -46,6 +47,7 @@ def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimize
 def b_optimize(batch_size, top_k_percent, n_samples, img_features, slide_label, i_model, b_model,
                c_model, i_optimizer, b_optimizer, c_optimizer, i_loss_func, b_loss_func,
                n_class, c1, c2, mut_ex):
+
     step_size = 0
 
     Ins_Loss = list()

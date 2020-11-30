@@ -54,6 +54,12 @@ def tf_func_options():
 
     return tf_func_dic
 
+def str_to_bool():
+    str_bool_dic = {'True': True,
+                    'False': False}
+
+    return str_bool_dic
+
 def dataset_shuffle(dataset, path, percent=[0.8, 0.1, 0.1]):
     """
     Input Arg:
