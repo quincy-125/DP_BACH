@@ -80,13 +80,13 @@ def make_arg_parser():
 
     parser.add_argument('-y', '--i_loss_name',
                         type=str,
-                        default="binary_cross_entropy",
+                        default="binary_crossentropy",
                         required=False,
                         help='loss function option for instance classifier')
 
     parser.add_argument('-b', '--b_loss_name',
                         type=str,
-                        default="binary_cross_entropy",
+                        default="binary_crossentropy",
                         required=False,
                         help='loss function option for bag classifier')
 
@@ -198,6 +198,12 @@ def make_arg_parser():
                         required=True,
                         help='whether or not preventing tensorflow from returning warning messages')
 
+    parser.add_argument('-P', '--wd_op_name',
+                        type=str,
+                        default='True',
+                        required=False,
+                        help='whether or not applying optimizers with weight decay options')
+
     parser.add_argument('-O', '--att_only_name',
                         type=str,
                         default='False',
@@ -292,6 +298,7 @@ def main():
               epochs=args.epochs,
               n_test_steps=args.test_steps,
               no_warn_op_name=args.no_warn_op_name,
+              weight_decay_op_name=args.wd_op_name,
               m_clam_op_name=args.m_clam_op_name,
               m_gpu_name=args.multi_gpu_name,
               is_training_name=args.is_training_name)

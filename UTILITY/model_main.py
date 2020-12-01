@@ -8,15 +8,17 @@ from MODEL.model_ins_classifier import Ins
 from UTILITY.model_train import train_step
 from UTILITY.model_val import val_step
 from UTILITY.model_test import test_step
-from UTILITY.util import model_save, restore_model, tf_shut_up, tf_func_options, str_to_bool, multi_gpu_train
+from UTILITY.util import model_save, restore_model, tf_shut_up, str_to_bool, multi_gpu_train
 
 
 def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
-              c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func,
-              i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
+              c_model, weight_decay_op_name,
+              i_optimizer_name, b_optimizer_name, c_optimizer_name,
+              i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
               i_learn_rate, b_learn_rate, c_learn_rate,
               i_l2_decay, b_l2_decay, c_l2_decay, top_k_percent,
               batch_size, batch_op, epochs):
+
     train_summary_writer = tf.summary.create_file_writer(train_log)
     val_summary_writer = tf.summary.create_file_writer(val_log)
 
@@ -27,9 +29,10 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
         train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, \
         train_sensitivity, train_specificity, train_acc, train_auc = train_step(
             i_model=i_model, b_model=b_model, c_model=c_model, train_path=train_path,
-            i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
-            c_optimizer_func=c_optimizer_func, i_loss_func=i_loss_func,
-            b_loss_func=b_loss_func, mut_ex=mut_ex, n_class=n_class,
+            weight_decay_op_name=weight_decay_op_name,
+            i_optimizer_name=i_optimizer_name, b_optimizer_name=b_optimizer_name,
+            c_optimizer_name=c_optimizer_name, i_loss_name=i_loss_name,
+            b_loss_name=b_loss_name, mut_ex=mut_ex, n_class=n_class,
             c1=c1, c2=c2, i_learn_rate=i_learn_rate, b_learn_rate=b_learn_rate,
             c_learn_rate=c_learn_rate, i_l2_decay=i_l2_decay, b_l2_decay=b_l2_decay,
             c_l2_decay=c_l2_decay, top_k_percent=top_k_percent,
@@ -52,7 +55,7 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
         val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, \
         val_sensitivity, val_specificity, val_acc, val_auc = val_step(
             i_model=i_model, b_model=b_model, c_model=c_model, val_path=val_path,
-            i_loss_func=i_loss_func, b_loss_func=b_loss_func, mut_ex=mut_ex,
+            i_loss_name=i_loss_name, b_loss_name=b_loss_name, mut_ex=mut_ex,
             n_class=n_class, c1=c1, c2=c2, top_k_percent=top_k_percent,
             batch_size=batch_size, batch_op=batch_op)
 
@@ -81,17 +84,19 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
 
 
 def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
-                  c_model, i_optimizer_func, b_optimizer_func, c_optimizer_func,
-                  i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
+                  c_model, weight_decay_op_name,
+                  i_optimizer_name, b_optimizer_name, c_optimizer_name,
+                  i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
                   i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
                   c_l2_decay, top_k_percent, batch_size, batch_op, i_model_dir, b_model_dir,
                   c_model_dir, m_clam_op, att_gate, epochs):
 
     train_val(train_log=train_log, val_log=val_log, train_path=train_path,
               val_path=val_path, i_model=i_model, b_model=b_model, c_model=c_model,
-              i_optimizer_func=i_optimizer_func, b_optimizer_func=b_optimizer_func,
-              c_optimizer_func=c_optimizer_func, i_loss_func=i_loss_func,
-              b_loss_func=b_loss_func, mut_ex=mut_ex, n_class=n_class,
+              weight_decay_op_name=weight_decay_op_name,
+              i_optimizer_name=i_optimizer_name, b_optimizer_name=b_optimizer_name,
+              c_optimizer_name=c_optimizer_name, i_loss_name=i_loss_name,
+              b_loss_name=b_loss_name, mut_ex=mut_ex, n_class=n_class,
               c1=c1, c2=c2, i_learn_rate=i_learn_rate, b_learn_rate=b_learn_rate,
               c_learn_rate=c_learn_rate, i_l2_decay=i_l2_decay, b_l2_decay=b_l2_decay,
               c_l2_decay=c_l2_decay, top_k_percent=top_k_percent,
@@ -213,6 +218,7 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
               att_only_name, mil_ins_name, att_gate_name,
               epochs, n_test_steps,
               no_warn_op_name,
+              weight_decay_op_name,
               m_clam_op_name='False',
               m_gpu_name='False',
               is_training_name='True'):
@@ -231,15 +237,6 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
     is_training = str_bool_dic[is_training_name]
 
     if is_training:
-        tf_func_dic = tf_func_options()
-
-        i_optimizer_func = tf_func_dic[i_optimizer_name]
-        b_optimizer_func = tf_func_dic[b_optimizer_name]
-        c_optimizer_func = tf_func_dic[c_optimizer_name]
-
-        i_loss_func = tf_func_dic[i_loss_name]
-        b_loss_func = tf_func_dic[b_loss_name]
-
         a_model, i_model, b_model, c_model = load_model(dim_features=dim_features,
                                                         dim_compress_features=dim_compress_features,
                                                         n_hidden_units=n_hidden_units,
@@ -258,64 +255,37 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
 
         if m_clam_op:
             b_c_model_index = 1
-
-            clam_optimize(train_log=train_log, val_log=val_log,
-                          train_path=train_path, val_path=val_path,
-                          i_model=i_model,
-                          b_model=b_model[b_c_model_index],
-                          c_model=c_model[b_c_model_index],
-                          i_optimizer_func=i_optimizer_func,
-                          b_optimizer_func=b_optimizer_func,
-                          c_optimizer_func=c_optimizer_func,
-                          i_loss_func=i_loss_func,
-                          b_loss_func=b_loss_func,
-                          mut_ex=mut_ex,
-                          n_class=n_class,
-                          c1=c1, c2=c2,
-                          i_learn_rate=i_learn_rate,
-                          b_learn_rate=b_learn_rate,
-                          c_learn_rate=c_learn_rate,
-                          i_l2_decay=i_l2_decay,
-                          b_l2_decay=b_l2_decay,
-                          c_l2_decay=c_l2_decay,
-                          top_k_percent=top_k_percent,
-                          batch_size=batch_size, batch_op=batch_op,
-                          i_model_dir=i_model_dir,
-                          b_model_dir=b_model_dir,
-                          c_model_dir=c_model_dir,
-                          m_clam_op=m_clam_op,
-                          att_gate=att_gate,
-                          epochs=epochs)
         else:
             b_c_model_index = 0
 
-            clam_optimize(train_log=train_log, val_log=val_log,
-                          train_path=train_path, val_path=val_path,
-                          i_model=i_model,
-                          b_model=b_model[b_c_model_index],
-                          c_model=c_model[b_c_model_index],
-                          i_optimizer_func=i_optimizer_func,
-                          b_optimizer_func=b_optimizer_func,
-                          c_optimizer_func=c_optimizer_func,
-                          i_loss_func=i_loss_func,
-                          b_loss_func=b_loss_func,
-                          mut_ex=mut_ex,
-                          n_class=n_class,
-                          c1=c1, c2=c2,
-                          i_learn_rate=i_learn_rate,
-                          b_learn_rate=b_learn_rate,
-                          c_learn_rate=c_learn_rate,
-                          i_l2_decay=i_l2_decay,
-                          b_l2_decay=b_l2_decay,
-                          c_l2_decay=c_l2_decay,
-                          top_k_percent=top_k_percent,
-                          batch_size=batch_size, batch_op=batch_op,
-                          i_model_dir=i_model_dir,
-                          b_model_dir=b_model_dir,
-                          c_model_dir=c_model_dir,
-                          m_clam_op=m_clam_op,
-                          att_gate=att_gate,
-                          epochs=epochs)
+        clam_optimize(train_log=train_log, val_log=val_log,
+                      train_path=train_path, val_path=val_path,
+                      i_model=i_model,
+                      b_model=b_model[b_c_model_index],
+                      c_model=c_model[b_c_model_index],
+                      weight_decay_op_name=weight_decay_op_name,
+                      i_optimizer_name=i_optimizer_name,
+                      b_optimizer_name=b_optimizer_name,
+                      c_optimizer_name=c_optimizer_name,
+                      i_loss_name=i_loss_name,
+                      b_loss_name=b_loss_name,
+                      mut_ex=mut_ex,
+                      n_class=n_class,
+                      c1=c1, c2=c2,
+                      i_learn_rate=i_learn_rate,
+                      b_learn_rate=b_learn_rate,
+                      c_learn_rate=c_learn_rate,
+                      i_l2_decay=i_l2_decay,
+                      b_l2_decay=b_l2_decay,
+                      c_l2_decay=c_l2_decay,
+                      top_k_percent=top_k_percent,
+                      batch_size=batch_size, batch_op=batch_op,
+                      i_model_dir=i_model_dir,
+                      b_model_dir=b_model_dir,
+                      c_model_dir=c_model_dir,
+                      m_clam_op=m_clam_op,
+                      att_gate=att_gate,
+                      epochs=epochs)
     else:
         clam_test(n_class=n_class,
                   top_k_percent=top_k_percent,

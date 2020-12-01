@@ -5,7 +5,7 @@ import os
 import random
 import statistics
 
-from UTILITY.util import most_frequent, get_data_from_tf
+from UTILITY.util import most_frequent, get_data_from_tf, load_optimizers, load_loss_func
 
 
 def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimizer, b_optimizer, c_optimizer,
@@ -141,18 +141,31 @@ def b_optimize(batch_size, top_k_percent, n_samples, img_features, slide_label, 
 
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
-
-def train_step(i_model, b_model, c_model, train_path, i_optimizer_func, b_optimizer_func,
-               c_optimizer_func, i_loss_func, b_loss_func, mut_ex, n_class, c1, c2,
-               i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay, c_l2_decay,
+def train_step(i_model, b_model, c_model, train_path, weight_decay_op_name,
+               i_optimizer_name, b_optimizer_name, c_optimizer_name,
+               i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
+               i_learn_rate, b_learn_rate, c_learn_rate,
+               i_l2_decay, b_l2_decay, c_l2_decay,
                top_k_percent, batch_size, batch_op):
+
+    i_optimizer, b_optimizer, c_optimizer = load_optimizers(weight_decay_op_name=weight_decay_op_name,
+                                                            i_optimizer_name=i_optimizer_name,
+                                                            b_optimizer_name=b_optimizer_name,
+                                                            c_optimizer_name=c_optimizer_name,
+                                                            i_learn_rate=i_learn_rate,
+                                                            b_learn_rate=b_learn_rate,
+                                                            c_learn_rate=c_learn_rate,
+                                                            i_l2_decay=i_l2_decay,
+                                                            b_l2_decay=b_l2_decay,
+                                                            c_l2_decay=c_l2_decay)
+
+    i_loss_func, b_loss_func = load_loss_func(weight_decay_op_name=weight_decay_op_name,
+                                              i_loss_func_name=i_loss_name,
+                                              b_loss_func_name=b_loss_name)
+
     loss_total = list()
     loss_ins = list()
     loss_bag = list()
-
-    i_optimizer = i_optimizer_func(learning_rate=i_learn_rate, weight_decay=i_l2_decay)
-    b_optimizer = b_optimizer_func(learning_rate=b_learn_rate, weight_decay=b_l2_decay)
-    c_optimizer = c_optimizer_func(learning_rate=c_learn_rate, weight_decay=c_l2_decay)
 
     slide_true_label = list()
     slide_predict_label = list()

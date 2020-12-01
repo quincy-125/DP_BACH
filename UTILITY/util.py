@@ -46,13 +46,92 @@ def tf_shut_up(no_warn_op=False):
         print('Are you sure you want to receive the annoying TensorFlow Warning Messages?', \
               '\n', 'If not, check the value of your input prameter for this function and re-run it.')
 
-def tf_func_options():
+
+def tf_func_options(weight_decay_op_name):
+
+    str_bool_dic = str_to_bool()
+    weight_decay_op = str_bool_dic[weight_decay_op_name]
+
+    wd_keys = ["AdamW", "SGDW", "LAMB", "NovoGrad", "RectifiedAdam"]
+    nwd_keys = ["ConditionalGradient", "LazyAdam", "ProximalAdagrad", "Yogi", "Adam",
+                "Adadelta", "Adagrad", "Adamax", "Ftrl", "Nadam", "RMSprop", "SGD"]
+
     tf_func_dic = {"AdamW": tfa.optimizers.AdamW,
+                   "SGDW": tfa.optimizers.SGDW,
+                   "LAMB": tfa.optimizers.LAMB,
+                   "NovoGrad": tfa.optimizers.NovoGrad,
+                   "RectifiedAdam": tfa.optimizers.RectifiedAdam,
+                   "ConditionalGradient": tfa.optimizers.ConditionalGradient,
+                   "LazyAdam": tfa.optimizers.LazyAdam,
+                   "ProximalAdagrad": tfa.optimizers.ProximalAdagrad,
+                   "Yogi": tfa.optimizers.Yogi,
                    "Adam": tf.keras.optimizers.Adam,
-                   "binary_cross_entropy": tf.keras.losses.binary_crossentropy,
-                   "hinge": tf.keras.losses.hinge}
+                   "Adadelta": tf.keras.optimizers.Adadelta,
+                   "Adagrad": tf.keras.optimizers.Adagrad,
+                   "Adamax": tf.keras.optimizers.Adamax,
+                   "Ftrl": tf.keras.optimizers.Ftrl,
+                   "Nadam": tf.keras.optimizers.Nadam,
+                   "RMSprop": tf.keras.optimizers.RMSprop,
+                   "SGD": tf.keras.optimizers.SGD,
+                   "binary_crossentropy": tf.keras.losses.binary_crossentropy,
+                   "hinge": tf.keras.losses.hinge,
+                   "categorical_crossentropy": tf.keras.losses.categorical_crossentropy,
+                   "categorical_hinge": tf.keras.losses.categorical_hinge,
+                   "cosine_similarity": tf.keras.losses.cosine_similarity,
+                   "huber": tf.keras.losses.huber,
+                   "log_cosh": tf.keras.losses.log_cosh,
+                   "poisson": tf.keras.losses.poisson,
+                   "squared_hinge": tf.keras.losses.squared_hinge}
+
+    if weight_decay_op:
+        [tf_func_dic.pop(key) for key in nwd_keys]
+    else:
+        [tf_func_dic.pop(key) for key in wd_keys]
 
     return tf_func_dic
+
+def load_optimizers(weight_decay_op_name, i_optimizer_name, b_optimizer_name, c_optimizer_name,
+                    i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay, c_l2_decay):
+
+    str_bool_dic = str_to_bool()
+
+    weight_decay_op = str_bool_dic[weight_decay_op_name]
+
+    tf_func_dic = tf_func_options(weight_decay_op_name=weight_decay_op_name)
+
+    i_optimizer_func = tf_func_dic[i_optimizer_name]
+    b_optimizer_func = tf_func_dic[b_optimizer_name]
+    c_optimizer_func = tf_func_dic[c_optimizer_name]
+
+    if weight_decay_op:
+        if i_optimizer_name == 'LAMB':
+            i_optimizer = i_optimizer_func(learning_rate=i_learn_rate, weight_decay_rate=i_l2_decay)
+        else:
+            i_optimizer = i_optimizer_func(learning_rate=i_learn_rate, weight_decay=i_l2_decay)
+        if b_optimizer_name == 'LAMB':
+            b_optimizer = b_optimizer_func(learning_rate=b_learn_rate, weight_decay_rate=b_l2_decay)
+        else:
+            b_optimizer = b_optimizer_func(learning_rate=b_learn_rate, weight_decay=b_l2_decay)
+        if c_optimizer_name == 'LAMB':
+            c_optimizer = c_optimizer_func(learning_rate=c_learn_rate, weight_decay_rate=c_l2_decay)
+        else:
+            c_optimizer = c_optimizer_func(learning_rate=c_learn_rate, weight_decay=c_l2_decay)
+    else:
+        i_optimizer = i_optimizer_func(learning_rate=i_learn_rate)
+        b_optimizer = b_optimizer_func(learning_rate=b_learn_rate)
+        c_optimizer = c_optimizer_func(learning_rate=c_learn_rate)
+
+    return i_optimizer, b_optimizer, c_optimizer
+
+
+def load_loss_func(weight_decay_op_name, i_loss_func_name, b_loss_func_name):
+
+    tf_func_dic = tf_func_options(weight_decay_op_name=weight_decay_op_name)
+
+    i_loss_func = tf_func_dic[i_loss_func_name]
+    b_loss_func = tf_func_dic[b_loss_func_name]
+
+    return i_loss_func, b_loss_func
 
 def str_to_bool():
     str_bool_dic = {'True': True,

@@ -73,7 +73,8 @@ class S_CLAM(tf.keras.Model):
 
         slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = self.bag_net.call(slide_label, A, h)
 
-        return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_slide_label
+        return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
+               Y_prob, Y_hat, Y_true, predict_slide_label
 
 
 class M_CLAM(tf.keras.Model):
@@ -146,4 +147,5 @@ class M_CLAM(tf.keras.Model):
 
         slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = self.bag_net.call(slide_label, A, h)
 
-        return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_slide_label
+        return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
+               Y_prob, Y_hat, Y_true, predict_slide_label
