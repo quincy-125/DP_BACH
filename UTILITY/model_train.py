@@ -141,7 +141,7 @@ def b_optimize(batch_size, top_k_percent, n_samples, img_features, slide_label, 
 
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
-def train_step(i_model, b_model, c_model, train_path,
+def train_step(i_model, b_model, c_model, train_path, imf_norm_op,
                i_wd_op_name, b_wd_op_name, c_wd_op_name,
                i_optimizer_name, b_optimizer_name, c_optimizer_name,
                i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
@@ -177,7 +177,7 @@ def train_step(i_model, b_model, c_model, train_path,
     for i in train_sample_list:
         print('=', end="")
         single_train_data = train_path + i
-        img_features, slide_label = get_data_from_tf(single_train_data)
+        img_features, slide_label = get_data_from_tf(tf_path=single_train_data, imf_norm_op=imf_norm_op)
         # shuffle the order of img features list in order to reduce the side effects of randomly drop potential
         # number of patches' feature vectors during training when enable batch training option
         img_features = random.sample(img_features, len(img_features))

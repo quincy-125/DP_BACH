@@ -1,12 +1,13 @@
+import os
+import random
+import shutil
+
+import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
-import numpy as np
-import shutil
-import random
-import os
 
 
-def get_data_from_tf(tf_path):
+def get_data_from_tf(tf_path, imf_norm_op):
     feature = {'height': tf.io.FixedLenFeature([], tf.int64),
                'width': tf.io.FixedLenFeature([], tf.int64),
                'depth': tf.io.FixedLenFeature([], tf.int64),
@@ -27,8 +28,13 @@ def get_data_from_tf(tf_path):
 
     for tfrecord_value in CLAM_dataset:
         img_feature = tf.io.parse_tensor(tfrecord_value['image_feature'], 'float32')
+
+        if imf_norm_op:
+            img_feature = tf.math.l2_normalize(img_feature)
+
         slide_labels = tfrecord_value['label']
         slide_label = int(slide_labels)
+
         image_features.append(img_feature)
 
     return image_features, slide_label

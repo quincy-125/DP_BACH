@@ -12,7 +12,7 @@ from UTILITY.util import model_save, restore_model, tf_shut_up, str_to_bool, mul
 
 
 def train_val(train_log, val_log, train_path, val_path,
-              i_model, b_model, c_model,
+              imf_norm_op, i_model, b_model, c_model,
               i_wd_op_name, b_wd_op_name, c_wd_op_name,
               i_optimizer_name, b_optimizer_name, c_optimizer_name,
               i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
@@ -29,8 +29,11 @@ def train_val(train_log, val_log, train_path, val_path,
 
         train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, \
         train_sensitivity, train_specificity, \
-        train_acc, train_auc = train_step(i_model=i_model, b_model=b_model, c_model=c_model,
+        train_acc, train_auc = train_step(i_model=i_model,
+                                          b_model=b_model,
+                                          c_model=c_model,
                                           train_path=train_path,
+                                          imf_norm_op=imf_norm_op,
                                           i_wd_op_name=i_wd_op_name,
                                           b_wd_op_name=b_wd_op_name,
                                           c_wd_op_name=c_wd_op_name,
@@ -67,11 +70,20 @@ def train_val(train_log, val_log, train_path, val_path,
 
         # Validation Step
         val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, \
-        val_sensitivity, val_specificity, val_acc, val_auc = val_step(
-            i_model=i_model, b_model=b_model, c_model=c_model, val_path=val_path,
-            i_loss_name=i_loss_name, b_loss_name=b_loss_name, mut_ex=mut_ex,
-            n_class=n_class, c1=c1, c2=c2, top_k_percent=top_k_percent,
-            batch_size=batch_size, batch_op=batch_op)
+        val_sensitivity, val_specificity, \
+        val_acc, val_auc = val_step(i_model=i_model,
+                                    b_model=b_model,
+                                    c_model=c_model,
+                                    val_path=val_path,
+                                    imf_norm_op=imf_norm_op,
+                                    i_loss_name=i_loss_name,
+                                    b_loss_name=b_loss_name,
+                                    mut_ex=mut_ex,
+                                    n_class=n_class,
+                                    c1=c1, c2=c2,
+                                    top_k_percent=top_k_percent,
+                                    batch_size=batch_size,
+                                    batch_op=batch_op)
 
         with val_summary_writer.as_default():
             tf.summary.scalar('Total Loss', float(val_loss), step=epoch)
@@ -98,7 +110,7 @@ def train_val(train_log, val_log, train_path, val_path,
 
 
 def clam_optimize(train_log, val_log, train_path, val_path,
-                  i_model, b_model, c_model,
+                  imf_norm_op, i_model, b_model, c_model,
                   i_wd_op_name, b_wd_op_name, c_wd_op_name,
                   i_optimizer_name, b_optimizer_name, c_optimizer_name,
                   i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
@@ -107,7 +119,7 @@ def clam_optimize(train_log, val_log, train_path, val_path,
                   c_model_dir, m_clam_op, att_gate, epochs):
 
     train_val(train_log=train_log, val_log=val_log, train_path=train_path,
-              val_path=val_path, i_model=i_model, b_model=b_model, c_model=c_model,
+              val_path=val_path, imf_norm_op=imf_norm_op, i_model=i_model, b_model=b_model, c_model=c_model,
               i_wd_op_name=i_wd_op_name, b_wd_op_name=b_wd_op_name, c_wd_op_name=c_wd_op_name,
               i_optimizer_name=i_optimizer_name, b_optimizer_name=b_optimizer_name,
               c_optimizer_name=c_optimizer_name, i_loss_name=i_loss_name,
@@ -221,7 +233,7 @@ def load_model(dim_features, dim_compress_features, n_hidden_units,
     return a_model, i_model, b_model, c_model
 
 def clam_main(train_log, val_log, train_path, val_path, test_path,
-              result_path, result_file_name,
+              result_path, result_file_name, imf_norm_op_name,
               dim_features, dim_compress_features, n_hidden_units,
               net_size, dropout_name, dropout_rate,
               i_optimizer_name, b_optimizer_name, c_optimizer_name,
@@ -240,6 +252,7 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
 
     str_bool_dic = str_to_bool()
 
+    imf_norm_op = str_bool_dic[imf_norm_op_name]
     m_gpu = str_bool_dic[m_gpu_name]
     dropout = str_bool_dic[dropout_name]
     mut_ex = str_bool_dic[mut_ex_name]
@@ -275,6 +288,7 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
 
         clam_optimize(train_log=train_log, val_log=val_log,
                       train_path=train_path, val_path=val_path,
+                      imf_norm_op=imf_norm_op,
                       i_model=i_model,
                       b_model=b_model[b_c_model_index],
                       c_model=c_model[b_c_model_index],

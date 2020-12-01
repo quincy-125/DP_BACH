@@ -150,6 +150,12 @@ def make_arg_parser():
                         required=False,
                         help='L2 weight decay rate for clam model')
 
+    parser.add_argument('-Y', '--imf_norm_op_name',
+                        type=str,
+                        default='True',
+                        required=False,
+                        help='whether or not normalize input image feature vectors')
+
     parser.add_argument('-S', '--n_class',
                         type=int,
                         default=2,
@@ -277,6 +283,7 @@ def main():
               test_path=args.test_data_dir,
               result_path=args.test_result_dir,
               result_file_name=args.test_result_file_name,
+              imf_norm_op_name=args.imf_norm_op_name,
               dim_features=args.dim_features,
               dim_compress_features=args.dim_compress_features,
               n_hidden_units=args.n_hidden_units,

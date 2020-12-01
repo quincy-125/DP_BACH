@@ -109,7 +109,7 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, i_mod
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
-def val_step(i_model, b_model, c_model, val_path,
+def val_step(i_model, b_model, c_model, val_path, imf_norm_op,
              i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
              top_k_percent, batch_size, batch_op):
 
@@ -128,7 +128,7 @@ def val_step(i_model, b_model, c_model, val_path,
     for i in val_sample_list:
         print('=', end="")
         single_val_data = val_path + i
-        img_features, slide_label = get_data_from_tf(single_val_data)
+        img_features, slide_label = get_data_from_tf(tf_path=single_val_data, imf_norm_op=imf_norm_op)
 
         img_features = random.sample(img_features, len(img_features))  # follow the training loop, see details there
 
