@@ -109,12 +109,11 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, i_mod
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
-def val_step(i_model, b_model, c_model, val_path, weight_decay_op_name,
+def val_step(i_model, b_model, c_model, val_path,
              i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
              top_k_percent, batch_size, batch_op):
 
-    i_loss_func, b_loss_func = load_loss_func(weight_decay_op_name=weight_decay_op_name,
-                                              i_loss_func_name=i_loss_name,
+    i_loss_func, b_loss_func = load_loss_func(i_loss_func_name=i_loss_name,
                                               b_loss_func_name=b_loss_name)
 
     loss_t = list()

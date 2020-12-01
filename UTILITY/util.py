@@ -47,7 +47,7 @@ def tf_shut_up(no_warn_op=False):
               '\n', 'If not, check the value of your input prameter for this function and re-run it.')
 
 
-def tf_func_options(weight_decay_op_name):
+def optimizer_func_options(weight_decay_op_name):
 
     str_bool_dic = str_to_bool()
     weight_decay_op = str_bool_dic[weight_decay_op_name]
@@ -56,39 +56,43 @@ def tf_func_options(weight_decay_op_name):
     nwd_keys = ["ConditionalGradient", "LazyAdam", "ProximalAdagrad", "Yogi", "Adam",
                 "Adadelta", "Adagrad", "Adamax", "Ftrl", "Nadam", "RMSprop", "SGD"]
 
-    tf_func_dic = {"AdamW": tfa.optimizers.AdamW,
-                   "SGDW": tfa.optimizers.SGDW,
-                   "LAMB": tfa.optimizers.LAMB,
-                   "NovoGrad": tfa.optimizers.NovoGrad,
-                   "RectifiedAdam": tfa.optimizers.RectifiedAdam,
-                   "ConditionalGradient": tfa.optimizers.ConditionalGradient,
-                   "LazyAdam": tfa.optimizers.LazyAdam,
-                   "ProximalAdagrad": tfa.optimizers.ProximalAdagrad,
-                   "Yogi": tfa.optimizers.Yogi,
-                   "Adam": tf.keras.optimizers.Adam,
-                   "Adadelta": tf.keras.optimizers.Adadelta,
-                   "Adagrad": tf.keras.optimizers.Adagrad,
-                   "Adamax": tf.keras.optimizers.Adamax,
-                   "Ftrl": tf.keras.optimizers.Ftrl,
-                   "Nadam": tf.keras.optimizers.Nadam,
-                   "RMSprop": tf.keras.optimizers.RMSprop,
-                   "SGD": tf.keras.optimizers.SGD,
-                   "binary_crossentropy": tf.keras.losses.binary_crossentropy,
-                   "hinge": tf.keras.losses.hinge,
-                   "categorical_crossentropy": tf.keras.losses.categorical_crossentropy,
-                   "categorical_hinge": tf.keras.losses.categorical_hinge,
-                   "cosine_similarity": tf.keras.losses.cosine_similarity,
-                   "huber": tf.keras.losses.huber,
-                   "log_cosh": tf.keras.losses.log_cosh,
-                   "poisson": tf.keras.losses.poisson,
-                   "squared_hinge": tf.keras.losses.squared_hinge}
+    optimizer_func_dic = {"AdamW": tfa.optimizers.AdamW,
+                          "SGDW": tfa.optimizers.SGDW,
+                          "LAMB": tfa.optimizers.LAMB,
+                          "NovoGrad": tfa.optimizers.NovoGrad,
+                          "RectifiedAdam": tfa.optimizers.RectifiedAdam,
+                          "ConditionalGradient": tfa.optimizers.ConditionalGradient,
+                          "LazyAdam": tfa.optimizers.LazyAdam,
+                          "ProximalAdagrad": tfa.optimizers.ProximalAdagrad,
+                          "Yogi": tfa.optimizers.Yogi,
+                          "Adam": tf.keras.optimizers.Adam,
+                          "Adadelta": tf.keras.optimizers.Adadelta,
+                          "Adagrad": tf.keras.optimizers.Adagrad,
+                          "Adamax": tf.keras.optimizers.Adamax,
+                          "Ftrl": tf.keras.optimizers.Ftrl,
+                          "Nadam": tf.keras.optimizers.Nadam,
+                          "RMSprop": tf.keras.optimizers.RMSprop,
+                          "SGD": tf.keras.optimizers.SGD}
 
     if weight_decay_op:
-        [tf_func_dic.pop(key) for key in nwd_keys]
+        [optimizer_func_dic.pop(key) for key in nwd_keys]
     else:
-        [tf_func_dic.pop(key) for key in wd_keys]
+        [optimizer_func_dic.pop(key) for key in wd_keys]
 
-    return tf_func_dic
+    return optimizer_func_dic
+
+def loss_func_options():
+    loss_func_dic = {"binary_crossentropy": tf.keras.losses.binary_crossentropy,
+                     "hinge": tf.keras.losses.hinge,
+                     "categorical_crossentropy": tf.keras.losses.categorical_crossentropy,
+                     "categorical_hinge": tf.keras.losses.categorical_hinge,
+                     "cosine_similarity": tf.keras.losses.cosine_similarity,
+                     "huber": tf.keras.losses.huber,
+                     "log_cosh": tf.keras.losses.log_cosh,
+                     "poisson": tf.keras.losses.poisson,
+                     "squared_hinge": tf.keras.losses.squared_hinge}
+
+    return loss_func_dic
 
 def load_optimizers(i_wd_op_name, b_wd_op_name, c_wd_op_name,
                     i_optimizer_name, b_optimizer_name, c_optimizer_name,
@@ -101,9 +105,9 @@ def load_optimizers(i_wd_op_name, b_wd_op_name, c_wd_op_name,
     b_wd_op = str_bool_dic[b_wd_op_name]
     c_wd_op = str_bool_dic[c_wd_op_name]
 
-    i_tf_func_dic = tf_func_options(weight_decay_op_name=i_wd_op_name)
-    b_tf_func_dic = tf_func_options(weight_decay_op_name=b_wd_op_name)
-    c_tf_func_dic = tf_func_options(weight_decay_op_name=c_wd_op_name)
+    i_tf_func_dic = optimizer_func_options(weight_decay_op_name=i_wd_op_name)
+    b_tf_func_dic = optimizer_func_options(weight_decay_op_name=b_wd_op_name)
+    c_tf_func_dic = optimizer_func_options(weight_decay_op_name=c_wd_op_name)
 
     i_optimizer_func = i_tf_func_dic[i_optimizer_name]
     b_optimizer_func = b_tf_func_dic[b_optimizer_name]
@@ -136,9 +140,9 @@ def load_optimizers(i_wd_op_name, b_wd_op_name, c_wd_op_name,
     return i_optimizer, b_optimizer, c_optimizer
 
 
-def load_loss_func(weight_decay_op_name, i_loss_func_name, b_loss_func_name):
+def load_loss_func(i_loss_func_name, b_loss_func_name):
 
-    tf_func_dic = tf_func_options(weight_decay_op_name=weight_decay_op_name)
+    tf_func_dic = loss_func_options()
 
     i_loss_func = tf_func_dic[i_loss_func_name]
     b_loss_func = tf_func_dic[b_loss_func_name]

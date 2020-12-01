@@ -39,7 +39,6 @@ att_only_name='False'
 mil_ins_name='True'
 att_gate_name='True'
 no_warn_op_name='True'
-weight_decay_op_name='True'
 i_wd_op_name='True'
 b_wd_op_name='True'
 c_wd_op_name='True'
@@ -52,4 +51,4 @@ epochs=200
 n_test_steps=10
 m_gpu_name='False'
 is_training_name='False'
-qsub $QSUB_OPTIONS -b y /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Anaconda/conda_env/clam/bin/python3 /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Code/DigiPath_CLAM_TF/main.py -g $train_log -l $val_log -t $train_path -v $val_path -d $test_path -r $result_path -f $result_file_name -F $dim_features -A $dim_compress_features -H $n_hidden_units -T $net_size -D $dropout_name -R $dropout_rate -o $i_optimizer_name -p $b_optimizer_name -z $c_optimizer_name -y $i_loss_name -b $b_loss_name -u $mut_ex_name -S $n_class -c $c1 -a $c2 -L $i_learn_rate -j $b_learn_rate -k $c_learn_rate -n $i_l2_decay -q $b_l2_decay -w $c_l2_decay -K $top_k_percent -Z $batch_size -B $batch_op_name -e $i_model_dir -s $b_model_dir -m $c_model_dir -O $att_only_name -N $mil_ins_name -x $att_gate_name -E $epochs -X $n_test_steps -W $no_warn_op_name -P $weight_decay_op_name -I $i_wd_op_name -J $b_wd_op_name -C $c_wd_op_name -M $m_clam_op_name -G $m_gpu_name -i $is_training_name
+qsub $QSUB_OPTIONS -b y /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Anaconda/conda_env/clam/bin/python3 /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Code/DigiPath_CLAM_TF/main.py -g $train_log -l $val_log -t $train_path -v $val_path -d $test_path -r $result_path -f $result_file_name -F $dim_features -A $dim_compress_features -H $n_hidden_units -T $net_size -D $dropout_name -R $dropout_rate -o $i_optimizer_name -p $b_optimizer_name -z $c_optimizer_name -y $i_loss_name -b $b_loss_name -u $mut_ex_name -S $n_class -c $c1 -a $c2 -L $i_learn_rate -j $b_learn_rate -k $c_learn_rate -n $i_l2_decay -q $b_l2_decay -w $c_l2_decay -K $top_k_percent -Z $batch_size -B $batch_op_name -e $i_model_dir -s $b_model_dir -m $c_model_dir -O $att_only_name -N $mil_ins_name -x $att_gate_name -E $epochs -X $n_test_steps -W $no_warn_op_name -I $i_wd_op_name -J $b_wd_op_name -C $c_wd_op_name -M $m_clam_op_name -G $m_gpu_name -i $is_training_name

@@ -198,12 +198,6 @@ def make_arg_parser():
                         required=True,
                         help='whether or not preventing tensorflow from returning warning messages')
 
-    parser.add_argument('-P', '--wd_op_name',
-                        type=str,
-                        default='True',
-                        required=False,
-                        help='whether or not returning available optimizer functions with weight decay options')
-
     parser.add_argument('-I', '--i_wd_op_name',
                         type=str,
                         default='True',
@@ -316,7 +310,6 @@ def main():
               epochs=args.epochs,
               n_test_steps=args.test_steps,
               no_warn_op_name=args.no_warn_op_name,
-              weight_decay_op_name=args.wd_op_name,
               i_wd_op_name=args.i_wd_op_name,
               b_wd_op_name=args.b_wd_op_name,
               c_wd_op_name=args.c_wd_op_name,
