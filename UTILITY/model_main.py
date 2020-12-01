@@ -11,8 +11,9 @@ from UTILITY.model_test import test_step
 from UTILITY.util import model_save, restore_model, tf_shut_up, str_to_bool, multi_gpu_train
 
 
-def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
-              c_model, weight_decay_op_name,
+def train_val(train_log, val_log, train_path, val_path,
+              i_model, b_model, c_model, weight_decay_op_name,
+              i_wd_op_name, b_wd_op_name, c_wd_op_name,
               i_optimizer_name, b_optimizer_name, c_optimizer_name,
               i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
               i_learn_rate, b_learn_rate, c_learn_rate,
@@ -27,16 +28,30 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
         start_time = time.time()
 
         train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, \
-        train_sensitivity, train_specificity, train_acc, train_auc = train_step(
-            i_model=i_model, b_model=b_model, c_model=c_model, train_path=train_path,
-            weight_decay_op_name=weight_decay_op_name,
-            i_optimizer_name=i_optimizer_name, b_optimizer_name=b_optimizer_name,
-            c_optimizer_name=c_optimizer_name, i_loss_name=i_loss_name,
-            b_loss_name=b_loss_name, mut_ex=mut_ex, n_class=n_class,
-            c1=c1, c2=c2, i_learn_rate=i_learn_rate, b_learn_rate=b_learn_rate,
-            c_learn_rate=c_learn_rate, i_l2_decay=i_l2_decay, b_l2_decay=b_l2_decay,
-            c_l2_decay=c_l2_decay, top_k_percent=top_k_percent,
-            batch_size=batch_size, batch_op=batch_op)
+        train_sensitivity, train_specificity, \
+        train_acc, train_auc = train_step(i_model=i_model, b_model=b_model, c_model=c_model,
+                                          train_path=train_path,
+                                          i_wd_op_name=i_wd_op_name,
+                                          b_wd_op_name=b_wd_op_name,
+                                          c_wd_op_name=c_wd_op_name,
+                                          i_optimizer_name=i_optimizer_name,
+                                          b_optimizer_name=b_optimizer_name,
+                                          c_optimizer_name=c_optimizer_name,
+                                          weight_decay_op_name=weight_decay_op_name,
+                                          i_loss_name=i_loss_name,
+                                          b_loss_name=b_loss_name,
+                                          mut_ex=mut_ex,
+                                          n_class=n_class,
+                                          c1=c1, c2=c2,
+                                          i_learn_rate=i_learn_rate,
+                                          b_learn_rate=b_learn_rate,
+                                          c_learn_rate=c_learn_rate,
+                                          i_l2_decay=i_l2_decay,
+                                          b_l2_decay=b_l2_decay,
+                                          c_l2_decay=c_l2_decay,
+                                          top_k_percent=top_k_percent,
+                                          batch_size=batch_size,
+                                          batch_op=batch_op)
 
         with train_summary_writer.as_default():
             tf.summary.scalar('Total Loss', float(train_loss), step=epoch)
@@ -55,6 +70,7 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
         val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, \
         val_sensitivity, val_specificity, val_acc, val_auc = val_step(
             i_model=i_model, b_model=b_model, c_model=c_model, val_path=val_path,
+            weight_decay_op_name=weight_decay_op_name,
             i_loss_name=i_loss_name, b_loss_name=b_loss_name, mut_ex=mut_ex,
             n_class=n_class, c1=c1, c2=c2, top_k_percent=top_k_percent,
             batch_size=batch_size, batch_op=batch_op)
@@ -83,8 +99,9 @@ def train_val(train_log, val_log, train_path, val_path, i_model, b_model,
                               "--- %s mins ---" % int(epoch_run_time / 60)))
 
 
-def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
-                  c_model, weight_decay_op_name,
+def clam_optimize(train_log, val_log, train_path, val_path,
+                  i_model, b_model, c_model, weight_decay_op_name,
+                  i_wd_op_name, b_wd_op_name, c_wd_op_name,
                   i_optimizer_name, b_optimizer_name, c_optimizer_name,
                   i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
                   i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay,
@@ -94,6 +111,7 @@ def clam_optimize(train_log, val_log, train_path, val_path, i_model, b_model,
     train_val(train_log=train_log, val_log=val_log, train_path=train_path,
               val_path=val_path, i_model=i_model, b_model=b_model, c_model=c_model,
               weight_decay_op_name=weight_decay_op_name,
+              i_wd_op_name=i_wd_op_name, b_wd_op_name=b_wd_op_name, c_wd_op_name=c_wd_op_name,
               i_optimizer_name=i_optimizer_name, b_optimizer_name=b_optimizer_name,
               c_optimizer_name=c_optimizer_name, i_loss_name=i_loss_name,
               b_loss_name=b_loss_name, mut_ex=mut_ex, n_class=n_class,
@@ -219,6 +237,7 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
               epochs, n_test_steps,
               no_warn_op_name,
               weight_decay_op_name,
+              i_wd_op_name, b_wd_op_name, c_wd_op_name,
               m_clam_op_name='False',
               m_gpu_name='False',
               is_training_name='True'):
@@ -264,6 +283,9 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                       b_model=b_model[b_c_model_index],
                       c_model=c_model[b_c_model_index],
                       weight_decay_op_name=weight_decay_op_name,
+                      i_wd_op_name=i_wd_op_name,
+                      b_wd_op_name=b_wd_op_name,
+                      c_wd_op_name=c_wd_op_name,
                       i_optimizer_name=i_optimizer_name,
                       b_optimizer_name=b_optimizer_name,
                       c_optimizer_name=c_optimizer_name,

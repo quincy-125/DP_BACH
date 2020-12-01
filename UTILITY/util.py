@@ -90,35 +90,47 @@ def tf_func_options(weight_decay_op_name):
 
     return tf_func_dic
 
-def load_optimizers(weight_decay_op_name, i_optimizer_name, b_optimizer_name, c_optimizer_name,
-                    i_learn_rate, b_learn_rate, c_learn_rate, i_l2_decay, b_l2_decay, c_l2_decay):
+def load_optimizers(i_wd_op_name, b_wd_op_name, c_wd_op_name,
+                    i_optimizer_name, b_optimizer_name, c_optimizer_name,
+                    i_learn_rate, b_learn_rate, c_learn_rate,
+                    i_l2_decay, b_l2_decay, c_l2_decay):
 
     str_bool_dic = str_to_bool()
 
-    weight_decay_op = str_bool_dic[weight_decay_op_name]
+    i_wd_op = str_bool_dic[i_wd_op_name]
+    b_wd_op = str_bool_dic[b_wd_op_name]
+    c_wd_op = str_bool_dic[c_wd_op_name]
 
-    tf_func_dic = tf_func_options(weight_decay_op_name=weight_decay_op_name)
+    i_tf_func_dic = tf_func_options(weight_decay_op_name=i_wd_op_name)
+    b_tf_func_dic = tf_func_options(weight_decay_op_name=b_wd_op_name)
+    c_tf_func_dic = tf_func_options(weight_decay_op_name=c_wd_op_name)
 
-    i_optimizer_func = tf_func_dic[i_optimizer_name]
-    b_optimizer_func = tf_func_dic[b_optimizer_name]
-    c_optimizer_func = tf_func_dic[c_optimizer_name]
+    i_optimizer_func = i_tf_func_dic[i_optimizer_name]
+    b_optimizer_func = b_tf_func_dic[b_optimizer_name]
+    c_optimizer_func = c_tf_func_dic[c_optimizer_name]
 
-    if weight_decay_op:
+    if i_wd_op:
         if i_optimizer_name == 'LAMB':
             i_optimizer = i_optimizer_func(learning_rate=i_learn_rate, weight_decay_rate=i_l2_decay)
         else:
             i_optimizer = i_optimizer_func(learning_rate=i_learn_rate, weight_decay=i_l2_decay)
+    else:
+        i_optimizer = i_optimizer_func(learning_rate=i_learn_rate)
+
+    if b_wd_op:
         if b_optimizer_name == 'LAMB':
             b_optimizer = b_optimizer_func(learning_rate=b_learn_rate, weight_decay_rate=b_l2_decay)
         else:
             b_optimizer = b_optimizer_func(learning_rate=b_learn_rate, weight_decay=b_l2_decay)
+    else:
+        b_optimizer = b_optimizer_func(learning_rate=b_learn_rate)
+
+    if c_wd_op:
         if c_optimizer_name == 'LAMB':
             c_optimizer = c_optimizer_func(learning_rate=c_learn_rate, weight_decay_rate=c_l2_decay)
         else:
             c_optimizer = c_optimizer_func(learning_rate=c_learn_rate, weight_decay=c_l2_decay)
     else:
-        i_optimizer = i_optimizer_func(learning_rate=i_learn_rate)
-        b_optimizer = b_optimizer_func(learning_rate=b_learn_rate)
         c_optimizer = c_optimizer_func(learning_rate=c_learn_rate)
 
     return i_optimizer, b_optimizer, c_optimizer

@@ -141,14 +141,17 @@ def b_optimize(batch_size, top_k_percent, n_samples, img_features, slide_label, 
 
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
-def train_step(i_model, b_model, c_model, train_path, weight_decay_op_name,
+def train_step(i_model, b_model, c_model, train_path,
+               i_wd_op_name, b_wd_op_name, c_wd_op_name, weight_decay_op_name,
                i_optimizer_name, b_optimizer_name, c_optimizer_name,
                i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
                i_learn_rate, b_learn_rate, c_learn_rate,
                i_l2_decay, b_l2_decay, c_l2_decay,
                top_k_percent, batch_size, batch_op):
 
-    i_optimizer, b_optimizer, c_optimizer = load_optimizers(weight_decay_op_name=weight_decay_op_name,
+    i_optimizer, b_optimizer, c_optimizer = load_optimizers(i_wd_op_name=i_wd_op_name,
+                                                            b_wd_op_name=b_wd_op_name,
+                                                            c_wd_op_name=c_wd_op_name,
                                                             i_optimizer_name=i_optimizer_name,
                                                             b_optimizer_name=b_optimizer_name,
                                                             c_optimizer_name=c_optimizer_name,

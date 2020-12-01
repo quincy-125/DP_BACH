@@ -202,7 +202,25 @@ def make_arg_parser():
                         type=str,
                         default='True',
                         required=False,
-                        help='whether or not applying optimizers with weight decay options')
+                        help='whether or not returning available optimizer functions with weight decay options')
+
+    parser.add_argument('-I', '--i_wd_op_name',
+                        type=str,
+                        default='True',
+                        required=False,
+                        help='whether or not applying optimizer with weight decay options for instance classifier')
+
+    parser.add_argument('-J', '--b_wd_op_name',
+                        type=str,
+                        default='True',
+                        required=False,
+                        help='whether or not applying optimizer with weight decay options for bag classifier')
+
+    parser.add_argument('-C', '--c_wd_op_name',
+                        type=str,
+                        default='True',
+                        required=False,
+                        help='whether or not applying optimizer with weight decay options for clam model')
 
     parser.add_argument('-O', '--att_only_name',
                         type=str,
@@ -299,6 +317,9 @@ def main():
               n_test_steps=args.test_steps,
               no_warn_op_name=args.no_warn_op_name,
               weight_decay_op_name=args.wd_op_name,
+              i_wd_op_name=args.i_wd_op_name,
+              b_wd_op_name=args.b_wd_op_name,
+              c_wd_op_name=args.c_wd_op_name,
               m_clam_op_name=args.m_clam_op_name,
               m_gpu_name=args.multi_gpu_name,
               is_training_name=args.is_training_name)
