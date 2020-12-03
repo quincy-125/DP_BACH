@@ -2,7 +2,7 @@ set -x
 QSUB_OPTIONS='-q 1-day -l h_vmem=100G -M Gu.Qiangqiang@mayo.edu -m abe -V -cwd -j y -o /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/LOG'
 
 dir=/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM
-folder_name=bach_imf_norm_i_lr_2e-03_rest_default_topk_p_0.1
+folder_name=bach_imf_norm_i_lr_2e-03_i_dr_1e_04_rest_default_topk_p_0.1
 data_name=BACH
 train_log=$dir/log/$data_name/$folder_name/train/
 val_log=$dir/log/$data_name/$folder_name/val/
@@ -31,7 +31,7 @@ c2=0.3
 i_learn_rate=2e-03
 b_learn_rate=2e-04
 c_learn_rate=2e-04
-i_l2_decay=1e-05
+i_l2_decay=1e-04
 b_l2_decay=1e-05
 c_l2_decay=1e-05
 imf_norm_op_name='True'
