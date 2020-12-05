@@ -6,10 +6,12 @@
       <w>adamax</w>
       <w>crossentropy</w>
       <w>ftrl</w>
+      <w>logits</w>
       <w>nadam</w>
       <w>novo</w>
       <w>sgdw</w>
       <w>sprop</w>
+      <w>unnorm</w>
     </words>
   </dictionary>
 </component>

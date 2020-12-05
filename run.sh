@@ -1,6 +1,6 @@
 dir=/data/Quincy/Data/CLAM
 folder_name=tcga_imf_norm_batch_size_1000_rest_default_topk_p_0.1
-data_name=BACH
+data_name=TCGA
 train_log=$dir/log/$data_name/$folder_name/train/
 val_log=$dir/log/$data_name/$folder_name/val/
 train_path=$dir/$data_name/train/
