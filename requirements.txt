@@ -1,0 +1,14 @@
+tensorflow
+tensorflow-addons
+pandas
+sklearn
+pillow
+openslide-python
+numpy
+scikit-image
+Shapely
+matplotlib
+descartes
+statistics
+import-ipynb
+jupyterlab
