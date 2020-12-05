@@ -1,6 +1,6 @@
 dir=/data/Quincy/Data/CLAM
-folder_name=ycga_imf_norm_all_default_topk_p_0.1
-data_name=TCGA
+folder_name=tcga_imf_norm_batch_size_1000_rest_default_topk_p_0.1
+data_name=BACH
 train_log=$dir/log/$data_name/$folder_name/train/
 val_log=$dir/log/$data_name/$folder_name/val/
 train_path=$dir/$data_name/train/
@@ -47,6 +47,6 @@ batch_size=1000
 batch_op_name='True'
 epochs=200
 n_test_steps=10
-m_gpu_name='False'
+m_gpu_name='True'
 is_training_name='True'
-/data/Quincy/Conda/clam/bin/python3 /data/Quincy/Code/DP_BACH_CLAM_TF/main.py -g $train_log -l $val_log -t $train_path -v $val_path -d $test_path -r $result_path -f $result_file_name -Y $imf_norm_op_name -F $dim_features -A $dim_compress_features -H $n_hidden_units -T $net_size -D $dropout_name -R $dropout_rate -o $i_optimizer_name -p $b_optimizer_name -z $c_optimizer_name -y $i_loss_name -b $b_loss_name -u $mut_ex_name -S $n_class -c $c1 -a $c2 -L $i_learn_rate -j $b_learn_rate -k $c_learn_rate -n $i_l2_decay -q $b_l2_decay -w $c_l2_decay -K $top_k_percent -Z $batch_size -B $batch_op_name -e $i_model_dir -s $b_model_dir -m $c_model_dir -O $att_only_name -N $mil_ins_name -x $att_gate_name -E $epochs -X $n_test_steps -W $no_warn_op_name -I $i_wd_op_name -J $b_wd_op_name -C $c_wd_op_name -M $m_clam_op_name -G $m_gpu_name -i $is_training_name
+/data/Quincy/Conda/clam/bin/python /data/Quincy/Code/DP_BACH_CLAM_TF/main.py -g $train_log -l $val_log -t $train_path -v $val_path -d $test_path -r $result_path -f $result_file_name -Y $imf_norm_op_name -F $dim_features -A $dim_compress_features -H $n_hidden_units -T $net_size -D $dropout_name -R $dropout_rate -o $i_optimizer_name -p $b_optimizer_name -z $c_optimizer_name -y $i_loss_name -b $b_loss_name -u $mut_ex_name -S $n_class -c $c1 -a $c2 -L $i_learn_rate -j $b_learn_rate -k $c_learn_rate -n $i_l2_decay -q $b_l2_decay -w $c_l2_decay -K $top_k_percent -Z $batch_size -B $batch_op_name -e $i_model_dir -s $b_model_dir -m $c_model_dir -O $att_only_name -N $mil_ins_name -x $att_gate_name -E $epochs -X $n_test_steps -W $no_warn_op_name -I $i_wd_op_name -J $b_wd_op_name -C $c_wd_op_name -M $m_clam_op_name -G $m_gpu_name -i $is_training_name
