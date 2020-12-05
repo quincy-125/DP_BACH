@@ -563,6 +563,8 @@ def restore_model(i_model_dir, b_model_dir, c_model_dir, n_class,
     trained_ins_classifier = list()
     trained_bag_classifier = list()
 
+    c_trained_model = list()
+
     if m_clam_op:
         if att_gate:
             att_nets_dir = os.path.join(c_model_dir, 'G' + clam_model_names[0])
