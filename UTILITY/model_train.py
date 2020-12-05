@@ -24,7 +24,6 @@ def nb_optimize(img_features, slide_label, i_model, b_model, c_model, i_optimize
         if mut_ex:
             I_Loss = tf.math.add_n(ins_loss) / n_class
         else:
-            print('if execute?')
             I_Loss = tf.math.add_n(ins_loss)
 
         slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = b_model.call(slide_label, A, h)
@@ -184,7 +183,7 @@ def train_step(i_model, b_model, c_model, train_path, imf_norm_op,
         img_features = random.sample(img_features, len(img_features))
 
         if batch_op:
-            if len(img_features) < batch_size:
+            if batch_size < len(img_features):
                 I_Loss, B_Loss, T_Loss, predict_slide_label = b_optimize(batch_size=batch_size,
                                                                          top_k_percent=top_k_percent,
                                                                          n_samples=len(img_features),
