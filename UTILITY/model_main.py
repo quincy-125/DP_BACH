@@ -119,7 +119,8 @@ def clam_optimize(train_log, val_log, train_path, val_path,
                   c_model_dir, m_clam_op, att_gate, epochs):
 
     train_val(train_log=train_log, val_log=val_log, train_path=train_path,
-              val_path=val_path, imf_norm_op=imf_norm_op, i_model=i_model, b_model=b_model, c_model=c_model,
+              val_path=val_path, imf_norm_op=imf_norm_op,
+              i_model=i_model, b_model=b_model, c_model=c_model,
               i_wd_op_name=i_wd_op_name, b_wd_op_name=b_wd_op_name, c_wd_op_name=c_wd_op_name,
               i_optimizer_name=i_optimizer_name, b_optimizer_name=b_optimizer_name,
               c_optimizer_name=c_optimizer_name, i_loss_name=i_loss_name,
@@ -207,7 +208,6 @@ def load_model(dim_features, dim_compress_features, n_hidden_units,
                     drop_rate=dropout_rate,
                     mil_ins=mil_ins,
                     att_only=att_only)
-
     if m_gpu:
         ng_att_model = multi_gpu_train(ng_att)
         g_att_model = multi_gpu_train(g_att)

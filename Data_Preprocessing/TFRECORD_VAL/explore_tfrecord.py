@@ -1,8 +1,6 @@
-bach_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
-    'Quincy/Data/CLAM/BACH/train/Normal_n100.tif.tfrecords'
+bach_dir = '/path/'
 
-tcga_dir = '/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/' \
-    'Quincy/Data/CLAM/TCGA/train/TCGA-Z2-A8RT-01Z-00-DX1.3DE00C7C-0373-425C-A042-A463FD814D50.svs.0.train.tfrecords'
+tcga_dir = '/path/'
 
 import tensorflow as tf
 import io

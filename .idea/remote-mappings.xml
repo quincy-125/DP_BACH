@@ -6,7 +6,11 @@
         <remote-mappings server-id="python@sftp://m216613@172.22.9.140:22/data/Quincy/Conda/clam/bin/python">
           <settings>
             <list>
+<<<<<<< HEAD
               <mapping local-root="$PROJECT_DIR$" remote-root="/data/Quincy/Code/DP_BACH?CLAM_TF" />
+=======
+              <mapping local-root="$PROJECT_DIR$" remote-root="/data/Quincy/Code/DP_BACH_CLAM_TF" />
+>>>>>>> 0ae8eae881297bf1aa3f4ff0a65b5733aa71e41d
             </list>
           </settings>
         </remote-mappings>

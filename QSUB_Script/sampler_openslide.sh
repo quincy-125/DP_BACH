@@ -1,16 +1,16 @@
 #! /bin/bash
-#$ -q day-rhel7
+#$ -q queue_name
 #$ -l h_vmem=50G
-#$ -M gu.qiangqiang@mayo.edu
+#$ -M xxxx@xxx.xxx
 #$ -t 1-5:1
 #$ -m abe
 #$ -V
 #$ -cwd
 #$ -j y
-#$ -o /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/log
+#$ -o /path/log
 set -x
-dir=/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/
-INPUT_DIR=/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/Neg
+dir=/dir/
+INPUT_DIR=/input_dir/
 cd $dir
 lev=0
 hed=0.17
@@ -23,5 +23,5 @@ mut="0"
 
 for i in $INPUT_DIR/*svs
 do
-  /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Anaconda/conda_env/tf2/bin/python /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Code/TissueDetector/IMG_FEATUREVEC_TFR/sampler_openslide_quincy.py -i $i -p $PATCH_DIR -o $TF_DIR -s $Patch_size -l $lev -a $threshold_area_percent_patch  -x $hed -c $mut
+  /path/bin/python /path/tfrecird_from_microscope_img.py -i $i -p $PATCH_DIR -o $TF_DIR -s $Patch_size -l $lev -a $threshold_area_percent_patch  -x $hed -c $mut
 done

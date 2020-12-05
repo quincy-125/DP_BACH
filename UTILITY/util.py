@@ -480,9 +480,6 @@ def m_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
            slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_slide_label
 
 def multi_gpu_train(model):
-    # In TF V2.0, eager_execution will prevent from enabling multi-gpu for training
-    tf.compat.v1.disable_eager_execution()
-
     strategy = tf.distribute.MirroredStrategy()
 
     with strategy.scope():

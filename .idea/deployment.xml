@@ -1,25 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="CLAM" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="cytomine">
     <serverData>
-      <paths name="CLAM">
+      <paths name="cytomine">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="CLAM (1)">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Code/DigiPath_CLAM_TF" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="DICOM-mforgehn5">
-        <serverdata>
-          <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/data/Quincy/Code/DP_BACH_CLAM_TF" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

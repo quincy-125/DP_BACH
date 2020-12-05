@@ -133,18 +133,29 @@ def val_step(i_model, b_model, c_model, val_path, imf_norm_op,
         img_features = random.sample(img_features, len(img_features))  # follow the training loop, see details there
 
         if batch_op:
-            I_Loss, B_Loss, T_Loss, predict_slide_label = b_val(batch_size=batch_size,
-                                                                top_k_percent=top_k_percent,
-                                                                n_samples=len(img_features),
-                                                                img_features=img_features,
-                                                                slide_label=slide_label,
-                                                                i_model=i_model,
-                                                                b_model=b_model,
-                                                                c_model=c_model,
-                                                                i_loss_func=i_loss_func,
-                                                                b_loss_func=b_loss_func,
-                                                                n_class=n_class, c1=c1, c2=c2,
-                                                                mut_ex=mut_ex)
+            if batch_size < len(img_features):
+                I_Loss, B_Loss, T_Loss, predict_slide_label = b_val(batch_size=batch_size,
+                                                                    top_k_percent=top_k_percent,
+                                                                    n_samples=len(img_features),
+                                                                    img_features=img_features,
+                                                                    slide_label=slide_label,
+                                                                    i_model=i_model,
+                                                                    b_model=b_model,
+                                                                    c_model=c_model,
+                                                                    i_loss_func=i_loss_func,
+                                                                    b_loss_func=b_loss_func,
+                                                                    n_class=n_class, c1=c1, c2=c2,
+                                                                    mut_ex=mut_ex)
+            else:
+                I_Loss, B_Loss, T_Loss, predict_slide_label = nb_val(img_features=img_features,
+                                                                     slide_label=slide_label,
+                                                                     i_model=i_model,
+                                                                     b_model=b_model,
+                                                                     c_model=c_model,
+                                                                     i_loss_func=i_loss_func,
+                                                                     b_loss_func=b_loss_func,
+                                                                     n_class=n_class, c1=c1, c2=c2,
+                                                                     mut_ex=mut_ex)
         else:
             I_Loss, B_Loss, T_Loss, predict_slide_label = nb_val(img_features=img_features,
                                                                  slide_label=slide_label,
