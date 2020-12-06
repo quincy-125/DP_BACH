@@ -3,17 +3,14 @@
   <component name="RemoteMappingsManager">
     <list>
       <list>
-        <remote-mappings server-id="python@sftp://m216613@172.22.9.140:22/data/Quincy/Conda/clam/bin/python">
+        <remote-mappings server-id="python@sftp://m216613@mforgehn5.mayo.edu:22/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Anaconda/conda_env/clam/bin/python">
           <settings>
             <list>
-<<<<<<< HEAD
-              <mapping local-root="$PROJECT_DIR$" remote-root="/data/Quincy/Code/DP_BACH?CLAM_TF" />
-=======
-              <mapping local-root="$PROJECT_DIR$" remote-root="/data/Quincy/Code/DP_BACH_CLAM_TF" />
->>>>>>> 0ae8eae881297bf1aa3f4ff0a65b5733aa71e41d
+              <mapping local-root="$PROJECT_DIR$" remote-root="/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Code/DP_BACH_CLAM_TF" />
             </list>
           </settings>
         </remote-mappings>
+        <remote-mappings server-id="python@sftp://m216613@172.22.9.140:22/data/Quincy/Anaconda/clam/bin/python" />
       </list>
     </list>
   </component>

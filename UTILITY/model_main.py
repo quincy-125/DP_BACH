@@ -137,7 +137,7 @@ def clam_optimize(train_log, val_log, train_path, val_path,
 
 def clam_test(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, test_path,
               result_path, result_file_name, i_model_dir, b_model_dir, c_model_dir,
-              m_clam_op, n_test_steps):
+              dim_compress_features, imf_norm_op, m_clam_op, n_test_steps):
 
     i_trained_model, b_trained_model, c_trained_model = restore_model(i_model_dir=i_model_dir,
                                                                       b_model_dir=b_model_dir,
@@ -152,9 +152,12 @@ def clam_test(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, test_
               att_only=att_only,
               mil_ins=mil_ins,
               mut_ex=mut_ex,
+              m_clam_op=m_clam_op,
+              imf_norm_op=imf_norm_op,
               i_model=i_trained_model,
               b_model=b_trained_model,
               c_model=c_trained_model,
+              dim_compress_features=dim_compress_features,
               test_path=test_path,
               result_path=result_path,
               result_file_name=result_file_name,
@@ -330,5 +333,7 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                   i_model_dir=i_model_dir,
                   b_model_dir=b_model_dir,
                   c_model_dir=c_model_dir,
+                  dim_compress_features=dim_compress_features,
+                  imf_norm_op=imf_norm_op,
                   m_clam_op=m_clam_op,
                   n_test_steps=n_test_steps)

@@ -3,7 +3,7 @@ QSUB_OPTIONS='-q gpu-long -l gpu=1 -l h_vmem=100G -M Gu.Qiangqiang@mayo.edu -m a
 
 dir=/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM
 folder_name=tcga_imf_norm_i_lr_2e-03_rest_default_topk_p_0.1
-data_name=TCGA
+data_name=BACH
 train_log=$dir/log/$data_name/$folder_name/train/
 val_log=$dir/log/$data_name/$folder_name/val/
 train_path=$dir/$data_name/Image_Standardization/train/
@@ -48,7 +48,7 @@ n_class=2
 top_k_percent=0.1
 batch_size=1000
 batch_op_name='True'
-epochs=200
+epochs=1
 n_test_steps=10
 m_gpu_name='True'
 is_training_name='True'
