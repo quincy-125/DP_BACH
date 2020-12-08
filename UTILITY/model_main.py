@@ -99,6 +99,11 @@ def train_val(train_log, val_log, train_path, val_path,
             tf.summary.histogram('False Negative', int(val_fn), step=epoch)
 
         epoch_run_time = time.time() - start_time
+
+        # early-stopping
+        tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=1E-02, patience=20,
+                                         mode='min', restore_best_weights=True)
+
         template = '\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, Epoch Running ' \
                    'Time: {} '
         print(template.format(epoch + 1,

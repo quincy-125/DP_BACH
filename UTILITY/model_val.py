@@ -21,9 +21,9 @@ def nb_val(img_features, slide_label, i_model, b_model, c_model,
         i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
         ins_loss.append(i_loss)
     if mut_ex:
-        I_Loss = tf.math.add_n(ins_loss) / n_class
+        I_Loss = (tf.math.add_n(ins_loss) / len(ins_loss)) / n_class
     else:
-        I_Loss = tf.math.add_n(ins_loss)
+        I_Loss = tf.math.add_n(ins_loss) / len(ins_loss)
 
     slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = b_model.call(slide_label, A, h)
 
@@ -61,9 +61,9 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, i_mod
                 i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
                 ins_loss.append(i_loss)
             if mut_ex:
-                Loss_I = tf.math.add_n(ins_loss) / n_class
+                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / n_class
             else:
-                Loss_I = tf.math.add_n(ins_loss)
+                Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
 
             slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
 
@@ -82,9 +82,9 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, i_mod
                 i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
                 ins_loss.append(i_loss)
             if mut_ex:
-                Loss_I = tf.math.add_n(ins_loss) / n_class
+                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / n_class
             else:
-                Loss_I = tf.math.add_n(ins_loss)
+                Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
 
             slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
 
