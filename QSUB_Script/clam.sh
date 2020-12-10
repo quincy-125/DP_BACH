@@ -1,8 +1,8 @@
 set -x
-QSUB_OPTIONS='-q gpu-long -l gpu=1 -l h_vmem=100G -M Gu.Qiangqiang@mayo.edu -m abe -V -cwd -j y -o /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/LOG'
+QSUB_OPTIONS='-q gpu -l gpu=1 -l h_vmem=100G -M Gu.Qiangqiang@mayo.edu -m abe -V -cwd -j y -o /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/LOG'
 
 dir=/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM
-folder_name=tcga_imf_norm_i_lr_2e-03_rest_default_topk_p_0.1
+folder_name=tcga_imf_norm_i-b_lr_2e-03_i-b_dr_1e-04_rest_default_topk_p_0.1
 data_name=BACH
 train_log=$dir/log/$data_name/$folder_name/train/
 val_log=$dir/log/$data_name/$folder_name/val/
@@ -29,10 +29,10 @@ b_loss_name="binary_crossentropy"
 c1=0.7
 c2=0.3
 i_learn_rate=2e-03
-b_learn_rate=2e-04
+b_learn_rate=2e-03
 c_learn_rate=2e-04
-i_l2_decay=1e-05
-b_l2_decay=1e-05
+i_l2_decay=1e-04
+b_l2_decay=1e-04
 c_l2_decay=1e-05
 imf_norm_op_name='True'
 mut_ex_name='False'
@@ -47,8 +47,8 @@ m_clam_op_name='False'
 n_class=2
 top_k_percent=0.1
 batch_size=1000
-batch_op_name='True'
-epochs=1
+batch_op_name='False'
+epochs=200
 n_test_steps=10
 m_gpu_name='True'
 is_training_name='True'

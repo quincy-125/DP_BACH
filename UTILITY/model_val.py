@@ -44,7 +44,7 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, i_mod
 
     label_predict = list()
 
-    n_ins = top_k_percent * n_samples
+    n_ins = top_k_percent * batch_size
     n_ins = int(n_ins)
 
     for n_step in range(0, (n_samples // batch_size + 1)):

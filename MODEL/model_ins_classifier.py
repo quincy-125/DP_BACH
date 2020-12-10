@@ -31,10 +31,7 @@ class Ins(tf.keras.Model):
     def generate_neg_labels(n_neg_sample):
         return tf.fill(dims=[n_neg_sample, ], value=0)
 
-    def in_call(self, ins_classifier, h, A_I):
-        n_ins = self.top_k_percent * len(h)
-        n_ins = int(n_ins)
-
+    def in_call(self, n_ins, ins_classifier, h, A_I):
         pos_label = self.generate_pos_labels(n_ins)
         neg_label = self.generate_neg_labels(n_ins)
         ins_label_in = tf.concat(values=[pos_label, neg_label], axis=0)
@@ -72,10 +69,7 @@ class Ins(tf.keras.Model):
 
         return ins_label_in, logits_unnorm_in, logits_in
 
-    def out_call(self, ins_classifier, h, A_O):
-        n_ins = self.top_k_percent * len(h)
-        n_ins = int(n_ins)
-
+    def out_call(self, n_ins, ins_classifier, h, A_O):
         # get compressed 512-dimensional instance-level feature vectors for following use, denoted by h
         A_O = tf.reshape(tf.convert_to_tensor(A_O), (1, len(A_O)))
         top_pos_ids = tf.math.top_k(A_O, n_ins)[1][-1]
@@ -104,6 +98,12 @@ class Ins(tf.keras.Model):
         return ins_label_out, logits_unnorm_out, logits_out
 
     def call(self, bag_label, h, A):
+        n_ins = self.top_k_percent * len(h)
+        n_ins = int(n_ins)
+        # if n_ins computed above is less than 0, make n_ins be default be 8
+        if n_ins == 0:
+            n_ins += 8
+
         for i in range(self.n_class):
             ins_classifier = self.ins_classifier()[i]
             if i == bag_label:
@@ -111,14 +111,14 @@ class Ins(tf.keras.Model):
                 for j in range(len(A)):
                     a_i = A[j][0][i]
                     A_I.append(a_i)
-                ins_label_in, logits_unnorm_in, logits_in = self.in_call(ins_classifier, h, A_I)
+                ins_label_in, logits_unnorm_in, logits_in = self.in_call(n_ins, ins_classifier, h, A_I)
             else:
                 if self.mut_ex:
                     A_O = list()
                     for j in range(len(A)):
                         a_o = A[j][0][i]
                         A_O.append(a_o)
-                    ins_label_out, logits_unnorm_out, logits_out = self.out_call(ins_classifier, h, A_O)
+                    ins_label_out, logits_unnorm_out, logits_out = self.out_call(n_ins, ins_classifier, h, A_O)
                 else:
                     continue
 
