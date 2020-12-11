@@ -354,7 +354,7 @@ def ins_call(m_ins_classifier, bag_label, h, A, n_class, top_k_percent, mut_ex):
 
     return ins_labels, ins_logits_unnorm, ins_logits
 
-def bag_h_slide(A, h):
+def s_bag_h_slide(A, h):
     # compute the slide-level representation aggregated per the attention score distribution for the mth class
     SAR = list()
     for i in range(len(A)):
@@ -367,7 +367,7 @@ def bag_h_slide(A, h):
 
 
 def s_bag_call(bag_classifier, bag_label, A, h, n_class):
-    slide_agg_rep = bag_h_slide(A=A, h=h)
+    slide_agg_rep = s_bag_h_slide(A=A, h=h)
 
     slide_score_unnorm = bag_classifier(slide_agg_rep)
     slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, n_class))
@@ -383,38 +383,38 @@ def s_bag_call(bag_classifier, bag_label, A, h, n_class):
 
     return slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true
 
-def m_bag_in_call(bag_classifier, h_slide_I):
-    ssu_in = bag_classifier(h_slide_I)[0][0]
+def m_bag_h_slide(A, h, dim_compress_features, n_class):
+    SAR = list()
+    for i in range(len(A)):
+        sar = tf.linalg.matmul(tf.transpose(A[i]), h[i])  # shape be (2,512)
+        SAR.append(sar)
 
-    return ssu_in
+    SAR_Branch = list()
+    for i in range(n_class):
+        sar_branch = list()
+        for j in range(len(SAR)):
+            sar_c = tf.reshape(SAR[j][i], (1, dim_compress_features))
+            sar_branch.append(sar_c)
+        SAR_Branch.append(sar_branch)
 
-def m_bag_out_call(bag_classifier, h_slide_O):
-    ssu_out = bag_classifier(h_slide_O)[0][0]
+    slide_agg_rep = list()
+    for k in range(n_class):
+        slide_agg_rep.append(tf.math.add_n(SAR_Branch[k]))
 
-    return ssu_out
+    return slide_agg_rep
 
 def m_bag_call(m_bag_classifier, bag_label, A, h, n_class, dim_compress_features):
-    slide_agg_rep = bag_h_slide(A=A, h=h)
-    # unnormalized slide-level score (s_[slide,m]) with uninitialized entries, shape be (1,num_of_classes)
-    slide_score_unnorm = tf.Variable(np.empty((1, n_class)), dtype=tf.float32)
-    slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, n_class)).numpy()
+    slide_agg_rep = m_bag_h_slide(A=A, h=h, dim_compress_features=dim_compress_features, n_class=n_class)
 
+    ssus = list()
     # return s_[slide,m] (slide-level prediction scores)
     for i in range(n_class):
         bag_classifier = m_bag_classifier[i]
-        if i == bag_label:
-            h_slide_I = tf.reshape(slide_agg_rep[i], (1, dim_compress_features))
-            ssu_in = m_bag_in_call(bag_classifier=bag_classifier, h_slide_I=h_slide_I)
-        else:
-            h_slide_O = tf.reshape(slide_agg_rep[i], (1, dim_compress_features))
-            ssu_out = m_bag_out_call(bag_classifier=bag_classifier, h_slide_O=h_slide_O)
+        ssu = bag_classifier(slide_agg_rep[i])
+        ssus.append(ssu[0][0])
 
-    for i in range(n_class):
-        if i == bag_label:
-            slide_score_unnorm[0, i] = ssu_in
-        else:
-            slide_score_unnorm[0, i] = ssu_out
-    slide_score_unnorm = tf.convert_to_tensor(slide_score_unnorm)
+    slide_score_unnorm = tf.convert_to_tensor(ssus)
+    slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, n_class))
 
     Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
     Y_prob = tf.math.softmax(slide_score_unnorm)
