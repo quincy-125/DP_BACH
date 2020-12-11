@@ -100,24 +100,24 @@ def loss_func_options():
 
     return loss_func_dic
 
-def load_optimizers(i_wd_op_name, b_wd_op_name, c_wd_op_name,
-                    i_optimizer_name, b_optimizer_name, c_optimizer_name,
-                    i_learn_rate, b_learn_rate, c_learn_rate,
-                    i_l2_decay, b_l2_decay, c_l2_decay):
+def load_optimizers(i_wd_op_name, b_wd_op_name, a_wd_op_name,
+                    i_optimizer_name, b_optimizer_name, a_optimizer_name,
+                    i_learn_rate, b_learn_rate, a_learn_rate,
+                    i_l2_decay, b_l2_decay, a_l2_decay):
 
     str_bool_dic = str_to_bool()
 
     i_wd_op = str_bool_dic[i_wd_op_name]
     b_wd_op = str_bool_dic[b_wd_op_name]
-    c_wd_op = str_bool_dic[c_wd_op_name]
+    a_wd_op = str_bool_dic[a_wd_op_name]
 
     i_tf_func_dic = optimizer_func_options(weight_decay_op_name=i_wd_op_name)
     b_tf_func_dic = optimizer_func_options(weight_decay_op_name=b_wd_op_name)
-    c_tf_func_dic = optimizer_func_options(weight_decay_op_name=c_wd_op_name)
+    c_tf_func_dic = optimizer_func_options(weight_decay_op_name=a_wd_op_name)
 
     i_optimizer_func = i_tf_func_dic[i_optimizer_name]
     b_optimizer_func = b_tf_func_dic[b_optimizer_name]
-    c_optimizer_func = c_tf_func_dic[c_optimizer_name]
+    c_optimizer_func = c_tf_func_dic[a_optimizer_name]
 
     if i_wd_op:
         if i_optimizer_name == 'LAMB':
@@ -135,13 +135,13 @@ def load_optimizers(i_wd_op_name, b_wd_op_name, c_wd_op_name,
     else:
         b_optimizer = b_optimizer_func(learning_rate=b_learn_rate)
 
-    if c_wd_op:
-        if c_optimizer_name == 'LAMB':
-            c_optimizer = c_optimizer_func(learning_rate=c_learn_rate, weight_decay_rate=c_l2_decay)
+    if a_wd_op:
+        if a_optimizer_name == 'LAMB':
+            c_optimizer = c_optimizer_func(learning_rate=a_learn_rate, weight_decay_rate=a_l2_decay)
         else:
-            c_optimizer = c_optimizer_func(learning_rate=c_learn_rate, weight_decay=c_l2_decay)
+            c_optimizer = c_optimizer_func(learning_rate=a_learn_rate, weight_decay=a_l2_decay)
     else:
-        c_optimizer = c_optimizer_func(learning_rate=c_learn_rate)
+        c_optimizer = c_optimizer_func(learning_rate=a_learn_rate)
 
     return i_optimizer, b_optimizer, c_optimizer
 
@@ -487,17 +487,7 @@ def multi_gpu_train(model):
 
     return parallel_model
 
-def model_save(i_model, b_model, c_model, i_model_dir, b_model_dir,
-               c_model_dir, n_class, m_clam_op, att_gate):
-
-    for i in range(n_class):
-        i_model.ins_classifier()[i].save(os.path.join(i_model_dir, 'M_Ins', 'Class_' + str(i)))
-
-    if m_clam_op:
-        for j in range(n_class):
-            b_model.bag_classifier()[j].save(os.path.join(b_model_dir, 'M_Bag', 'Class_' + str(j)))
-    else:
-        b_model.bag_classifier().save(os.path.join(b_model_dir, 'S_Bag'))
+def model_save(c_model, c_model_dir, n_class, m_clam_op, att_gate):
 
     clam_model_names = ['_Att', '_Ins', '_Bag']
 
@@ -534,36 +524,13 @@ def model_save(i_model, b_model, c_model, i_model_dir, b_model_dir,
         c_model.clam_model()[2].save(os.path.join(c_model_dir, 'S' + clam_model_names[2]))
 
 
-def restore_model(i_model_dir, b_model_dir, c_model_dir, n_class,
-                  m_clam_op, att_gate):
-
-    i_trained_model = list()
-    for i in range(n_class):
-        m_ins_names = os.listdir(os.path.join(i_model_dir, 'M_Ins'))
-        m_ins_names.sort()
-        m_ins_name = m_ins_names[i]
-        m_ins_model = tf.keras.models.load_model(os.path.join(i_model_dir, 'M_Ins', m_ins_name))
-        i_trained_model.append(m_ins_model)
-
-    if m_clam_op:
-        b_trained_model = list()
-        for j in range(n_class):
-            m_bag_names = os.listdir(os.path.join(b_model_dir, 'M_Bag'))
-            m_bag_names.sort()
-            m_bag_name = m_bag_names[j]
-            m_bag_model = tf.keras.models.load_model(os.path.join(b_model_dir, 'M_Bag', m_bag_name))
-            b_trained_model.append(m_bag_model)
-    else:
-        s_bag_name = os.listdir(b_model_dir)[0]
-        b_trained_model = tf.keras.models.load_model(os.path.join(b_model_dir, s_bag_name))
+def restore_model(c_model_dir, n_class, m_clam_op, att_gate):
 
     clam_model_names = ['_Att', '_Ins', '_Bag']
 
     trained_att_net = list()
     trained_ins_classifier = list()
     trained_bag_classifier = list()
-
-    c_trained_model = list()
 
     if m_clam_op:
         if att_gate:
@@ -611,4 +578,4 @@ def restore_model(i_model_dir, b_model_dir, c_model_dir, n_class,
 
         c_trained_model = [trained_att_net, trained_ins_classifier, trained_bag_classifier[0]]
 
-    return i_trained_model, b_trained_model, c_trained_model
+    return c_trained_model

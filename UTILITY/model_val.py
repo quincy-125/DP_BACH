@@ -8,13 +8,11 @@ import statistics
 from UTILITY.util import get_data_from_tf, most_frequent, load_loss_func
 
 
-def nb_val(img_features, slide_label, i_model, b_model, c_model,
-           i_loss_func, b_loss_func, n_class, c1, c2, mut_ex):
+def nb_val(img_features, slide_label, c_model, i_loss_func, b_loss_func,
+           n_class, c1, c2, mut_ex):
 
     att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
     Y_prob, Y_hat, Y_true, predict_slide_label = c_model.call(img_features, slide_label)
-
-    ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
 
     ins_loss = list()
     for j in range(len(ins_logits)):
@@ -25,8 +23,6 @@ def nb_val(img_features, slide_label, i_model, b_model, c_model,
     else:
         I_Loss = tf.math.add_n(ins_loss) / len(ins_loss)
 
-    slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = b_model.call(slide_label, A, h)
-
     B_Loss = b_loss_func(Y_true, Y_prob)
 
     T_Loss = c1 * B_Loss + c2 * I_Loss
@@ -34,7 +30,7 @@ def nb_val(img_features, slide_label, i_model, b_model, c_model,
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
-def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, i_model, b_model,
+def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label,
           c_model, i_loss_func, b_loss_func, n_class, c1, c2, mut_ex):
     step_size = 0
 
@@ -49,12 +45,11 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, i_mod
 
     for n_step in range(0, (n_samples // batch_size + 1)):
         if step_size < (n_samples - batch_size):
-            att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-            Y_prob, Y_hat, Y_true, predict_label = c_model.call(
-                img_features=img_features[step_size:(step_size + batch_size)],
-                slide_label=slide_label)
-
-            ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
+            att_score, A, h, ins_labels, ins_logits_unnorm, \
+            ins_logits, slide_score_unnorm, \
+            Y_prob, Y_hat, Y_true, \
+            predict_label = c_model.call(img_features=img_features[step_size:(step_size + batch_size)],
+                                         slide_label=slide_label)
 
             ins_loss = list()
             for j in range(len(ins_logits)):
@@ -64,18 +59,16 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, i_mod
                 Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / n_class
             else:
                 Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
-
-            slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
 
             Loss_B = b_loss_func(Y_true, Y_prob)
             Loss_T = c1 * Loss_B + c2 * Loss_I
 
         else:
-            att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-            Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features=img_features[(step_size - n_ins):],
+            att_score, A, h, ins_labels, ins_logits_unnorm, \
+            ins_logits, slide_score_unnorm, \
+            Y_prob, Y_hat, Y_true, \
+            predict_label = c_model.call(img_features=img_features[(step_size - n_ins):],
                                                                 slide_label=slide_label)
-
-            ins_labels, ins_logits_unnorm, ins_logits = i_model.call(slide_label, h, A)
 
             ins_loss = list()
             for j in range(len(ins_logits)):
@@ -85,8 +78,6 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, i_mod
                 Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / n_class
             else:
                 Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
-
-            slide_score_unnorm, Y_hat, Y_prob, predict_label, Y_true = b_model.call(slide_label, A, h)
 
             Loss_B = b_loss_func(Y_true, Y_prob)
 
@@ -109,9 +100,8 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, i_mod
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
-def val_step(i_model, b_model, c_model, val_path, imf_norm_op,
-             i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
-             top_k_percent, batch_size, batch_op):
+def val_step(c_model, val_path, imf_norm_op, i_loss_name, b_loss_name,
+             mut_ex, n_class, c1, c2, top_k_percent, batch_size, batch_op):
 
     i_loss_func, b_loss_func = load_loss_func(i_loss_func_name=i_loss_name,
                                               b_loss_func_name=b_loss_name)
@@ -139,8 +129,6 @@ def val_step(i_model, b_model, c_model, val_path, imf_norm_op,
                                                                     n_samples=len(img_features),
                                                                     img_features=img_features,
                                                                     slide_label=slide_label,
-                                                                    i_model=i_model,
-                                                                    b_model=b_model,
                                                                     c_model=c_model,
                                                                     i_loss_func=i_loss_func,
                                                                     b_loss_func=b_loss_func,
@@ -149,8 +137,6 @@ def val_step(i_model, b_model, c_model, val_path, imf_norm_op,
             else:
                 I_Loss, B_Loss, T_Loss, predict_slide_label = nb_val(img_features=img_features,
                                                                      slide_label=slide_label,
-                                                                     i_model=i_model,
-                                                                     b_model=b_model,
                                                                      c_model=c_model,
                                                                      i_loss_func=i_loss_func,
                                                                      b_loss_func=b_loss_func,
@@ -159,8 +145,6 @@ def val_step(i_model, b_model, c_model, val_path, imf_norm_op,
         else:
             I_Loss, B_Loss, T_Loss, predict_slide_label = nb_val(img_features=img_features,
                                                                  slide_label=slide_label,
-                                                                 i_model=i_model,
-                                                                 b_model=b_model,
                                                                  c_model=c_model,
                                                                  i_loss_func=i_loss_func,
                                                                  b_loss_func=b_loss_func,

@@ -5,12 +5,11 @@ import os
 import random
 import time
 
-from UTILITY.util import get_data_from_tf, s_clam_call, ins_call, s_bag_call, most_frequent, m_clam_call
+from UTILITY.util import get_data_from_tf, s_clam_call, most_frequent, m_clam_call
 
 
-def m_test_per_sample(n_class, top_k_percent, att_gate, att_only,
-                      m_clam_op, mil_ins, mut_ex, i_model, b_model, c_model,
-                      dim_compress_features, img_features, slide_label, n_test_steps):
+def m_test_per_sample(n_class, top_k_percent, att_gate, att_only, m_clam_op, mil_ins, mut_ex,
+                      c_model, dim_compress_features, img_features, slide_label, n_test_steps):
 
     slide_pred_per_sample = list()
 
@@ -45,17 +44,6 @@ def m_test_per_sample(n_class, top_k_percent, att_gate, att_only,
                                                                mil_ins=mil_ins,
                                                                mut_ex=mut_ex)
 
-        ins_labels, ins_logits_unnorm, ins_logits = ins_call(m_ins_classifier=i_model,
-                                                             bag_label=slide_label,
-                                                             h=h, A=A, n_class=n_class,
-                                                             top_k_percent=top_k_percent,
-                                                             mut_ex=mut_ex)
-
-        slide_score_unnorm, Y_hat, Y_prob, \
-        predict_label, Y_true = s_bag_call(bag_classifier=b_model,
-                                           bag_label=slide_label,
-                                           A=A, h=h, n_class=n_class)
-
         slide_pred_per_sample.append(predict_label)
         predict_slide_label = most_frequent(slide_pred_per_sample)
 
@@ -63,7 +51,7 @@ def m_test_per_sample(n_class, top_k_percent, att_gate, att_only,
 
 
 def test_step(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex,
-              m_clam_op, imf_norm_op, i_model, b_model, c_model, dim_compress_features,
+              m_clam_op, imf_norm_op, c_model, dim_compress_features,
               test_path, result_path, result_file_name, n_test_steps):
 
     start_time = time.time()
@@ -87,8 +75,6 @@ def test_step(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex,
                                                 m_clam_op=m_clam_op,
                                                 mil_ins=mil_ins,
                                                 mut_ex=mut_ex,
-                                                i_model=i_model,
-                                                b_model=b_model,
                                                 c_model=c_model,
                                                 dim_compress_features=dim_compress_features,
                                                 img_features=img_features,

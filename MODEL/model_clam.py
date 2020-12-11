@@ -45,6 +45,15 @@ class S_CLAM(tf.keras.Model):
 
         self.bag_net = S_Bag(dim_compress_features=self.net_shape[1], n_class=self.n_class)
 
+    def networks(self):
+        a_net = self.att_net
+        i_net = self.ins_net
+        b_net = self.bag_net
+
+        c_nets = [a_net, i_net, b_net]
+
+        return c_nets
+
     def clam_model(self):
         att_model = self.att_net.att_model()
         ins_classifier = self.ins_net.ins_classifier()
@@ -118,6 +127,15 @@ class M_CLAM(tf.keras.Model):
                            mut_ex=self.mut_ex)
 
         self.bag_net = M_Bag(dim_compress_features=self.net_shape[1], n_class=self.n_class)
+
+    def networks(self):
+        a_net = self.att_net
+        i_net = self.ins_net
+        b_net = self.bag_net
+
+        c_nets = [a_net, i_net, b_net]
+
+        return c_nets
 
     def clam_model(self):
         att_model = self.att_net.att_model()

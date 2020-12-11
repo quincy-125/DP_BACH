@@ -48,14 +48,6 @@ def make_arg_parser():
                         required=False,
                         help='path to the validation log files')
 
-    parser.add_argument('-e', '--i_model_dir',
-                        required=True,
-                        help='path to where the trained instance classifier stored')
-
-    parser.add_argument('-s', '--b_model_dir',
-                        required=True,
-                        help='path to where the trained bag classifier stored')
-
     parser.add_argument('-m', '--c_model_dir',
                         required=True,
                         help='path to where the trained clam model stored')
@@ -72,11 +64,11 @@ def make_arg_parser():
                         required=False,
                         help='optimizer option for bag classifier')
 
-    parser.add_argument('-z', '--c_optimizer_name',
+    parser.add_argument('-z', '--a_optimizer_name',
                         type=str,
                         default="AdamW",
                         required=False,
-                        help='optimizer option for clam model')
+                        help='optimizer option for attention network')
 
     parser.add_argument('-y', '--i_loss_name',
                         type=str,
@@ -126,11 +118,11 @@ def make_arg_parser():
                         required=False,
                         help='learning rate for bag classifier')
 
-    parser.add_argument('-k', '--c_learn_rate',
+    parser.add_argument('-k', '--a_learn_rate',
                         type=float,
                         default=2e-04,
                         required=False,
-                        help='learning rate for clam model')
+                        help='learning rate for attention network')
 
     parser.add_argument('-n', '--i_weight_decay',
                         type=float,
@@ -144,11 +136,11 @@ def make_arg_parser():
                         required=False,
                         help='L2 weight decay rate for bag classifier')
 
-    parser.add_argument('-w', '--c_weight_decay',
+    parser.add_argument('-w', '--a_weight_decay',
                         type=float,
                         default=1e-05,
                         required=False,
-                        help='L2 weight decay rate for clam model')
+                        help='L2 weight decay rate for attention network')
 
     parser.add_argument('-Y', '--imf_norm_op_name',
                         type=str,
@@ -216,11 +208,11 @@ def make_arg_parser():
                         required=False,
                         help='whether or not applying optimizer with weight decay options for bag classifier')
 
-    parser.add_argument('-C', '--c_wd_op_name',
+    parser.add_argument('-C', '--a_wd_op_name',
                         type=str,
                         default='True',
                         required=False,
-                        help='whether or not applying optimizer with weight decay options for clam model')
+                        help='whether or not applying optimizer with weight decay options for attention network')
 
     parser.add_argument('-O', '--att_only_name',
                         type=str,
@@ -252,23 +244,11 @@ def make_arg_parser():
                         required=False,
                         help='dropout rate for the attention network dropout layer if it is enabled')
 
-    parser.add_argument('-F', '--dim_features',
-                        type=int,
-                        default=1024,
-                        required=False,
-                        help='dimensionality of image feature vectors, default be 1024')
-
     parser.add_argument('-A', '--dim_compress_features',
                         type=int,
                         default=512,
                         required=False,
                         help='dimensionality of compressed image feature vectors, default be 512')
-
-    parser.add_argument('-H', '--n_hidden_units',
-                        type=int,
-                        default=256,
-                        required=False,
-                        help='number of hidden unites of each layers in the attention network')
 
     return parser
 
@@ -284,15 +264,13 @@ def main():
               result_path=args.test_result_dir,
               result_file_name=args.test_result_file_name,
               imf_norm_op_name=args.imf_norm_op_name,
-              dim_features=args.dim_features,
               dim_compress_features=args.dim_compress_features,
-              n_hidden_units=args.n_hidden_units,
               net_size=args.net_size,
               dropout_name=args.dropout_name,
               dropout_rate=args.dropout_rate,
               i_optimizer_name=args.i_optimizer_name,
               b_optimizer_name=args.b_optimizer_name,
-              c_optimizer_name=args.c_optimizer_name,
+              a_optimizer_name=args.a_optimizer_name,
               i_loss_name=args.i_loss_name,
               b_loss_name=args.b_loss_name,
               mut_ex_name=args.mut_ex_name,
@@ -301,15 +279,13 @@ def main():
               c2=args.c_2,
               i_learn_rate=args.i_learn_rate,
               b_learn_rate=args.b_learn_rate,
-              c_learn_rate=args.c_learn_rate,
+              a_learn_rate=args.a_learn_rate,
               i_l2_decay=args.i_weight_decay,
               b_l2_decay=args.b_weight_decay,
-              c_l2_decay=args.c_weight_decay,
+              a_l2_decay=args.a_weight_decay,
               top_k_percent=args.top_k_percent,
               batch_size=args.batch_size,
               batch_op_name=args.batch_op_name,
-              i_model_dir=args.i_model_dir,
-              b_model_dir=args.b_model_dir,
               c_model_dir=args.c_model_dir,
               att_only_name=args.att_only_name,
               mil_ins_name=args.mil_ins_name,
@@ -319,7 +295,7 @@ def main():
               no_warn_op_name=args.no_warn_op_name,
               i_wd_op_name=args.i_wd_op_name,
               b_wd_op_name=args.b_wd_op_name,
-              c_wd_op_name=args.c_wd_op_name,
+              a_wd_op_name=args.a_wd_op_name,
               m_clam_op_name=args.m_clam_op_name,
               m_gpu_name=args.multi_gpu_name,
               is_training_name=args.is_training_name)
