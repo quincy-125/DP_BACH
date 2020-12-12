@@ -5,7 +5,7 @@ from MODEL.model_clam import S_CLAM, M_CLAM
 from UTILITY.model_train import train_step
 from UTILITY.model_val import val_step
 from UTILITY.model_test import test_step
-from UTILITY.util import model_save, restore_model, tf_shut_up, str_to_bool, multi_gpu_train
+from UTILITY.util import model_save, restore_model, tf_shut_up, str_to_bool
 
 
 def train_val(train_log, val_log, train_path, val_path, imf_norm_op, c_model,
@@ -153,7 +153,7 @@ def clam_test(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, test_
               n_test_steps=n_test_steps)
 
 def load_model(n_class, top_k_percent, net_size, mut_ex, att_gate, att_only,
-               mil_ins, dropout, dropout_rate, m_gpu):
+               mil_ins, dropout, dropout_rate):
 
     s_clam = S_CLAM(att_gate=att_gate,
                     net_size=net_size,
@@ -174,18 +174,15 @@ def load_model(n_class, top_k_percent, net_size, mut_ex, att_gate, att_only,
                     drop_rate=dropout_rate,
                     mil_ins=mil_ins,
                     att_only=att_only)
-    if m_gpu:
-        s_clam_model = multi_gpu_train(s_clam)
-        m_clam_model = multi_gpu_train(m_clam)
-    else:
-        s_clam_model = s_clam
-        m_clam_model = m_clam
+
+    s_clam_model = s_clam
+    m_clam_model = m_clam
 
     c_model = [s_clam_model, m_clam_model]
 
     return c_model
 
-def clam_main(train_log, val_log, train_path, val_path, test_path,
+def clam(train_log, val_log, train_path, val_path, test_path,
               result_path, result_file_name, imf_norm_op_name,
               dim_compress_features, net_size, dropout_name, dropout_rate,
               i_optimizer_name, b_optimizer_name, a_optimizer_name,
@@ -194,17 +191,13 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
               i_l2_decay, b_l2_decay, a_l2_decay,
               top_k_percent, batch_size, batch_op_name,
               c_model_dir, att_only_name, mil_ins_name, att_gate_name,
-              epochs, n_test_steps,
-              no_warn_op_name,
+              epochs, n_test_steps, no_warn_op_name,
               i_wd_op_name, b_wd_op_name, a_wd_op_name,
-              m_clam_op_name='False',
-              m_gpu_name='False',
-              is_training_name='True'):
+              m_clam_op_name, is_training_name):
 
     str_bool_dic = str_to_bool()
 
     imf_norm_op = str_bool_dic[imf_norm_op_name]
-    m_gpu = str_bool_dic[m_gpu_name]
     dropout = str_bool_dic[dropout_name]
     mut_ex = str_bool_dic[mut_ex_name]
     batch_op = str_bool_dic[batch_op_name]
@@ -224,8 +217,7 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                              att_only=att_only,
                              mil_ins=mil_ins,
                              dropout=dropout,
-                             dropout_rate=dropout_rate,
-                             m_gpu=m_gpu)
+                             dropout_rate=dropout_rate)
 
         tf_shut_up(no_warn_op=no_warn_op)
 
@@ -276,3 +268,106 @@ def clam_main(train_log, val_log, train_path, val_path, test_path,
                   imf_norm_op=imf_norm_op,
                   m_clam_op=m_clam_op,
                   n_test_steps=n_test_steps)
+
+
+def clam_main(train_log, val_log, train_path, val_path, test_path, result_path, result_file_name,
+              imf_norm_op_name, dim_compress_features, net_size, dropout_name, dropout_rate,
+              i_optimizer_name, b_optimizer_name, a_optimizer_name, i_loss_name, b_loss_name,
+              mut_ex_name, n_class, c1, c2, i_learn_rate, b_learn_rate, a_learn_rate,
+              i_l2_decay, b_l2_decay, a_l2_decay, top_k_percent, batch_size, batch_op_name,
+              c_model_dir, att_only_name, mil_ins_name, att_gate_name, epochs, n_test_steps, no_warn_op_name,
+              i_wd_op_name, b_wd_op_name, a_wd_op_name, m_clam_op_name, is_training_name, m_gpu_op_name):
+
+    str_bool_dic = str_to_bool()
+    m_gpu = str_bool_dic[m_gpu_op_name]
+
+    if m_gpu:
+        gpus = tf.config.experimental.list_logical_devices('GPU')
+        if gpus:
+            for gpu in gpus:
+                with tf.device(gpu.name):
+                    clam(train_log=train_log,
+                         val_log=val_log,
+                         train_path=train_path,
+                         val_path=val_path,
+                         test_path=test_path,
+                         result_path=result_path,
+                         result_file_name=result_file_name,
+                         imf_norm_op_name=imf_norm_op_name,
+                         dim_compress_features=dim_compress_features,
+                         net_size=net_size,
+                         dropout_name=dropout_name,
+                         dropout_rate=dropout_rate,
+                         i_optimizer_name=i_optimizer_name,
+                         b_optimizer_name=b_optimizer_name,
+                         a_optimizer_name=a_optimizer_name,
+                         i_loss_name=i_loss_name,
+                         b_loss_name=b_loss_name,
+                         mut_ex_name=mut_ex_name,
+                         n_class=n_class,
+                         c1=c1,
+                         c2=c2,
+                         i_learn_rate=i_learn_rate,
+                         b_learn_rate=b_learn_rate,
+                         a_learn_rate=a_learn_rate,
+                         i_l2_decay=i_l2_decay,
+                         b_l2_decay=b_l2_decay,
+                         a_l2_decay=a_l2_decay,
+                         top_k_percent=top_k_percent,
+                         batch_size=batch_size,
+                         batch_op_name=batch_op_name,
+                         c_model_dir=c_model_dir,
+                         att_only_name=att_only_name,
+                         mil_ins_name=mil_ins_name,
+                         att_gate_name=att_gate_name,
+                         epochs=epochs,
+                         n_test_steps=n_test_steps,
+                         no_warn_op_name=no_warn_op_name,
+                         i_wd_op_name=i_wd_op_name,
+                         b_wd_op_name=b_wd_op_name,
+                         a_wd_op_name=a_wd_op_name,
+                         m_clam_op_name=m_clam_op_name,
+                         is_training_name=is_training_name)
+    else:
+        clam(train_log=train_log,
+                  val_log=val_log,
+                  train_path=train_path,
+                  val_path=val_path,
+                  test_path=test_path,
+                  result_path=result_path,
+                  result_file_name=result_file_name,
+                  imf_norm_op_name=imf_norm_op_name,
+                  dim_compress_features=dim_compress_features,
+                  net_size=net_size,
+                  dropout_name=dropout_name,
+                  dropout_rate=dropout_rate,
+                  i_optimizer_name=i_optimizer_name,
+                  b_optimizer_name=b_optimizer_name,
+                  a_optimizer_name=a_optimizer_name,
+                  i_loss_name=i_loss_name,
+                  b_loss_name=b_loss_name,
+                  mut_ex_name=mut_ex_name,
+                  n_class=n_class,
+                  c1=c1,
+                  c2=c2,
+                  i_learn_rate=i_learn_rate,
+                  b_learn_rate=b_learn_rate,
+                  a_learn_rate=a_learn_rate,
+                  i_l2_decay=i_l2_decay,
+                  b_l2_decay=b_l2_decay,
+                  a_l2_decay=a_l2_decay,
+                  top_k_percent=top_k_percent,
+                  batch_size=batch_size,
+                  batch_op_name=batch_op_name,
+                  c_model_dir=c_model_dir,
+                  att_only_name=att_only_name,
+                  mil_ins_name=mil_ins_name,
+                  att_gate_name=att_gate_name,
+                  epochs=epochs,
+                  n_test_steps=n_test_steps,
+                  no_warn_op_name=no_warn_op_name,
+                  i_wd_op_name=i_wd_op_name,
+                  b_wd_op_name=b_wd_op_name,
+                  a_wd_op_name=a_wd_op_name,
+                  m_clam_op_name=m_clam_op_name,
+                  is_training_name=is_training_name)

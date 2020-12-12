@@ -479,14 +479,6 @@ def m_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
     return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, \
            slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_slide_label
 
-def multi_gpu_train(model):
-    strategy = tf.distribute.MirroredStrategy()
-
-    with strategy.scope():
-        parallel_model = model
-
-    return parallel_model
-
 def model_save(c_model, c_model_dir, n_class, m_clam_op, att_gate):
 
     clam_model_names = ['_Att', '_Ins', '_Bag']

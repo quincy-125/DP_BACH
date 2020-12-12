@@ -297,5 +297,5 @@ def main():
               b_wd_op_name=args.b_wd_op_name,
               a_wd_op_name=args.a_wd_op_name,
               m_clam_op_name=args.m_clam_op_name,
-              m_gpu_name=args.multi_gpu_name,
-              is_training_name=args.is_training_name)
+              is_training_name=args.is_training_name,
+              m_gpu_op_name=args.multi_gpu_name)
