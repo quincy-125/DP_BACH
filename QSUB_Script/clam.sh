@@ -2,7 +2,7 @@ set -x
 QSUB_OPTIONS='-q gpu-long -l gpu=1 -l h_vmem=100G -M Gu.Qiangqiang@mayo.edu -m abe -V -cwd -j y -o /research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM/LOG'
 
 dir=/research/bsi/projects/PI/tertiary/Hart_Steven_m087494/s211408.DigitalPathology/Quincy/Data/CLAM
-folder_name=tcga_imf_norm_rest_default_topk_p_0.01
+folder_name=tcga_imf_norm_m_clam_bs_2000_rest_default_topk_p_0.01
 data_name=TCGA
 train_log=$dir/log/$data_name/$folder_name/train/
 val_log=$dir/log/$data_name/$folder_name/val/
@@ -39,7 +39,7 @@ no_warn_op_name='True'
 i_wd_op_name='True'
 b_wd_op_name='True'
 a_wd_op_name='True'
-m_clam_op_name='False'
+m_clam_op_name='True'
 n_class=2
 top_k_percent=0.01
 batch_size=2000

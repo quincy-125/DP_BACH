@@ -8,8 +8,8 @@ from UTILITY.model_test import test_step
 from UTILITY.util import model_save, restore_model, tf_shut_up, str_to_bool, multi_gpu_train
 
 
-def train_val(train_log, val_log, train_path, val_path, imf_norm_op,
-              c_model, i_wd_op_name, b_wd_op_name, a_wd_op_name,
+def train_val(train_log, val_log, train_path, val_path, imf_norm_op, c_model,
+              i_wd_op_name, b_wd_op_name, a_wd_op_name,
               i_optimizer_name, b_optimizer_name, a_optimizer_name,
               i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
               i_learn_rate, b_learn_rate, a_learn_rate,
@@ -132,10 +132,10 @@ def clam_test(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, test_
               result_path, result_file_name, c_model_dir,
               dim_compress_features, imf_norm_op, m_clam_op, n_test_steps):
 
-    i_trained_model, b_trained_model, c_trained_model = restore_model(c_model_dir=c_model_dir,
-                                                                      n_class=n_class,
-                                                                      m_clam_op=m_clam_op,
-                                                                      att_gate=att_gate)
+    c_trained_model = restore_model(c_model_dir=c_model_dir,
+                                    n_class=n_class,
+                                    m_clam_op=m_clam_op,
+                                    att_gate=att_gate)
 
     test_step(n_class=n_class,
               top_k_percent=top_k_percent,
