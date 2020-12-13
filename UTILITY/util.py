@@ -211,8 +211,8 @@ def ng_att_call(ng_att_net, img_features):
         c_imf = ng_att_net[0](i)
         h.append(c_imf)
 
-    for i in img_features:
-        a = ng_att_net[1](i)
+    for j in h:
+        a = ng_att_net[1](j)
         A.append(a)
     return h, A
 
@@ -225,11 +225,11 @@ def g_att_call(g_att_net, img_features):
         c_imf = g_att_net[0](i)
         h.append(c_imf)
 
-    for i in img_features:
-        layer1_output = g_att_net[1](i)
-        layer2_output = g_att_net[2](i)
-        a = tf.math.multiply(layer1_output, layer2_output)
-        a = g_att_net[3](a)
+    for j in h:
+        att_v_output = g_att_net[1](j)
+        att_u_output = g_att_net[2](j)
+        att_input = tf.math.multiply(att_v_output, att_u_output)
+        a = g_att_net[3](att_input)
         A.append(a)
 
     return h, A

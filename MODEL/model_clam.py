@@ -30,12 +30,14 @@ class S_CLAM(tf.keras.Model):
                                      dim_compress_features=self.net_shape[1],
                                      n_hidden_units=self.net_shape[2],
                                      n_class=self.n_class,
-                                     dropout=self.dropout, dropout_rate=self.drop_rate)
+                                     dropout=self.dropout,
+                                     dropout_rate=self.drop_rate)
         else:
             self.att_net = NG_Att_Net(dim_features=self.net_shape[0],
                                       dim_compress_features=self.net_shape[1],
                                       n_hidden_units=self.net_shape[2],
-                                      n_class=self.n_class, dropout=self.dropout,
+                                      n_class=self.n_class,
+                                      dropout=self.dropout,
                                       dropout_rate=self.drop_rate)
 
         self.ins_net = Ins(dim_compress_features=self.net_shape[1],
