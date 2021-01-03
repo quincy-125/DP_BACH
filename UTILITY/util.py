@@ -96,7 +96,10 @@ def loss_func_options():
                      "huber": tf.keras.losses.huber,
                      "log_cosh": tf.keras.losses.log_cosh,
                      "poisson": tf.keras.losses.poisson,
-                     "squared_hinge": tf.keras.losses.squared_hinge}
+                     "squared_hinge": tf.keras.losses.squared_hinge,
+                     "contrastive": tfa.losses.contrastive_loss,
+                     "pinball": tfa.losses.pinball_loss,
+                     "sigmoid_focal_crossentropy": tfa.losses.sigmoid_focal_crossentropy}
 
     return loss_func_dic
 
@@ -161,7 +164,7 @@ def str_to_bool():
 
     return str_bool_dic
 
-def dataset_shuffle(dataset, path, percent=[0.8, 0.1, 0.1]):
+def dataset_shuffle(dataset, path, percent):
     """
     Input Arg:
         dataset -> path where all tfrecord data stored
