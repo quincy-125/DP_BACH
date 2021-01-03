@@ -38,7 +38,8 @@ def train_val(train_log, val_log, train_path, val_path, imf_norm_op, c_model,
                                           b_loss_name=b_loss_name,
                                           mut_ex=mut_ex,
                                           n_class=n_class,
-                                          c1=c1, c2=c2,
+                                          c1=c1,
+                                          c2=c2,
                                           i_learn_rate=i_learn_rate,
                                           b_learn_rate=b_learn_rate,
                                           a_learn_rate=a_learn_rate,
@@ -72,7 +73,8 @@ def train_val(train_log, val_log, train_path, val_path, imf_norm_op, c_model,
                                     b_loss_name=b_loss_name,
                                     mut_ex=mut_ex,
                                     n_class=n_class,
-                                    c1=c1, c2=c2,
+                                    c1=c1,
+                                    c2=c2,
                                     top_k_percent=top_k_percent,
                                     batch_size=batch_size,
                                     batch_op=batch_op)
@@ -93,8 +95,11 @@ def train_val(train_log, val_log, train_path, val_path, imf_norm_op, c_model,
         epoch_run_time = time.time() - start_time
 
         # early-stopping
-        tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=1E-02, patience=20,
-                                         mode='min', restore_best_weights=True)
+        tf.keras.callbacks.EarlyStopping(monitor='val_loss',
+                                         min_delta=0.1,
+                                         patience=20,
+                                         mode='min',
+                                         restore_best_weights=True)
 
         template = '\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, Epoch Running ' \
                    'Time: {} '
@@ -114,19 +119,40 @@ def clam_optimize(train_log, val_log, train_path, val_path, imf_norm_op, c_model
                   a_l2_decay, top_k_percent, batch_size, batch_op,
                   c_model_dir, m_clam_op, att_gate, epochs):
 
-    train_val(train_log=train_log, val_log=val_log, train_path=train_path,
-              val_path=val_path, imf_norm_op=imf_norm_op, c_model=c_model,
-              i_wd_op_name=i_wd_op_name, b_wd_op_name=b_wd_op_name, a_wd_op_name=a_wd_op_name,
-              i_optimizer_name=i_optimizer_name, b_optimizer_name=b_optimizer_name,
-              a_optimizer_name=a_optimizer_name, i_loss_name=i_loss_name,
-              b_loss_name=b_loss_name, mut_ex=mut_ex, n_class=n_class,
-              c1=c1, c2=c2, i_learn_rate=i_learn_rate, b_learn_rate=b_learn_rate,
-              a_learn_rate=a_learn_rate, i_l2_decay=i_l2_decay, b_l2_decay=b_l2_decay,
-              a_l2_decay=a_l2_decay, top_k_percent=top_k_percent,
-              batch_size=batch_size, batch_op=batch_op, epochs=epochs)
+    train_val(train_log=train_log,
+              val_log=val_log,
+              train_path=train_path,
+              val_path=val_path,
+              imf_norm_op=imf_norm_op,
+              c_model=c_model,
+              i_wd_op_name=i_wd_op_name,
+              b_wd_op_name=b_wd_op_name,
+              a_wd_op_name=a_wd_op_name,
+              i_optimizer_name=i_optimizer_name,
+              b_optimizer_name=b_optimizer_name,
+              a_optimizer_name=a_optimizer_name,
+              i_loss_name=i_loss_name,
+              b_loss_name=b_loss_name,
+              mut_ex=mut_ex,
+              n_class=n_class,
+              c1=c1,
+              c2=c2,
+              i_learn_rate=i_learn_rate,
+              b_learn_rate=b_learn_rate,
+              a_learn_rate=a_learn_rate,
+              i_l2_decay=i_l2_decay,
+              b_l2_decay=b_l2_decay,
+              a_l2_decay=a_l2_decay,
+              top_k_percent=top_k_percent,
+              batch_size=batch_size,
+              batch_op=batch_op,
+              epochs=epochs)
 
-    model_save(c_model=c_model, c_model_dir=c_model_dir, n_class=n_class,
-               m_clam_op=m_clam_op, att_gate=att_gate)
+    model_save(c_model=c_model,
+               c_model_dir=c_model_dir,
+               n_class=n_class,
+               m_clam_op=m_clam_op,
+               att_gate=att_gate)
 
 def clam_test(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, test_path,
               result_path, result_file_name, c_model_dir,

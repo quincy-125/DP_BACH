@@ -59,18 +59,17 @@ def b_optimize(batch_size, top_k_percent, n_samples, img_features, slide_label, 
     n_ins = top_k_percent * batch_size
     n_ins = int(n_ins)
 
+    a_net = c_model.networks()[0]
+    i_net = c_model.networks()[1]
+    b_net = c_model.networks()[2]
+
     for n_step in range(0, (n_samples // batch_size + 1)):
         if step_size < (n_samples - batch_size):
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
-                att_score, A, h, ins_labels, ins_logits_unnorm, \
-                ins_logits, slide_score_unnorm, \
-                Y_prob, Y_hat, Y_true, \
-                predict_label = c_model.call(img_features=img_features[step_size:(step_size + batch_size)],
-                                             slide_label=slide_label)
 
-                a_net = c_model.networks()[0]
-                i_net = c_model.networks()[1]
-                b_net = c_model.networks()[2]
+                att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
+                Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features[step_size:(step_size + batch_size)],
+                                                                    slide_label)
 
                 ins_loss = list()
                 for j in range(len(ins_logits)):
@@ -96,15 +95,10 @@ def b_optimize(batch_size, top_k_percent, n_samples, img_features, slide_label, 
 
         else:
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
-                att_score, A, h, ins_labels, ins_logits_unnorm, \
-                ins_logits, slide_score_unnorm, \
-                Y_prob, Y_hat, Y_true, \
-                predict_label = c_model.call(img_features=img_features[(step_size - n_ins):],
-                                             slide_label=slide_label)
 
-                a_net = c_model.networks()[0]
-                i_net = c_model.networks()[1]
-                b_net = c_model.networks()[2]
+                att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
+                Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features[(step_size - n_ins):],
+                                                                    slide_label)
 
                 ins_loss = list()
                 for j in range(len(ins_logits)):
