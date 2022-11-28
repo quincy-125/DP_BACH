@@ -1,7 +1,7 @@
 # Copyright 2022 Mayo Clinic. All Rights Reserved.
 #
 # Author: Quincy Gu (M216613)
-# Affliation: Division of Computational Pathology and Artificial Intelligence, 
+# Affliation: Division of Computational Pathology and Artificial Intelligence,
 # Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
 # Email: Gu.Qiangqiang@mayo.edu
 # Version: 1.0.1
@@ -24,6 +24,7 @@
 import os
 import sys
 import logging
+
 sys_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(sys_dir))
 
@@ -39,8 +40,9 @@ def load_config():
 
     with open("./configs/data_module_config.yaml") as f:
         config = yaml.load(f, Loader=SafeLoader)
-    
+
     return config
+
 
 def configure_logging(script_name):
     """_summary_
@@ -58,9 +60,12 @@ def configure_logging(script_name):
     os.makedirs("../logs", exist_ok=True)
     with open(config["stdout_path"], "w") as f:
         pass
-    
+
     logging.basicConfig(
-        level=logging.DEBUG, format=log_format, filename=config["stdout_path"], filemode="w"
+        level=logging.DEBUG,
+        format=log_format,
+        filename=config["stdout_path"],
+        filemode="w",
     )
 
     console = logging.StreamHandler()

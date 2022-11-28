@@ -1,7 +1,7 @@
 # Copyright 2022 Mayo Clinic. All Rights Reserved.
 #
 # Author: Quincy Gu (M216613)
-# Affliation: Division of Computational Pathology and Artificial Intelligence, 
+# Affliation: Division of Computational Pathology and Artificial Intelligence,
 # Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
 # Email: Gu.Qiangqiang@mayo.edu
 # Version: 1.0.1
@@ -27,6 +27,7 @@ import subprocess
 from components.cross_val_split import *
 
 import sys
+
 sys_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(sys_dir))
 
@@ -47,30 +48,35 @@ def load_config(config_path):
 
     with open(config_path) as f:
         config = yaml.load(f, Loader=SafeLoader)
-        logging.info("\nLoading {}. \nThe customized configuration parameters are in the following \n  {}".format(config_path.split("/")[-1], config))
+        logging.info(
+            "\nLoading {}. \nThe customized configuration parameters are in the following \n  {}".format(
+                config_path.split("/")[-1], config
+            )
+        )
 
     return config
+
 
 def data_module_run(config):
     """create bash job script file"""
     if config["task"] == "kf_cv_split":
         run_kf_cross_val(
-            data_path=config["data_path"], 
-            neg_labels=config["neg_labels"], 
+            data_path=config["data_path"],
+            neg_labels=config["neg_labels"],
             pos_labels=config["pos_labels"],
-            kf_csv_path=config["kf_csv_path"], 
-            test_ratio=config["test_ratio"], 
-            n_folds=config["n_folds"], 
-            kf_shuffle=config["kf_shuffle"], 
-            kf_rs=config["kf_rs"]
+            kf_csv_path=config["kf_csv_path"],
+            test_ratio=config["test_ratio"],
+            n_folds=config["n_folds"],
+            kf_shuffle=config["kf_shuffle"],
+            kf_rs=config["kf_rs"],
         )
 
+
 def run_main():
-    """_summary_
-    """
+    """_summary_"""
     config = load_config("configs/data_module_config.yaml")
     data_module_run(config=config)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     run_main()
