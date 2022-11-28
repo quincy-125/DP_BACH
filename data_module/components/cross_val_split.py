@@ -50,9 +50,6 @@ def binary_bach_data(data_path, neg_labels, pos_labels):
     """
     logging.info("reorganize BACH dataset for binary classification")
 
-    neg_labels = _str2list(neg_labels)
-    pos_labels = _str2list(pos_labels)
-
     neg_slides = list()
     pos_slides = list()
 
@@ -115,13 +112,10 @@ def cross_val_data(
         )
         test_df = pd.DataFrame({"UUID": neg_test_slides + pos_test_slides})
         ## Write K-Fold Cross Validation Data Split into CSV File
+        test_kf_csv_path = os.path.join(kf_csv_path, "test")
+        os.makedirs(test_kf_csv_path, exist_ok=True)
         test_df.to_csv(
-            os.path.join(
-                kf_csv_path,
-                "bach_ratio_{}_p_{}_test.csv".format(
-                    str(test_ratio).split(".")[0], str(test_ratio).split(".")[-1]
-                ),
-            ),
+            "{}/bach_ratio_{}_p_{}_test.csv".format(test_kf_csv_path, str(test_ratio).split(".")[0], str(test_ratio).split(".")[-1]),
             index=False,
         )
 
@@ -172,77 +166,17 @@ def cross_val_data(
         val_fold_df = pd.DataFrame({"UUID": val_fold_slides})
 
         ## Write K-Fold Cross Validation Data Split into CSV File
+        fold_kf_csv_path = os.path.join(kf_csv_path, "fold_{}".format(f+1))
+        os.makedirs(fold_kf_csv_path, exist_ok=True)
+
         train_fold_df.to_csv(
-            os.path.join(kf_csv_path, "bach_fold_{}_train.csv".format(f + 1)),
-            index=False,
+            "{}/bach_fold_{}_train.csv".format(fold_kf_csv_path, f + 1),
+            index=False
         )
         val_fold_df.to_csv(
-            os.path.join(kf_csv_path, "bach_fold_{}_val.csv".format(f + 1)), index=False
+            "{}/bach_fold_{}_val.csv".format(fold_kf_csv_path, f + 1), 
+            index=False
         )
-
-
-def _str2bool(v):
-    """_summary_
-
-    Args:
-        v (_type_): _description_
-
-    Raises:
-        argparse.ArgumentTypeError: _description_
-
-    Returns:
-        _type_: _description_
-    """
-    if isinstance(v, bool):
-        return v
-    elif v.casefold() in ("yes", "true", "y", "1"):
-        return True
-    elif v.casefold() in ("no", "false", "n", "0"):
-        return False
-    else:
-        logging.error("Boolean value expected to be returned")
-
-
-def _str2int(v):
-    """_summary_
-
-    Args:
-        v (_type_): _description_
-
-    Raises:
-        argparse.ArgumentTypeError: _description_
-
-    Returns:
-        _type_: _description_
-    """
-    if isinstance(v, int):
-        return v
-    elif v.casefold() == "None":
-        return None
-    else:
-        raise argparse.ArgumentTypeError("Integer value expected to be returned")
-
-
-def _str2list(v):
-    """_summary_
-
-    Args:
-        v (_type_): _description_
-
-    Raises:
-        argparse.ArgumentTypeError: _description_
-
-    Returns:
-        _type_: _description_
-    """
-    import json
-
-    if isinstance(v, list):
-        return v
-    elif "[" in v and "]" in v:
-        return json.loads(v)
-    else:
-        logging.error("List value expected to be returned")
 
 
 def run_kf_cross_val(

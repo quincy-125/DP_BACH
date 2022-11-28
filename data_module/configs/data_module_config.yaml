@@ -25,22 +25,25 @@
 ## kf_cv_config yaml file ends with "..."
 
 ---
-  # task name called in main.py within the data module to determine which task user requested to be executed, options include kf_cv_split, patch_extract, clam_tfrecord_create
-  task: kf_cv_split
-  stdout_path: ../logs/output.out
-  conda_env: /home/quincy/env/tf2
+  ## General configuration parameters for all functionalities provided in data module
 
+  # task name called in main.py within the data module to determine which task user requested to be executed, options include kf_cv_split, patch_extract, clam_tfrecord_create
+  task: patch_extract
+  # path to the standard output file which contains the logging information
+  stdout_path: ../logs/patch_extract.out
+  # full path to the conda virtual environment used to execute the python scripts
+  conda_env: /home/quincy/env/bach
+  # path to the original BACH Dataset downloaded from the ICIAR 2018 Grand Challenge on BreAst Cancer Histology images Website via https://iciar2018-challenge.grand-challenge.org/ 
+  data_path: /home/quincy/data/BACH
+  # path to the cvs files contains the k-fold corss validation data split info for training and validation, when argument test_ratio is not 0.0, the test data split info csv file will also be saved in this path
+  kf_csv_path: /home/quincy/data/bach_kf/fold_1
 
   ## kf_cv_split specific configuration parameters
 
-  # path to the original BACH Dataset downloaded from the ICIAR 2018 Grand Challenge on BreAst Cancer Histology images Website via https://iciar2018-challenge.grand-challenge.org/ 
-  data_path: /home/quincy/data/BACH
   # original BACH dataset labels that represents the negative class label in binary classification scenario, which includes Normal and Benign
-  neg_labels: '["Normal", "Benign"]'
+  neg_labels: ["Normal", "Benign"]
   # original BACH dataset labels that represents the positive class label in binary classification scenario, which includes InSitu and Invasive
-  pos_labels: '["InSitu", "Invasive"]'
-  # path to the cvs files contains the k-fold corss validation data split info for training and validation, when argument test_ratio is not 0.0, the test data split info csv file will also be saved in this path
-  kf_csv_path: /home/quincy/data/BACH/kf_cv_split
+  pos_labels: ["InSitu", "Invasive"]
   # split ratio used to random select testing samples from the negative and positive class samples to form the final testing dataset
   test_ratio: 0.2
   # equivalent to argument shuffle in sklearn.model_selection.KFold function, stands for number of folds, must be at least 2
@@ -49,4 +52,8 @@
   kf_shuffle: True
   # equivelent to argument random_state in sklearn.model_selection.KFold function, when shuffle (i.e., kf_shuffle) is True, random_state affects the ordering of the indices, which controls the randomness of each fold. Otherwise, this parameter has no effect. Pass an int for reproducible output across multiple function calls. See https://scikit-learn.org/stable/glossary.html#term-random_state for more details
   kf_rs: 13
+
+  ## patch_extract specific configuration parameters
+  patch_size: (256, 256)
+  patch_path: /home/quincy/data/bach_patches
 ...

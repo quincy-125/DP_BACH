@@ -25,6 +25,7 @@ import os
 import subprocess
 
 from components.cross_val_split import *
+from components.patch_extract import *
 
 import sys
 
@@ -57,7 +58,7 @@ def load_config(config_path):
     return config
 
 
-def data_module_run(config):
+def data_module_run(config):    
     """create bash job script file"""
     if config["task"] == "kf_cv_split":
         run_kf_cross_val(
@@ -68,7 +69,14 @@ def data_module_run(config):
             test_ratio=config["test_ratio"],
             n_folds=config["n_folds"],
             kf_shuffle=config["kf_shuffle"],
-            kf_rs=config["kf_rs"],
+            kf_rs=config["kf_rs"]
+        )
+    if config["task"] == "patch_extract":
+        bach_patch_extractions(
+            data_path=config["data_path"],
+            kf_csv_path=config["kf_csv_path"],
+            patch_size=config["patch_size"], 
+            patch_path=config["patch_path"]
         )
 
 
