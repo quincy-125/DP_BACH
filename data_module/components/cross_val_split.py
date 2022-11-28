@@ -115,7 +115,11 @@ def cross_val_data(
         test_kf_csv_path = os.path.join(kf_csv_path, "test")
         os.makedirs(test_kf_csv_path, exist_ok=True)
         test_df.to_csv(
-            "{}/bach_ratio_{}_p_{}_test.csv".format(test_kf_csv_path, str(test_ratio).split(".")[0], str(test_ratio).split(".")[-1]),
+            "{}/bach_ratio_{}_p_{}_test.csv".format(
+                test_kf_csv_path,
+                str(test_ratio).split(".")[0],
+                str(test_ratio).split(".")[-1],
+            ),
             index=False,
         )
 
@@ -166,16 +170,14 @@ def cross_val_data(
         val_fold_df = pd.DataFrame({"UUID": val_fold_slides})
 
         ## Write K-Fold Cross Validation Data Split into CSV File
-        fold_kf_csv_path = os.path.join(kf_csv_path, "fold_{}".format(f+1))
+        fold_kf_csv_path = os.path.join(kf_csv_path, "fold_{}".format(f + 1))
         os.makedirs(fold_kf_csv_path, exist_ok=True)
 
         train_fold_df.to_csv(
-            "{}/bach_fold_{}_train.csv".format(fold_kf_csv_path, f + 1),
-            index=False
+            "{}/bach_fold_{}_train.csv".format(fold_kf_csv_path, f + 1), index=False
         )
         val_fold_df.to_csv(
-            "{}/bach_fold_{}_val.csv".format(fold_kf_csv_path, f + 1), 
-            index=False
+            "{}/bach_fold_{}_val.csv".format(fold_kf_csv_path, f + 1), index=False
         )
 
 

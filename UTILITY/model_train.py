@@ -5,15 +5,43 @@ import os
 import random
 import statistics
 
-from UTILITY.util import most_frequent, get_data_from_tf, load_optimizers, load_loss_func
+from UTILITY.util import (
+    most_frequent,
+    get_data_from_tf,
+    load_optimizers,
+    load_loss_func,
+)
 
 
-def nb_optimize(img_features, slide_label, c_model, i_optimizer, b_optimizer, a_optimizer,
-                i_loss_func, b_loss_func, n_class, c1, c2, mut_ex):
+def nb_optimize(
+    img_features,
+    slide_label,
+    c_model,
+    i_optimizer,
+    b_optimizer,
+    a_optimizer,
+    i_loss_func,
+    b_loss_func,
+    n_class,
+    c1,
+    c2,
+    mut_ex,
+):
 
     with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
-        att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-        Y_prob, Y_hat, Y_true, predict_slide_label = c_model.call(img_features, slide_label)
+        (
+            att_score,
+            A,
+            h,
+            ins_labels,
+            ins_logits_unnorm,
+            ins_logits,
+            slide_score_unnorm,
+            Y_prob,
+            Y_hat,
+            Y_true,
+            predict_slide_label,
+        ) = c_model.call(img_features, slide_label)
 
         a_net = c_model.networks()[0]
         i_net = c_model.networks()[1]
@@ -44,9 +72,23 @@ def nb_optimize(img_features, slide_label, c_model, i_optimizer, b_optimizer, a_
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
-def b_optimize(batch_size, top_k_percent, n_samples, img_features, slide_label, c_model,
-               i_optimizer, b_optimizer, a_optimizer, i_loss_func, b_loss_func,
-               n_class, c1, c2, mut_ex):
+def b_optimize(
+    batch_size,
+    top_k_percent,
+    n_samples,
+    img_features,
+    slide_label,
+    c_model,
+    i_optimizer,
+    b_optimizer,
+    a_optimizer,
+    i_loss_func,
+    b_loss_func,
+    n_class,
+    c1,
+    c2,
+    mut_ex,
+):
 
     step_size = 0
 
@@ -67,9 +109,21 @@ def b_optimize(batch_size, top_k_percent, n_samples, img_features, slide_label, 
         if step_size < (n_samples - batch_size):
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
 
-                att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-                Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features[step_size:(step_size + batch_size)],
-                                                                    slide_label)
+                (
+                    att_score,
+                    A,
+                    h,
+                    ins_labels,
+                    ins_logits_unnorm,
+                    ins_logits,
+                    slide_score_unnorm,
+                    Y_prob,
+                    Y_hat,
+                    Y_true,
+                    predict_label,
+                ) = c_model.call(
+                    img_features[step_size : (step_size + batch_size)], slide_label
+                )
 
                 ins_loss = list()
                 for j in range(len(ins_logits)):
@@ -96,9 +150,19 @@ def b_optimize(batch_size, top_k_percent, n_samples, img_features, slide_label, 
         else:
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
 
-                att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-                Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features[(step_size - n_ins):],
-                                                                    slide_label)
+                (
+                    att_score,
+                    A,
+                    h,
+                    ins_labels,
+                    ins_logits_unnorm,
+                    ins_logits,
+                    slide_score_unnorm,
+                    Y_prob,
+                    Y_hat,
+                    Y_true,
+                    predict_label,
+                ) = c_model.call(img_features[(step_size - n_ins) :], slide_label)
 
                 ins_loss = list()
                 for j in range(len(ins_logits)):
@@ -138,29 +202,52 @@ def b_optimize(batch_size, top_k_percent, n_samples, img_features, slide_label, 
 
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
-def train_step(c_model, train_path, imf_norm_op,
-               i_wd_op_name, b_wd_op_name, a_wd_op_name,
-               i_optimizer_name, b_optimizer_name, a_optimizer_name,
-               i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
-               i_learn_rate, b_learn_rate, a_learn_rate,
-               i_l2_decay, b_l2_decay, a_l2_decay,
-               top_k_percent, batch_size, batch_op):
 
-    i_optimizer, b_optimizer, a_optimizer = load_optimizers(i_wd_op_name=i_wd_op_name,
-                                                            b_wd_op_name=b_wd_op_name,
-                                                            a_wd_op_name=a_wd_op_name,
-                                                            i_optimizer_name=i_optimizer_name,
-                                                            b_optimizer_name=b_optimizer_name,
-                                                            a_optimizer_name=a_optimizer_name,
-                                                            i_learn_rate=i_learn_rate,
-                                                            b_learn_rate=b_learn_rate,
-                                                            a_learn_rate=a_learn_rate,
-                                                            i_l2_decay=i_l2_decay,
-                                                            b_l2_decay=b_l2_decay,
-                                                            a_l2_decay=a_l2_decay)
+def train_step(
+    c_model,
+    train_path,
+    imf_norm_op,
+    i_wd_op_name,
+    b_wd_op_name,
+    a_wd_op_name,
+    i_optimizer_name,
+    b_optimizer_name,
+    a_optimizer_name,
+    i_loss_name,
+    b_loss_name,
+    mut_ex,
+    n_class,
+    c1,
+    c2,
+    i_learn_rate,
+    b_learn_rate,
+    a_learn_rate,
+    i_l2_decay,
+    b_l2_decay,
+    a_l2_decay,
+    top_k_percent,
+    batch_size,
+    batch_op,
+):
 
-    i_loss_func, b_loss_func = load_loss_func(i_loss_func_name=i_loss_name,
-                                              b_loss_func_name=b_loss_name)
+    i_optimizer, b_optimizer, a_optimizer = load_optimizers(
+        i_wd_op_name=i_wd_op_name,
+        b_wd_op_name=b_wd_op_name,
+        a_wd_op_name=a_wd_op_name,
+        i_optimizer_name=i_optimizer_name,
+        b_optimizer_name=b_optimizer_name,
+        a_optimizer_name=a_optimizer_name,
+        i_learn_rate=i_learn_rate,
+        b_learn_rate=b_learn_rate,
+        a_learn_rate=a_learn_rate,
+        i_l2_decay=i_l2_decay,
+        b_l2_decay=b_l2_decay,
+        a_l2_decay=a_l2_decay,
+    )
+
+    i_loss_func, b_loss_func = load_loss_func(
+        i_loss_func_name=i_loss_name, b_loss_func_name=b_loss_name
+    )
 
     loss_total = list()
     loss_ins = list()
@@ -172,52 +259,64 @@ def train_step(c_model, train_path, imf_norm_op,
     train_sample_list = os.listdir(train_path)
     train_sample_list = random.sample(train_sample_list, len(train_sample_list))
     for i in train_sample_list:
-        print('=', end="")
+        print("=", end="")
         single_train_data = train_path + i
-        img_features, slide_label = get_data_from_tf(tf_path=single_train_data, imf_norm_op=imf_norm_op)
+        img_features, slide_label = get_data_from_tf(
+            tf_path=single_train_data, imf_norm_op=imf_norm_op
+        )
         # shuffle the order of img features list in order to reduce the side effects of randomly drop potential
         # number of patches' feature vectors during training when enable batch training option
         img_features = random.sample(img_features, len(img_features))
 
         if batch_op:
             if batch_size < len(img_features):
-                I_Loss, B_Loss, T_Loss, predict_slide_label = b_optimize(batch_size=batch_size,
-                                                                         top_k_percent=top_k_percent,
-                                                                         n_samples=len(img_features),
-                                                                         img_features=img_features,
-                                                                         slide_label=slide_label,
-                                                                         c_model=c_model,
-                                                                         i_optimizer=i_optimizer,
-                                                                         b_optimizer=b_optimizer,
-                                                                         a_optimizer=a_optimizer,
-                                                                         i_loss_func=i_loss_func,
-                                                                         b_loss_func=b_loss_func,
-                                                                         n_class=n_class,
-                                                                         c1=c1, c2=c2, mut_ex=mut_ex)
+                I_Loss, B_Loss, T_Loss, predict_slide_label = b_optimize(
+                    batch_size=batch_size,
+                    top_k_percent=top_k_percent,
+                    n_samples=len(img_features),
+                    img_features=img_features,
+                    slide_label=slide_label,
+                    c_model=c_model,
+                    i_optimizer=i_optimizer,
+                    b_optimizer=b_optimizer,
+                    a_optimizer=a_optimizer,
+                    i_loss_func=i_loss_func,
+                    b_loss_func=b_loss_func,
+                    n_class=n_class,
+                    c1=c1,
+                    c2=c2,
+                    mut_ex=mut_ex,
+                )
             else:
-                I_Loss, B_Loss, T_Loss, predict_slide_label = nb_optimize(img_features=img_features,
-                                                                          slide_label=slide_label,
-                                                                          c_model=c_model,
-                                                                          i_optimizer=i_optimizer,
-                                                                          b_optimizer=b_optimizer,
-                                                                          a_optimizer=a_optimizer,
-                                                                          i_loss_func=i_loss_func,
-                                                                          b_loss_func=b_loss_func,
-                                                                          n_class=n_class,
-                                                                          c1=c1, c2=c2,
-                                                                          mut_ex=mut_ex)
+                I_Loss, B_Loss, T_Loss, predict_slide_label = nb_optimize(
+                    img_features=img_features,
+                    slide_label=slide_label,
+                    c_model=c_model,
+                    i_optimizer=i_optimizer,
+                    b_optimizer=b_optimizer,
+                    a_optimizer=a_optimizer,
+                    i_loss_func=i_loss_func,
+                    b_loss_func=b_loss_func,
+                    n_class=n_class,
+                    c1=c1,
+                    c2=c2,
+                    mut_ex=mut_ex,
+                )
         else:
-            I_Loss, B_Loss, T_Loss, predict_slide_label = nb_optimize(img_features=img_features,
-                                                                      slide_label=slide_label,
-                                                                      c_model=c_model,
-                                                                      i_optimizer=i_optimizer,
-                                                                      b_optimizer=b_optimizer,
-                                                                      a_optimizer=a_optimizer,
-                                                                      i_loss_func=i_loss_func,
-                                                                      b_loss_func=b_loss_func,
-                                                                      n_class=n_class,
-                                                                      c1=c1, c2=c2,
-                                                                      mut_ex=mut_ex)
+            I_Loss, B_Loss, T_Loss, predict_slide_label = nb_optimize(
+                img_features=img_features,
+                slide_label=slide_label,
+                c_model=c_model,
+                i_optimizer=i_optimizer,
+                b_optimizer=b_optimizer,
+                a_optimizer=a_optimizer,
+                i_loss_func=i_loss_func,
+                b_loss_func=b_loss_func,
+                n_class=n_class,
+                c1=c1,
+                c2=c2,
+                mut_ex=mut_ex,
+            )
 
         loss_total.append(float(T_Loss))
         loss_ins.append(float(I_Loss))
@@ -226,7 +325,9 @@ def train_step(c_model, train_path, imf_norm_op,
         slide_true_label.append(slide_label)
         slide_predict_label.append(predict_slide_label)
 
-    tn, fp, fn, tp = sklearn.metrics.confusion_matrix(slide_true_label, slide_predict_label).ravel()
+    tn, fp, fn, tp = sklearn.metrics.confusion_matrix(
+        slide_true_label, slide_predict_label
+    ).ravel()
     train_tn = int(tn)
     train_fp = int(fp)
     train_fn = int(fn)
@@ -234,14 +335,29 @@ def train_step(c_model, train_path, imf_norm_op,
 
     train_sensitivity = round(train_tp / (train_tp + train_fn), 2)
     train_specificity = round(train_tn / (train_tn + train_fp), 2)
-    train_acc = round((train_tp + train_tn) / (train_tn + train_fp + train_fn + train_tp), 2)
+    train_acc = round(
+        (train_tp + train_tn) / (train_tn + train_fp + train_fn + train_tp), 2
+    )
 
-    fpr, tpr, thresholds = sklearn.metrics.roc_curve(slide_true_label, slide_predict_label, pos_label=1)
+    fpr, tpr, thresholds = sklearn.metrics.roc_curve(
+        slide_true_label, slide_predict_label, pos_label=1
+    )
     train_auc = round(sklearn.metrics.auc(fpr, tpr), 2)
 
     train_loss = statistics.mean(loss_total)
     train_ins_loss = statistics.mean(loss_ins)
     train_bag_loss = statistics.mean(loss_bag)
 
-    return train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, train_sensitivity, \
-           train_specificity, train_acc, train_auc
+    return (
+        train_loss,
+        train_ins_loss,
+        train_bag_loss,
+        train_tn,
+        train_fp,
+        train_fn,
+        train_tp,
+        train_sensitivity,
+        train_specificity,
+        train_acc,
+        train_auc,
+    )

@@ -10,8 +10,10 @@ class S_Bag(tf.keras.Model):
 
         self.s_bag_model = tf.keras.models.Sequential()
         self.s_bag_layer = tf.keras.layers.Dense(
-            units=1, activation='linear', input_shape=(self.n_class, self.dim_compress_features),
-            name='Bag_Classifier_Layer'
+            units=1,
+            activation="linear",
+            input_shape=(self.n_class, self.dim_compress_features),
+            name="Bag_Classifier_Layer",
         )
         self.s_bag_model.add(self.s_bag_layer)
 
@@ -35,7 +37,8 @@ class S_Bag(tf.keras.Model):
         slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, self.n_class))
         Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
         Y_prob = tf.math.softmax(
-            tf.reshape(slide_score_unnorm, (1, self.n_class)))  # shape be (1,2), predictions for each of the classes
+            tf.reshape(slide_score_unnorm, (1, self.n_class))
+        )  # shape be (1,2), predictions for each of the classes
         predict_slide_label = np.argmax(Y_prob.numpy())
 
         Y_true = tf.one_hot([bag_label], 2)
@@ -51,9 +54,12 @@ class M_Bag(tf.keras.Model):
 
         self.m_bag_models = list()
         self.m_bag_model = tf.keras.models.Sequential()
-        self.m_bag_layer = tf.keras.layers.Dense(units=1, activation='linear',
-                                                 input_shape=(1, self.dim_compress_features),
-                                                 name='Bag_Classifier_Layer')
+        self.m_bag_layer = tf.keras.layers.Dense(
+            units=1,
+            activation="linear",
+            input_shape=(1, self.dim_compress_features),
+            name="Bag_Classifier_Layer",
+        )
         self.m_bag_model.add(self.m_bag_layer)
         for i in range(self.n_class):
             self.m_bag_models.append(self.m_bag_model)

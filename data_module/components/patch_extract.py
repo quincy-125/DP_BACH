@@ -66,12 +66,21 @@ def slide_extract_patches(slide_path, patch_size, patch_path):
             if len(patch_path) > 1:
                 slide_patch_path = os.path.join(patch_path, uuid)
                 os.makedirs(slide_patch_path, exist_ok=True)
-                patch.save("{}/{}_left_{}_top_{}_right_{}_bottom_{}_patch.png".format(slide_patch_path, uuid, left, top, right, bottom))
+                patch.save(
+                    "{}/{}_left_{}_top_{}_right_{}_bottom_{}_patch.png".format(
+                        slide_patch_path, uuid, left, top, right, bottom
+                    )
+                )
 
     expect_num_patches = (slide_width * slide_height) // (patch_width * patch_height)
-    assert expect_num_patches == len(patches), logging.debug("We expected to have total number of {} patches been extracted, however, we ended up with only {} patches have been extracted".format(expect_num_patches, len(patches)))
+    assert expect_num_patches == len(patches), logging.debug(
+        "We expected to have total number of {} patches been extracted, however, we ended up with only {} patches have been extracted".format(
+            expect_num_patches, len(patches)
+        )
+    )
 
     return patches
+
 
 def bach_patch_extractions(data_path, kf_csv_path, patch_size, patch_path):
     """_summary_
@@ -83,7 +92,7 @@ def bach_patch_extractions(data_path, kf_csv_path, patch_size, patch_path):
         patch_path (_type_): _description_
     """
     import shutil
-    
+
     dest_path = os.path.join(os.path.split(data_path)[0], "tmp")
 
     patch_size = eval(patch_size)
@@ -94,15 +103,32 @@ def bach_patch_extractions(data_path, kf_csv_path, patch_size, patch_path):
         src_path = os.path.join(data_path, label)
         shutil.copytree(src_path, dest_path, dirs_exist_ok=True)
         num_src_files.append(len(tf.io.gfile.listdir(src_path)))
-    
-    num_copy_files = sum(num_src_files)
-    assert num_copy_files == len(tf.io.gfile.listdir(dest_path)), logging.debug("expected to have {} slides copied to the tmp folder {}, however, only {} slides have been copied, there are {} files which have not been copied to the destinated folder".format(num_copy_files, dest_path, len(tf.io.gfile.listdir(dest_path)), num_copy_files - len(tf.io.gfile.listdir(dest_path))))
-    logging.info("successfully copied {} slides to the tmp folder {}".format(num_copy_files, dest_path))
 
-    logging.warning("this will do patch extraction for all splits, which will require a large amount of disk space, it is not ideal. recommend provide the path to a specific split csv file rather than the folder with mutiple split csv files.")
-    
+    num_copy_files = sum(num_src_files)
+    assert num_copy_files == len(tf.io.gfile.listdir(dest_path)), logging.debug(
+        "expected to have {} slides copied to the tmp folder {}, however, only {} slides have been copied, there are {} files which have not been copied to the destinated folder".format(
+            num_copy_files,
+            dest_path,
+            len(tf.io.gfile.listdir(dest_path)),
+            num_copy_files - len(tf.io.gfile.listdir(dest_path)),
+        )
+    )
+    logging.info(
+        "successfully copied {} slides to the tmp folder {}".format(
+            num_copy_files, dest_path
+        )
+    )
+
+    logging.warning(
+        "this will do patch extraction for all splits, which will require a large amount of disk space, it is not ideal. recommend provide the path to a specific split csv file rather than the folder with mutiple split csv files."
+    )
+
     for i in tf.io.gfile.listdir(kf_csv_path):
-        logging.info("execute patch extraction pipeline for slides in dataset {}".format(i.split(".")[0]))
+        logging.info(
+            "execute patch extraction pipeline for slides in dataset {}".format(
+                i.split(".")[0]
+            )
+        )
         slides_df = pd.read_csv(os.path.join(kf_csv_path, i))
 
         uuids = list(slides_df["UUID"])
@@ -115,17 +141,23 @@ def bach_patch_extractions(data_path, kf_csv_path, patch_size, patch_path):
                 os.makedirs(full_patch_path, exist_ok=True)
 
             slide_extract_patches(
-                slide_path=slide_path, 
-                patch_size=patch_size, 
-                patch_path=full_patch_path
+                slide_path=slide_path, patch_size=patch_size, patch_path=full_patch_path
             )
             if len(tf.io.gfile.listdir(kf_csv_path)) == 1:
                 logging.debug("remove slide {} from tmp folder".format(slide_path))
                 tf.io.gfile.remove(slide_path)
 
-                assert len(tf.io.gfile.listdir(dest_path)) == 0, logging.debug("tmp folder after the completion of patch extraction pipeline supposed to be empty, however, it still has {} files there".format(len(tf.io.gfile.listdir(dest_path))))
-    
+                assert len(tf.io.gfile.listdir(dest_path)) == 0, logging.debug(
+                    "tmp folder after the completion of patch extraction pipeline supposed to be empty, however, it still has {} files there".format(
+                        len(tf.io.gfile.listdir(dest_path))
+                    )
+                )
+
     tf.io.gfile.rmtree(dest_path)
-    logging.info("removed tmp folder {}, the existence of the tmp folder is {}".format(dest_path, tf.io.gfile.exists(dest_path)))
+    logging.info(
+        "removed tmp folder {}, the existence of the tmp folder is {}".format(
+            dest_path, tf.io.gfile.exists(dest_path)
+        )
+    )
 
     logging.info("patch extraction task has been completed")
