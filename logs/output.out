@@ -1,0 +1,7 @@
+2022-11-27 22:50:19,253: root: INFO: 
+Loading data_module_config.yaml. 
+The customized configuration parameters are in the following 
+  {'task': 'kf_cv_split', 'stdout_path': '../logs/output.out', 'conda_env': '/home/quincy/env/tf2', 'data_path': '/home/quincy/data/BACH', 'neg_labels': '["Normal", "Benign"]', 'pos_labels': '["InSitu", "Invasive"]', 'kf_csv_path': '/home/quincy/data/BACH/kf_cv_split', 'test_ratio': 0.2, 'n_folds': 5, 'kf_shuffle': True, 'kf_rs': 13}
+2022-11-27 22:50:19,253: root: INFO: reorganize BACH dataset for binary classification
+2022-11-27 22:50:19,253: root: INFO: Starting to Execute 5-Fold Cross Validation Data Split
+2022-11-27 22:50:19,265: root: INFO: Successfully Completed the Execution of 5-Fold Cross Validation Data Split
