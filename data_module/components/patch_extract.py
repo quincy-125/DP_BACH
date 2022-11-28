@@ -23,7 +23,6 @@
 
 import os
 import tensorflow as tf
-import numpy as np
 import pandas as pd
 from PIL import Image
 
@@ -143,15 +142,6 @@ def bach_patch_extractions(data_path, kf_csv_path, patch_size, patch_path):
             slide_extract_patches(
                 slide_path=slide_path, patch_size=patch_size, patch_path=full_patch_path
             )
-            if len(tf.io.gfile.listdir(kf_csv_path)) == 1:
-                logging.debug("remove slide {} from tmp folder".format(slide_path))
-                tf.io.gfile.remove(slide_path)
-
-                assert len(tf.io.gfile.listdir(dest_path)) == 0, logging.debug(
-                    "tmp folder after the completion of patch extraction pipeline supposed to be empty, however, it still has {} files there".format(
-                        len(tf.io.gfile.listdir(dest_path))
-                    )
-                )
 
     tf.io.gfile.rmtree(dest_path)
     logging.info(

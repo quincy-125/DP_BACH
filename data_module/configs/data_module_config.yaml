@@ -36,7 +36,7 @@
   # path to the original BACH Dataset downloaded from the ICIAR 2018 Grand Challenge on BreAst Cancer Histology images Website via https://iciar2018-challenge.grand-challenge.org/ 
   data_path: /home/quincy/data/BACH
   # path to the cvs files contains the k-fold corss validation data split info for training and validation, when argument test_ratio is not 0.0, the test data split info csv file will also be saved in this path
-  kf_csv_path: /home/quincy/data/bach_kf/fold_1
+  kf_csv_path: /home/quincy/data/bach_kf/test
 
   ## kf_cv_split specific configuration parameters
 

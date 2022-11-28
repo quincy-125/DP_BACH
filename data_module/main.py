@@ -22,7 +22,6 @@
 
 
 import os
-import subprocess
 
 from components.cross_val_split import *
 from components.patch_extract import *
