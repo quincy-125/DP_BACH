@@ -1,9 +1,45 @@
+# Copyright 2022 Mayo Clinic. All Rights Reserved.
+#
+# Author: Quincy Gu (M216613)
+# Affliation: Division of Computational Pathology and Artificial Intelligence,
+# Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
+# Email: Gu.Qiangqiang@mayo.edu
+# Version: 1.0.1
+# Created on: 11/28/2022 06:37 pm CST
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+
 import tensorflow as tf
 import numpy as np
 
 
+## Single Bag-Level classifier
 class S_Bag(tf.keras.Model):
+    """_summary_
+
+    Args:
+        tf (_type_): _description_
+    """
+
     def __init__(self, dim_compress_features=512, n_class=2):
+        """_summary_
+
+        Args:
+            dim_compress_features (int, optional): _description_. Defaults to 512.
+            n_class (int, optional): _description_. Defaults to 2.
+        """
         super(S_Bag, self).__init__()
         self.dim_compress_features = dim_compress_features
         self.n_class = n_class
@@ -18,9 +54,23 @@ class S_Bag(tf.keras.Model):
         self.s_bag_model.add(self.s_bag_layer)
 
     def bag_classifier(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         return self.s_bag_model
 
     def h_slide(self, A, h):
+        """_summary_
+
+        Args:
+            A (_type_): _description_
+            h (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         # compute the slide-level representation aggregated per the attention score distribution for the mth class
         SAR = list()
         for i in range(len(A)):
@@ -31,6 +81,16 @@ class S_Bag(tf.keras.Model):
         return slide_agg_rep
 
     def call(self, bag_label, A, h):
+        """_summary_
+
+        Args:
+            bag_label (_type_): _description_
+            A (_type_): _description_
+            h (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         slide_agg_rep = self.h_slide(A, h)
         bag_classifier = self.bag_classifier()
         slide_score_unnorm = bag_classifier(slide_agg_rep)
@@ -43,11 +103,30 @@ class S_Bag(tf.keras.Model):
 
         Y_true = tf.one_hot([bag_label], 2)
 
-        return slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true
+        return {
+            "slide_score_unnorm": slide_score_unnorm,
+            "Y_hat": Y_hat,
+            "Y_prob": Y_prob,
+            "predict_slide_label": predict_slide_label,
+            "Y_true": Y_true,
+        }
 
 
+## Multiple Bag-Level classifiers (#classifiers == #classes)
 class M_Bag(tf.keras.Model):
+    """_summary_
+
+    Args:
+        tf (_type_): _description_
+    """
+
     def __init__(self, dim_compress_features=512, n_class=2):
+        """_summary_
+
+        Args:
+            dim_compress_features (int, optional): _description_. Defaults to 512.
+            n_class (int, optional): _description_. Defaults to 2.
+        """
         super(M_Bag, self).__init__()
         self.dim_compress_features = dim_compress_features
         self.n_class = n_class
@@ -65,9 +144,23 @@ class M_Bag(tf.keras.Model):
             self.m_bag_models.append(self.m_bag_model)
 
     def bag_classifier(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         return self.m_bag_models
 
     def h_slide(self, A, h):
+        """_summary_
+
+        Args:
+            A (_type_): _description_
+            h (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         # compute the slide-level representation aggregated per the attention score distribution for the mth class
         SAR = list()
         for i in range(len(A)):
@@ -89,6 +182,16 @@ class M_Bag(tf.keras.Model):
         return slide_agg_rep
 
     def call(self, bag_label, A, h):
+        """_summary_
+
+        Args:
+            bag_label (_type_): _description_
+            A (_type_): _description_
+            h (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         slide_agg_rep = self.h_slide(A, h)
 
         # return s_[slide,m] (slide-level prediction scores)
@@ -107,4 +210,10 @@ class M_Bag(tf.keras.Model):
 
         Y_true = tf.one_hot([bag_label], 2)
 
-        return slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true
+        return {
+            "slide_score_unnorm": slide_score_unnorm,
+            "Y_hat": Y_hat,
+            "Y_prob": Y_prob,
+            "predict_slide_label": predict_slide_label,
+            "Y_true": Y_true,
+        }

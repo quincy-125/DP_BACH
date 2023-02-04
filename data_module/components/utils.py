@@ -38,7 +38,7 @@ def load_config():
     import yaml
     from yaml.loader import SafeLoader
 
-    with open("./configs/data_module_config.yaml") as f:
+    with open("././configs/data_module_config.yaml") as f:
         config = yaml.load(f, Loader=SafeLoader)
 
     return config

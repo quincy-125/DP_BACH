@@ -14,57 +14,74 @@ def nb_val(
     c_model,
     i_loss_func,
     b_loss_func,
-    n_class,
-    c1,
-    c2,
-    mut_ex,
+    args,
 ):
+    """_summary_
 
-    (
-        att_score,
-        A,
-        h,
-        ins_labels,
-        ins_logits_unnorm,
-        ins_logits,
-        slide_score_unnorm,
-        Y_prob,
-        Y_hat,
-        Y_true,
-        predict_slide_label,
-    ) = c_model.call(img_features, slide_label)
+    Args:
+        img_features (_type_): _description_
+        slide_label (_type_): _description_
+        c_model (_type_): _description_
+        i_loss_func (_type_): _description_
+        b_loss_func (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    c_model_dict = c_model.call(img_features, slide_label)
+
+    (ins_labels, ins_logits, Y_prob, Y_true, predict_slide_label,) = (
+        c_model_dict["ins_labels"],
+        c_model_dict["ins_logits"],
+        c_model_dict["Y_prob"],
+        c_model_dict["Y_true"],
+        c_model_dict["predict_slide_label"],
+    )
 
     ins_loss = list()
     for j in range(len(ins_logits)):
         i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
         ins_loss.append(i_loss)
-    if mut_ex:
-        I_Loss = (tf.math.add_n(ins_loss) / len(ins_loss)) / n_class
+    if args.mut_ex:
+        I_Loss = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
     else:
         I_Loss = tf.math.add_n(ins_loss) / len(ins_loss)
 
     B_Loss = b_loss_func(Y_true, Y_prob)
 
-    T_Loss = c1 * B_Loss + c2 * I_Loss
+    T_Loss = args.c1 * B_Loss + args.c2 * I_Loss
 
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
 def b_val(
-    batch_size,
-    top_k_percent,
-    n_samples,
     img_features,
     slide_label,
     c_model,
     i_loss_func,
     b_loss_func,
-    n_class,
-    c1,
-    c2,
-    mut_ex,
+    args,
 ):
+    """_summary_
 
+    Args:
+        batch_size (_type_): _description_
+        top_k_percent (_type_): _description_
+        n_samples (_type_): _description_
+        img_features (_type_): _description_
+        slide_label (_type_): _description_
+        c_model (_type_): _description_
+        i_loss_func (_type_): _description_
+        b_loss_func (_type_): _description_
+        n_class (_type_): _description_
+        c1 (_type_): _description_
+        c2 (_type_): _description_
+        mut_ex (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     step_size = 0
 
     Ins_Loss = list()
@@ -78,20 +95,16 @@ def b_val(
 
     for n_step in range(0, (n_samples // batch_size + 1)):
         if step_size < (n_samples - batch_size):
-            (
-                att_score,
-                A,
-                h,
-                ins_labels,
-                ins_logits_unnorm,
-                ins_logits,
-                slide_score_unnorm,
-                Y_prob,
-                Y_hat,
-                Y_true,
-                predict_label,
-            ) = c_model.call(
-                img_features[step_size : (step_size + batch_size)], slide_label
+            c_model_dict = c_model.call(
+                    img_features[step_size : (step_size + batch_size)], slide_label
+                )
+
+            (ins_labels, ins_logits, Y_prob, Y_true, predict_label,) = (
+                c_model_dict["ins_labels"],
+                c_model_dict["ins_logits"],
+                c_model_dict["Y_prob"],
+                c_model_dict["Y_true"],
+                c_model_dict["predict_slide_label"],
             )
 
             ins_loss = list()
@@ -107,19 +120,15 @@ def b_val(
             Loss_T = c1 * Loss_B + c2 * Loss_I
 
         else:
-            (
-                att_score,
-                A,
-                h,
-                ins_labels,
-                ins_logits_unnorm,
-                ins_logits,
-                slide_score_unnorm,
-                Y_prob,
-                Y_hat,
-                Y_true,
-                predict_label,
-            ) = c_model.call(img_features[(step_size - n_ins) :], slide_label)
+            c_model_dict = c_model.call(img_features[(step_size - n_ins) :], slide_label)
+
+            (ins_labels, ins_logits, Y_prob, Y_true, predict_label,) = (
+                c_model_dict["ins_labels"],
+                c_model_dict["ins_logits"],
+                c_model_dict["Y_prob"],
+                c_model_dict["Y_true"],
+                c_model_dict["predict_slide_label"],
+            )
 
             ins_loss = list()
             for j in range(len(ins_logits)):
@@ -165,7 +174,25 @@ def val_step(
     batch_size,
     batch_op,
 ):
+    """_summary_
 
+    Args:
+        c_model (_type_): _description_
+        val_path (_type_): _description_
+        imf_norm_op (_type_): _description_
+        i_loss_name (_type_): _description_
+        b_loss_name (_type_): _description_
+        mut_ex (_type_): _description_
+        n_class (_type_): _description_
+        c1 (_type_): _description_
+        c2 (_type_): _description_
+        top_k_percent (_type_): _description_
+        batch_size (_type_): _description_
+        batch_op (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     i_loss_func, b_loss_func = load_loss_func(
         i_loss_func_name=i_loss_name, b_loss_func_name=b_loss_name
     )
