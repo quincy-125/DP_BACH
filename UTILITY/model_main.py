@@ -238,6 +238,8 @@ def clam(
 
     if args.is_training:
         logging_config_path = os.path.join(args.checkpoints_dir, "config/train.json")
+        with open(logging_config_path, "w") as f:
+            json.dump(dict(args), f)
 
         c_model = load_model(
             args=args,
@@ -255,14 +257,13 @@ def clam(
             args=args,
         )
     else:
-        logging_config_path = os.path.join(cfg.checkpoints_dir, "config/test.json")
+        logging_config_path = os.path.join(args.checkpoints_dir, "config/test.json")
+        with open(logging_config_path, "w") as f:
+            json.dump(dict(args), f)
 
         clam_test(
             args=args,
         )
-
-    with open(logging_config_path, "w") as f:
-            json.dump(dict(args), f)
 
 
 def clam_main(args,):
