@@ -69,12 +69,16 @@ def test_step(
     slide_predict_label = list()
     sample_names = list()
 
-    test_sample_list = os.listdir(args.test_data_dir)
-    test_sample_list = random.sample(test_sample_list, len(test_sample_list))
+    test_img_uuids = list(pd.read_csv(args.test_data_dir, index_col=False).UUID)
+    all_img_uuids = list(os.listdir(args.all_tfrecords_path))
+
+    test_sample_list = [
+        os.path.join(args.all_tfrecords_path, img_uuid) for img_uuid in all_img_uuids if img_uuid.split("_")[-1].split(".tfrecords")[0] in test_img_uuids
+    ]
 
     for i in test_sample_list:
         print(">", end="")
-        single_test_data = args.test_data_dir + i
+        single_test_data = i
         img_features, slide_label = get_data_from_tf(
             single_test_data,
             args=args,

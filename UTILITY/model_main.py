@@ -22,6 +22,8 @@
 
 
 import tensorflow as tf
+import os
+import json
 import time
 
 from MODEL.model_clam import S_CLAM, M_CLAM
@@ -41,8 +43,13 @@ def train_val(
         c_model (_type_): _description_
         args (_type_): _description_
     """
-    train_summary_writer = tf.summary.create_file_writer(args.train_log_dir)
-    val_summary_writer = tf.summary.create_file_writer(args.val_log_dir)
+    train_summary_path = os.path.join(args.checkpoints_dir, "summary/train")
+    os.makedirs(train_summary_path, exist_ok=True)
+    train_summary_writer = tf.summary.create_file_writer(train_summary_path)
+
+    val_summary_path = os.path.join(args.checkpoints_dir, "summary/val")
+    os.makedirs(val_summary_path, exist_ok=True)
+    val_summary_writer = tf.summary.create_file_writer(val_summary_path)
 
     for epoch in range(args.epochs):
         # Training Step
@@ -192,7 +199,6 @@ def load_model(
         top_k_percent=args.top_k_percent,
         n_class=args.n_class,
         mut_ex=args.mut_ex,
-        dropout=args.dropout,
         drop_rate=args.dropout_rate,
         mil_ins=args.mil_ins,
         att_only=args.att_only,
@@ -204,7 +210,6 @@ def load_model(
         top_k_percent=args.top_k_percent,
         n_class=args.n_class,
         mut_ex=args.mut_ex,
-        dropout=args.dropout,
         drop_rate=args.dropout_rate,
         mil_ins=args.mil_ins,
         att_only=args.att_only,
@@ -226,6 +231,8 @@ def clam(
     Args:
         args (_type_): _description_
     """
+    os.makedirs(args.checkpoints_dir, exist_ok=True)
+
     if args.is_training:
         c_model = load_model(
             args=args,

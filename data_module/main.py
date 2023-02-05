@@ -59,7 +59,7 @@ def data_module_run(cfg):
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="data_config")
-def run_main(cfg : DictConfig) -> None:
+def run_main(cfg: DictConfig) -> None:
     """_summary_
 
     Args:
@@ -71,7 +71,7 @@ def run_main(cfg : DictConfig) -> None:
     for key, value in cfg.items():
         if value == "None":
             cfg[key] = eval(value)
-    
+
     configure_logging(cfg)
     data_module_run(cfg)
 

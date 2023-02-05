@@ -22,6 +22,7 @@
 
 
 import tensorflow as tf
+import pandas as pd
 import sklearn
 from sklearn import metrics
 import os
@@ -226,12 +227,16 @@ def val_step(
     slide_true_label = list()
     slide_predict_label = list()
 
-    val_sample_list = os.listdir(args.val_data_dir)
-    val_sample_list = random.sample(val_sample_list, len(val_sample_list))
+    val_img_uuids = list(pd.read_csv(args.val_data_dir, index_col=False).UUID)
+    all_img_uuids = list(os.listdir(args.all_tfrecords_path))
+
+    val_sample_list = [
+        os.path.join(args.all_tfrecords_path, img_uuid) for img_uuid in all_img_uuids if img_uuid.split("_")[-1].split(".tfrecords")[0] in val_img_uuids
+    ]
 
     for i in val_sample_list:
         print("=", end="")
-        single_val_data = args.val_data_dir + i
+        single_val_data = i
         img_features, slide_label = get_data_from_tf(
             tf_path=single_val_data, imf_norm_op=args.imf_norm_op
         )

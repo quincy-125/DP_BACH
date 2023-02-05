@@ -21,11 +21,38 @@
 # ==============================================================================
 
 
-import sys
 import tensorflow as tf
+import os
+import json
 
-from cli import main
+import hydra
+from omegaconf import DictConfig, OmegaConf
+from UTILITY.model_main import clam_main
 
+
+@hydra.main(version_base=None, config_path="configs", config_name="train_config")
+def main(cfg : DictConfig) -> None:
+    """_summary_
+
+    Args:
+        cfg (DictConfig): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    for key, value in cfg.items():
+        if value == "None":
+            cfg[key] = eval(value)
+    
+    if cfg.is_training:
+        logging_config_path = os.path.join(cfg.checkpoints_dir, "config/train.json")
+    else:
+        logging_config_path = os.path.join(cfg.checkpoints_dir, "config/test.json")
+    
+    with open(logging_config_path, "w") as f:
+            json.dump(dict(cfg), f)
+
+    clam_main(cfg)
 
 if __name__ == "__main__":
     print(tf.__version__)
@@ -34,4 +61,4 @@ if __name__ == "__main__":
     )
     print(tf.config.experimental.list_physical_devices("GPU"))
 
-    sys.exit(main())
+    main()

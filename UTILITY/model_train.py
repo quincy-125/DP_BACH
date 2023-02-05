@@ -22,6 +22,7 @@
 
 
 import tensorflow as tf
+import pandas as pd
 import sklearn
 from sklearn import metrics
 import os
@@ -282,11 +283,17 @@ def train_step(
     slide_true_label = list()
     slide_predict_label = list()
 
-    train_sample_list = os.listdir(args.train_data_dir)
+    train_img_uuids = list(pd.read_csv(args.train_data_dir, index_col=False).UUID)
+    all_img_uuids = list(os.listdir(args.all_tfrecords_path))
+
+    train_sample_list = [
+        os.path.join(args.all_tfrecords_path, img_uuid) for img_uuid in all_img_uuids if img_uuid.split("_")[-1].split(".tfrecords")[0] in train_img_uuids
+    ]
+
     train_sample_list = random.sample(train_sample_list, len(train_sample_list))
     for i in train_sample_list:
         print("=", end="")
-        single_train_data = args.train_data_dir + i
+        single_train_data = i
         img_features, slide_label = get_data_from_tf(
             tf_path=single_train_data,
             args=args,

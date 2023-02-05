@@ -27,7 +27,6 @@ import shutil
 
 import numpy as np
 import tensorflow as tf
-# import tensorflow_addons as tfa
 
 import sys
 import logging
@@ -147,18 +146,15 @@ def tf_shut_up(no_warn_op=False):
         )
 
 
-def optimizer_func_options(weight_decay_op_name):
+def optimizer_func_options(args,):
     """_summary_
 
     Args:
-        weight_decay_op_name (_type_): _description_
+        args (_type_): _description_
 
     Returns:
         _type_: _description_
     """
-    str_bool_dic = str_to_bool()
-    weight_decay_op = str_bool_dic[weight_decay_op_name]
-
     wd_keys = ["AdamW", "SGDW", "LAMB", "NovoGrad", "RectifiedAdam"]
     nwd_keys = [
         "ConditionalGradient",
@@ -195,7 +191,7 @@ def optimizer_func_options(weight_decay_op_name):
         "SGD": tf.keras.optimizers.SGD,
     }
 
-    if weight_decay_op:
+    if args.weight_decay_op:
         [optimizer_func_dic.pop(key) for key in nwd_keys]
     else:
         [optimizer_func_dic.pop(key) for key in wd_keys]
@@ -238,21 +234,15 @@ def load_optimizers(
     Returns:
         _type_: _description_
     """
-    str_bool_dic = str_to_bool()
-
-    i_wd_op = str_bool_dic[args.i_wd_op_name]
-    b_wd_op = str_bool_dic[args.b_wd_op_name]
-    a_wd_op = str_bool_dic[args.a_wd_op_name]
-
-    i_tf_func_dic = optimizer_func_options(weight_decay_op_name=args.i_wd_op_name)
-    b_tf_func_dic = optimizer_func_options(weight_decay_op_name=args.b_wd_op_name)
-    c_tf_func_dic = optimizer_func_options(weight_decay_op_name=args.a_wd_op_name)
+    i_tf_func_dic = optimizer_func_options(args=args,)
+    b_tf_func_dic = optimizer_func_options(args=args,)
+    c_tf_func_dic = optimizer_func_options(args=args,)
 
     i_optimizer_func = i_tf_func_dic[args.i_optimizer_name]
     b_optimizer_func = b_tf_func_dic[args.b_optimizer_name]
     c_optimizer_func = c_tf_func_dic[args.a_optimizer_name]
 
-    if i_wd_op:
+    if args.i_wd_op:
         if args.i_optimizer_name == "LAMB":
             i_optimizer = i_optimizer_func(
                 learning_rate=args.i_learn_rate, weight_decay_rate=args.i_l2_decay
@@ -264,7 +254,7 @@ def load_optimizers(
     else:
         i_optimizer = i_optimizer_func(learning_rate=args.i_learn_rate)
 
-    if b_wd_op:
+    if args.b_wd_op:
         if args.b_optimizer_name == "LAMB":
             b_optimizer = b_optimizer_func(
                 learning_rate=args.b_learn_rate, weight_decay_rate=args.b_l2_decay
@@ -276,7 +266,7 @@ def load_optimizers(
     else:
         b_optimizer = b_optimizer_func(learning_rate=args.b_learn_rate)
 
-    if a_wd_op:
+    if args.a_wd_op:
         if args.a_optimizer_name == "LAMB":
             c_optimizer = c_optimizer_func(
                 learning_rate=args.a_learn_rate, weight_decay_rate=args.a_l2_decay
@@ -334,14 +324,11 @@ def dataset_shuffle(dataset, path, percent):
     test = path + "/test"
 
     # create training, validation, and testing directory only if it is not existed
-    if not os.path.exists(train):
-        os.mkdir(os.path.join(path, "train"))
+    os.makedirs(os.path.join(path, "train"), exist_ok=True)
 
-    if not os.path.exists(valid):
-        os.mkdir(os.path.join(path, "valid"))
+    os.makedirs(os.path.join(path, "valid"), exist_ok=True)
 
-    if not os.path.exists(test):
-        os.mkdir(os.path.join(path, "test"))
+    os.makedirs(os.path.join(path, "test"), exist_ok=True)
 
     total_num_data = len(os.listdir(dataset))
 
@@ -894,6 +881,9 @@ def model_save(
         c_model (_type_): _description_
         args (_type_): _description_
     """
+    model_checkpoint_path = os.path.join(args.checkpoints_dir, "models")
+    os.makedirs(model_checkpoint_path, exist_ok=True)
+
     clam_model_names = ["_Att", "_Ins", "_Bag"]
 
     if args.m_clam_op:
@@ -902,7 +892,7 @@ def model_save(
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
-                        args.c_model_dir,
+                        model_checkpoint_path,
                         "G" + clam_model_names[0],
                         "Model_" + str(m + 1),
                     )
@@ -912,7 +902,7 @@ def model_save(
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
-                        args.c_model_dir,
+                        model_checkpoint_path,
                         "NG" + clam_model_names[0],
                         "Model_" + str(m + 1),
                     )
@@ -924,12 +914,12 @@ def model_save(
 
             ins_nets[n].save(
                 os.path.join(
-                    args.c_model_dir, "M" + clam_model_names[1], "Class_" + str(n)
+                    model_checkpoint_path, "M" + clam_model_names[1], "Class_" + str(n)
                 )
             )
             bag_nets[n].save(
                 os.path.join(
-                    args.c_model_dir, "M" + clam_model_names[2], "Class_" + str(n)
+                    model_checkpoint_path,"M" + clam_model_names[2], "Class_" + str(n)
                 )
             )
     else:
@@ -938,7 +928,7 @@ def model_save(
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
-                        args.c_model_dir,
+                        model_checkpoint_path,
                         "G" + clam_model_names[0],
                         "Model_" + str(m + 1),
                     )
@@ -948,7 +938,7 @@ def model_save(
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
-                        args.c_model_dir,
+                        model_checkpoint_path,
                         "NG" + clam_model_names[0],
                         "Model_" + str(m + 1),
                     )
@@ -958,12 +948,12 @@ def model_save(
             ins_nets = c_model.clam_model()[1]
             ins_nets[n].save(
                 os.path.join(
-                    args.c_model_dir, "M" + clam_model_names[1], "Class_" + str(n)
+                    model_checkpoint_path, "M" + clam_model_names[1], "Class_" + str(n)
                 )
             )
 
         c_model.clam_model()[2].save(
-            os.path.join(args.c_model_dir, "S" + clam_model_names[2])
+            os.path.join(model_checkpoint_path, "S" + clam_model_names[2])
         )
 
 
@@ -978,6 +968,9 @@ def restore_model(
     Returns:
         _type_: _description_
     """
+    model_checkpoint_path = os.path.join(args.checkpoints_dir, "models")
+    os.makedirs(model_checkpoint_path, exist_ok=True)
+
     clam_model_names = ["_Att", "_Ins", "_Bag"]
 
     trained_att_net = list()
@@ -986,22 +979,22 @@ def restore_model(
 
     if args.m_clam_op:
         if args.att_gate:
-            att_nets_dir = os.path.join(args.c_model_dir, "G" + clam_model_names[0])
+            att_nets_dir = os.path.join(model_checkpoint_path, "G" + clam_model_names[0])
             for k in range(len(os.listdir(att_nets_dir))):
                 att_net = tf.keras.models.load_model(
                     os.path.join(att_nets_dir, "Model_" + str(k + 1))
                 )
                 trained_att_net.append(att_net)
         else:
-            att_nets_dir = os.path.join(args.c_model_dir, "NG" + clam_model_names[0])
+            att_nets_dir = os.path.join(model_checkpoint_path, "NG" + clam_model_names[0])
             for k in range(len(os.listdir(att_nets_dir))):
                 att_net = tf.keras.models.load_model(
                     os.path.join(att_nets_dir, "Model_" + str(k + 1))
                 )
                 trained_att_net.append(att_net)
 
-        ins_nets_dir = os.path.join(args.c_model_dir, "M" + clam_model_names[1])
-        bag_nets_dir = os.path.join(args.c_model_dir, "M" + clam_model_names[2])
+        ins_nets_dir = os.path.join(model_checkpoint_path, "M" + clam_model_names[1])
+        bag_nets_dir = os.path.join(model_checkpoint_path, "M" + clam_model_names[2])
 
         for m in range(args.n_class):
             ins_net = tf.keras.models.load_model(
@@ -1021,21 +1014,21 @@ def restore_model(
         ]
     else:
         if args.att_gate:
-            att_nets_dir = os.path.join(args.c_model_dir, "G" + clam_model_names[0])
+            att_nets_dir = os.path.join(model_checkpoint_path, "G" + clam_model_names[0])
             for k in range(len(os.listdir(att_nets_dir))):
                 att_net = tf.keras.models.load_model(
                     os.path.join(att_nets_dir, "Model_" + str(k + 1))
                 )
                 trained_att_net.append(att_net)
         else:
-            att_nets_dir = os.path.join(args.c_model_dir, "NG" + clam_model_names[0])
+            att_nets_dir = os.path.join(model_checkpoint_path, "NG" + clam_model_names[0])
             for k in range(len(os.listdir(att_nets_dir))):
                 att_net = tf.keras.models.load_model(
                     os.path.join(att_nets_dir, "Model_" + str(k + 1))
                 )
                 trained_att_net.append(att_net)
 
-        ins_nets_dir = os.path.join(args.c_model_dir, "M" + clam_model_names[1])
+        ins_nets_dir = os.path.join(model_checkpoint_path, "M" + clam_model_names[1])
 
         for m in range(args.n_class):
             ins_net = tf.keras.models.load_model(
@@ -1043,7 +1036,7 @@ def restore_model(
             )
             trained_ins_classifier.append(ins_net)
 
-        bag_nets_dir = os.path.join(args.c_model_dir, "S" + clam_model_names[2])
+        bag_nets_dir = os.path.join(model_checkpoint_path, "S" + clam_model_names[2])
         trained_bag_classifier.append(tf.keras.models.load_model(bag_nets_dir))
 
         c_trained_model = [
