@@ -1,13 +1,12 @@
 tensorflow==2.3.4
 tensorflow-addons
-pandas==1.3.5
-sklearn
+pandas
+scikit-learn
 pillow
 openslide-python
-numpy==1.19.0
 scikit-image
 Shapely
-matplotlib==3.6.2
+matplotlib
 descartes
 statistics
 import-ipynb

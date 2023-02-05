@@ -76,7 +76,8 @@ def test_step(
         print(">", end="")
         single_test_data = args.test_data_dir + i
         img_features, slide_label = get_data_from_tf(
-            single_test_data, args=args,
+            single_test_data,
+            args=args,
         )
 
         predict_slide_label = m_test_per_sample(
@@ -95,7 +96,9 @@ def test_step(
             columns=["Sample Names", "Slide True Label", "Slide Predict Label"],
         )
         test_results.to_csv(
-            os.path.join(args.test_result_dir, args.test_result_file_name), sep="\t", index=False
+            os.path.join(args.test_result_dir, args.test_result_file_name),
+            sep="\t",
+            index=False,
         )
 
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(

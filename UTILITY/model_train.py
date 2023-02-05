@@ -67,7 +67,13 @@ def nb_optimize(
     with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
         c_model_dict = c_model.call(img_features, slide_label)
 
-        (ins_labels, ins_logits, Y_prob, Y_true, predict_slide_label,) = (
+        (
+            ins_labels,
+            ins_logits,
+            Y_prob,
+            Y_true,
+            predict_slide_label,
+        ) = (
             c_model_dict["ins_labels"],
             c_model_dict["ins_logits"],
             c_model_dict["Y_prob"],
@@ -146,14 +152,20 @@ def b_optimize(
     i_net = c_model.networks()[1]
     b_net = c_model.networks()[2]
 
-    for n_step in range(0, (n_samples // args.batch_size + 1)):
-        if step_size < (n_samples - args.batch_size):
+    for n_step in range(0, (len(img_features) // args.batch_size + 1)):
+        if step_size < (len(img_features) - args.batch_size):
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
                 c_model_dict = c_model.call(
                     img_features[step_size : (step_size + args.batch_size)], slide_label
                 )
 
-                (ins_labels, ins_logits, Y_prob, Y_true, predict_label,) = (
+                (
+                    ins_labels,
+                    ins_logits,
+                    Y_prob,
+                    Y_true,
+                    predict_label,
+                ) = (
                     c_model_dict["ins_labels"],
                     c_model_dict["ins_logits"],
                     c_model_dict["Y_prob"],
@@ -185,9 +197,17 @@ def b_optimize(
 
         else:
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
-                c_model_dict = c_model.call(img_features[(step_size - n_ins) :], slide_label)
+                c_model_dict = c_model.call(
+                    img_features[(step_size - n_ins) :], slide_label
+                )
 
-                (ins_labels, ins_logits, Y_prob, Y_true, predict_label,) = (
+                (
+                    ins_labels,
+                    ins_logits,
+                    Y_prob,
+                    Y_true,
+                    predict_label,
+                ) = (
                     c_model_dict["ins_labels"],
                     c_model_dict["ins_logits"],
                     c_model_dict["Y_prob"],
@@ -268,7 +288,8 @@ def train_step(
         print("=", end="")
         single_train_data = args.train_data_dir + i
         img_features, slide_label = get_data_from_tf(
-            tf_path=single_train_data, args=args,
+            tf_path=single_train_data,
+            args=args,
         )
         # shuffle the order of img features list in order to reduce the side effects of randomly drop potential
         # number of patches' feature vectors during training when enable batch training option

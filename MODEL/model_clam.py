@@ -156,7 +156,13 @@ class S_CLAM(tf.keras.Model):
 
         bag_net_dict = self.bag_net.call(slide_label, A, h)
 
-        (slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true,) = (
+        (
+            slide_score_unnorm,
+            Y_hat,
+            Y_prob,
+            predict_slide_label,
+            Y_true,
+        ) = (
             bag_net_dict["slide_score_unnorm"],
             bag_net_dict["Y_hat"],
             bag_net_dict["Y_prob"],
@@ -307,7 +313,13 @@ class M_CLAM(tf.keras.Model):
 
         bag_net_dict = self.bag_net.call(slide_label, A, h)
 
-        (slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true,) = (
+        (
+            slide_score_unnorm,
+            Y_hat,
+            Y_prob,
+            predict_slide_label,
+            Y_true,
+        ) = (
             bag_net_dict["slide_score_unnorm"],
             bag_net_dict["Y_hat"],
             bag_net_dict["Y_prob"],

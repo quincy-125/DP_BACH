@@ -1,56 +1,40 @@
-import yaml
-import json
+# Copyright 2022 Mayo Clinic. All Rights Reserved.
+#
+# Author: Quincy Gu (M216613)
+# Affliation: Division of Computational Pathology and Artificial Intelligence, 
+# Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
+# Email: Gu.Qiangqiang@mayo.edu
+# Version: 1.0.1
+# Created on: 11/27/2022 6:35 pm CST
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
 
+
+import hydra
+from omegaconf import DictConfig, OmegaConf
 from yaml.loader import SafeLoader
 from UTILITY.model_main import clam_main
 
 
-def load_args_config():
-    with open("configs/train_config.yaml")
+@hydra.main(version_base=None, config_path="configs", config_name="train_config")
+def load_config(cfg : DictConfig) -> None:
+    print(OmegaConf.to_yaml(cfg))
+    
+    return cfg
 
-def main(args):
+def main():
+    args = load_config()
     clam_main(
-        train_log=args.train_log_dir,
-        val_log=args.val_log_dir,
-        train_path=args.train_data_dir,
-        val_path=args.val_data_dir,
-        test_path=args.test_data_dir,
-        result_path=args.test_result_dir,
-        result_file_name=args.test_result_file_name,
-        imf_norm_op_name=args.imf_norm_op_name,
-        dim_compress_features=args.dim_compress_features,
-        net_size=args.net_size,
-        dropout_name=args.dropout_name,
-        dropout_rate=args.dropout_rate,
-        i_optimizer_name=args.i_optimizer_name,
-        b_optimizer_name=args.b_optimizer_name,
-        a_optimizer_name=args.a_optimizer_name,
-        i_loss_name=args.i_loss_name,
-        b_loss_name=args.b_loss_name,
-        mut_ex_name=args.mut_ex_name,
-        n_class=args.n_class,
-        c1=args.c_1,
-        c2=args.c_2,
-        i_learn_rate=args.i_learn_rate,
-        b_learn_rate=args.b_learn_rate,
-        a_learn_rate=args.a_learn_rate,
-        i_l2_decay=args.i_weight_decay,
-        b_l2_decay=args.b_weight_decay,
-        a_l2_decay=args.a_weight_decay,
-        top_k_percent=args.top_k_percent,
-        batch_size=args.batch_size,
-        batch_op_name=args.batch_op_name,
-        c_model_dir=args.c_model_dir,
-        att_only_name=args.att_only_name,
-        mil_ins_name=args.mil_ins_name,
-        att_gate_name=args.att_gate_name,
-        epochs=args.epochs,
-        n_test_steps=args.test_steps,
-        no_warn_op_name=args.no_warn_op_name,
-        i_wd_op_name=args.i_wd_op_name,
-        b_wd_op_name=args.b_wd_op_name,
-        a_wd_op_name=args.a_wd_op_name,
-        m_clam_op_name=args.m_clam_op_name,
-        is_training_name=args.is_training_name,
-        m_gpu_op_name=args.multi_gpu_name,
+        args=args,
     )

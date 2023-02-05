@@ -1,3 +1,26 @@
+# Copyright 2022 Mayo Clinic. All Rights Reserved.
+#
+# Author: Quincy Gu (M216613)
+# Affliation: Division of Computational Pathology and Artificial Intelligence,
+# Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
+# Email: Gu.Qiangqiang@mayo.edu
+# Version: 1.0.1
+# Created on: 11/28/2022 06:37 pm CST
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+
 import tensorflow as tf
 import sklearn
 from sklearn import metrics
@@ -31,7 +54,13 @@ def nb_val(
     """
     c_model_dict = c_model.call(img_features, slide_label)
 
-    (ins_labels, ins_logits, Y_prob, Y_true, predict_slide_label,) = (
+    (
+        ins_labels,
+        ins_logits,
+        Y_prob,
+        Y_true,
+        predict_slide_label,
+    ) = (
         c_model_dict["ins_labels"],
         c_model_dict["ins_logits"],
         c_model_dict["Y_prob"],
@@ -68,7 +97,6 @@ def b_val(
     Args:
         batch_size (_type_): _description_
         top_k_percent (_type_): _description_
-        n_samples (_type_): _description_
         img_features (_type_): _description_
         slide_label (_type_): _description_
         c_model (_type_): _description_
@@ -90,16 +118,22 @@ def b_val(
 
     label_predict = list()
 
-    n_ins = top_k_percent * batch_size
+    n_ins = args.top_k_percent * args.batch_size
     n_ins = int(n_ins)
 
-    for n_step in range(0, (n_samples // batch_size + 1)):
-        if step_size < (n_samples - batch_size):
+    for n_step in range(0, (len(img_features) // args.batch_size + 1)):
+        if step_size < (len(img_features) - args.batch_size):
             c_model_dict = c_model.call(
-                    img_features[step_size : (step_size + batch_size)], slide_label
-                )
+                img_features[step_size : (step_size + args.batch_size)], slide_label
+            )
 
-            (ins_labels, ins_logits, Y_prob, Y_true, predict_label,) = (
+            (
+                ins_labels,
+                ins_logits,
+                Y_prob,
+                Y_true,
+                predict_label,
+            ) = (
                 c_model_dict["ins_labels"],
                 c_model_dict["ins_logits"],
                 c_model_dict["Y_prob"],
@@ -111,18 +145,26 @@ def b_val(
             for j in range(len(ins_logits)):
                 i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
                 ins_loss.append(i_loss)
-            if mut_ex:
-                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / n_class
+            if args.mut_ex:
+                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
             else:
                 Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
 
             Loss_B = b_loss_func(Y_true, Y_prob)
-            Loss_T = c1 * Loss_B + c2 * Loss_I
+            Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
 
         else:
-            c_model_dict = c_model.call(img_features[(step_size - n_ins) :], slide_label)
+            c_model_dict = c_model.call(
+                img_features[(step_size - n_ins) :], slide_label
+            )
 
-            (ins_labels, ins_logits, Y_prob, Y_true, predict_label,) = (
+            (
+                ins_labels,
+                ins_logits,
+                Y_prob,
+                Y_true,
+                predict_label,
+            ) = (
                 c_model_dict["ins_labels"],
                 c_model_dict["ins_logits"],
                 c_model_dict["Y_prob"],
@@ -134,14 +176,14 @@ def b_val(
             for j in range(len(ins_logits)):
                 i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
                 ins_loss.append(i_loss)
-            if mut_ex:
-                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / n_class
+            if args.mut_ex:
+                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
             else:
                 Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
 
             Loss_B = b_loss_func(Y_true, Y_prob)
 
-            Loss_T = c1 * Loss_B + c2 * Loss_I
+            Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
 
         Ins_Loss.append(float(Loss_I))
         Bag_Loss.append(float(Loss_B))
@@ -149,7 +191,7 @@ def b_val(
 
         label_predict.append(predict_label)
 
-        step_size += batch_size
+        step_size += args.batch_size
 
     I_Loss = statistics.mean(Ins_Loss)
     B_Loss = statistics.mean(Bag_Loss)
@@ -162,39 +204,19 @@ def b_val(
 
 def val_step(
     c_model,
-    val_path,
-    imf_norm_op,
-    i_loss_name,
-    b_loss_name,
-    mut_ex,
-    n_class,
-    c1,
-    c2,
-    top_k_percent,
-    batch_size,
-    batch_op,
+    args,
 ):
     """_summary_
 
     Args:
         c_model (_type_): _description_
-        val_path (_type_): _description_
-        imf_norm_op (_type_): _description_
-        i_loss_name (_type_): _description_
-        b_loss_name (_type_): _description_
-        mut_ex (_type_): _description_
-        n_class (_type_): _description_
-        c1 (_type_): _description_
-        c2 (_type_): _description_
-        top_k_percent (_type_): _description_
-        batch_size (_type_): _description_
-        batch_op (_type_): _description_
+        args (_type_): _description_
 
     Returns:
         _type_: _description_
     """
     i_loss_func, b_loss_func = load_loss_func(
-        i_loss_func_name=i_loss_name, b_loss_func_name=b_loss_name
+        i_loss_func_name=args.i_loss_name, b_loss_func_name=args.b_loss_name
     )
 
     loss_t = list()
@@ -204,34 +226,28 @@ def val_step(
     slide_true_label = list()
     slide_predict_label = list()
 
-    val_sample_list = os.listdir(val_path)
+    val_sample_list = os.listdir(args.val_data_dir)
     val_sample_list = random.sample(val_sample_list, len(val_sample_list))
 
     for i in val_sample_list:
         print("=", end="")
-        single_val_data = val_path + i
+        single_val_data = args.val_data_dir + i
         img_features, slide_label = get_data_from_tf(
-            tf_path=single_val_data, imf_norm_op=imf_norm_op
+            tf_path=single_val_data, imf_norm_op=args.imf_norm_op
         )
         img_features = random.sample(
             img_features, len(img_features)
         )  # follow the training loop, see details there
 
-        if batch_op:
-            if batch_size < len(img_features):
+        if args.batch_op:
+            if args.batch_size < len(img_features):
                 I_Loss, B_Loss, T_Loss, predict_slide_label = b_val(
-                    batch_size=batch_size,
-                    top_k_percent=top_k_percent,
-                    n_samples=len(img_features),
                     img_features=img_features,
                     slide_label=slide_label,
                     c_model=c_model,
                     i_loss_func=i_loss_func,
                     b_loss_func=b_loss_func,
-                    n_class=n_class,
-                    c1=c1,
-                    c2=c2,
-                    mut_ex=mut_ex,
+                    args=args,
                 )
             else:
                 I_Loss, B_Loss, T_Loss, predict_slide_label = nb_val(
@@ -240,10 +256,8 @@ def val_step(
                     c_model=c_model,
                     i_loss_func=i_loss_func,
                     b_loss_func=b_loss_func,
-                    n_class=n_class,
-                    c1=c1,
-                    c2=c2,
-                    mut_ex=mut_ex,
+                    n_class=args.n_class,
+                    args=args,
                 )
         else:
             I_Loss, B_Loss, T_Loss, predict_slide_label = nb_val(
@@ -252,10 +266,8 @@ def val_step(
                 c_model=c_model,
                 i_loss_func=i_loss_func,
                 b_loss_func=b_loss_func,
-                n_class=n_class,
-                c1=c1,
-                c2=c2,
-                mut_ex=mut_ex,
+                n_class=args.n_class,
+                args=args,
             )
 
         loss_t.append(float(T_Loss))

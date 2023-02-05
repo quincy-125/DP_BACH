@@ -1,10 +1,33 @@
+# Copyright 2022 Mayo Clinic. All Rights Reserved.
+#
+# Author: Quincy Gu (M216613)
+# Affliation: Division of Computational Pathology and Artificial Intelligence, 
+# Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
+# Email: Gu.Qiangqiang@mayo.edu
+# Version: 1.0.1
+# Created on: 11/27/2022 6:35 pm CST
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+
 import os
 import random
 import shutil
 
 import numpy as np
 import tensorflow as tf
-import tensorflow_addons as tfa
+# import tensorflow_addons as tfa
 
 import sys
 import logging
@@ -13,7 +36,10 @@ sys_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(sys_dir))
 
 
-def configure_logging(script_name, args,):
+def configure_logging(
+    script_name,
+    args,
+):
     """_summary_
 
     Args:
@@ -45,7 +71,10 @@ def configure_logging(script_name, args,):
     return logging.getLogger(script_name)
 
 
-def get_data_from_tf(tf_path, args,):
+def get_data_from_tf(
+    tf_path,
+    args,
+):
     """_summary_
 
     Args:
@@ -147,15 +176,15 @@ def optimizer_func_options(weight_decay_op_name):
     ]
 
     optimizer_func_dic = {
-        "AdamW": tfa.optimizers.AdamW,
-        "SGDW": tfa.optimizers.SGDW,
-        "LAMB": tfa.optimizers.LAMB,
-        "NovoGrad": tfa.optimizers.NovoGrad,
-        "RectifiedAdam": tfa.optimizers.RectifiedAdam,
-        "ConditionalGradient": tfa.optimizers.ConditionalGradient,
-        "LazyAdam": tfa.optimizers.LazyAdam,
-        "ProximalAdagrad": tfa.optimizers.ProximalAdagrad,
-        "Yogi": tfa.optimizers.Yogi,
+        # "AdamW": tfa.optimizers.AdamW,
+        # "SGDW": tfa.optimizers.SGDW,
+        # "LAMB": tfa.optimizers.LAMB,
+        # "NovoGrad": tfa.optimizers.NovoGrad,
+        # "RectifiedAdam": tfa.optimizers.RectifiedAdam,
+        # "ConditionalGradient": tfa.optimizers.ConditionalGradient,
+        # "LazyAdam": tfa.optimizers.LazyAdam,
+        # "ProximalAdagrad": tfa.optimizers.ProximalAdagrad,
+        # "Yogi": tfa.optimizers.Yogi,
         "Adam": tf.keras.optimizers.Adam,
         "Adadelta": tf.keras.optimizers.Adadelta,
         "Adagrad": tf.keras.optimizers.Adagrad,
@@ -190,9 +219,9 @@ def loss_func_options():
         "log_cosh": tf.keras.losses.log_cosh,
         "poisson": tf.keras.losses.poisson,
         "squared_hinge": tf.keras.losses.squared_hinge,
-        "contrastive": tfa.losses.contrastive_loss,
-        "pinball": tfa.losses.pinball_loss,
-        "sigmoid_focal_crossentropy": tfa.losses.sigmoid_focal_crossentropy,
+        # "contrastive": tfa.losses.contrastive_loss,
+        # "pinball": tfa.losses.pinball_loss,
+        # "sigmoid_focal_crossentropy": tfa.losses.sigmoid_focal_crossentropy,
     }
 
     return loss_func_dic
@@ -262,7 +291,9 @@ def load_optimizers(
     return i_optimizer, b_optimizer, c_optimizer
 
 
-def load_loss_func(args,):
+def load_loss_func(
+    args,
+):
     """_summary_
 
     Args:
@@ -429,9 +460,9 @@ def generate_neg_labels(n_neg_sample):
 
 
 def ins_in_call(
-    ins_classifier, 
-    h, 
-    A_I, 
+    ins_classifier,
+    h,
+    A_I,
     args,
 ):
     """_summary_
@@ -488,9 +519,9 @@ def ins_in_call(
 
 
 def ins_out_call(
-    ins_classifier, 
-    h, 
-    A_O, 
+    ins_classifier,
+    h,
+    A_O,
     args,
 ):
     """_summary_
@@ -537,10 +568,10 @@ def ins_out_call(
 
 
 def ins_call(
-    m_ins_classifier, 
-    bag_label, 
-    h, 
-    A, 
+    m_ins_classifier,
+    bag_label,
+    h,
+    A,
     args,
 ):
     """_summary_
@@ -618,10 +649,10 @@ def s_bag_h_slide(A, h):
 
 
 def s_bag_call(
-    bag_classifier, 
-    bag_label, 
-    A, 
-    h, 
+    bag_classifier,
+    bag_label,
+    A,
+    h,
     args,
 ):
     """_summary_
@@ -655,8 +686,8 @@ def s_bag_call(
 
 
 def m_bag_h_slide(
-    A, 
-    h, 
+    A,
+    h,
     args,
 ):
     """_summary_
@@ -690,9 +721,9 @@ def m_bag_h_slide(
 
 
 def m_bag_call(
-    m_bag_classifier, 
-    bag_label, 
-    A, 
+    m_bag_classifier,
+    bag_label,
+    A,
     h,
     args,
 ):
@@ -854,7 +885,7 @@ def m_clam_call(
 
 
 def model_save(
-    c_model, 
+    c_model,
     args,
 ):
     """_summary_
@@ -871,7 +902,9 @@ def model_save(
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
-                        args.c_model_dir, "G" + clam_model_names[0], "Model_" + str(m + 1)
+                        args.c_model_dir,
+                        "G" + clam_model_names[0],
+                        "Model_" + str(m + 1),
                     )
                 )
         else:
@@ -879,7 +912,9 @@ def model_save(
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
-                        args.c_model_dir, "NG" + clam_model_names[0], "Model_" + str(m + 1)
+                        args.c_model_dir,
+                        "NG" + clam_model_names[0],
+                        "Model_" + str(m + 1),
                     )
                 )
 
@@ -888,10 +923,14 @@ def model_save(
             bag_nets = c_model.clam_model()[2]
 
             ins_nets[n].save(
-                os.path.join(args.c_model_dir, "M" + clam_model_names[1], "Class_" + str(n))
+                os.path.join(
+                    args.c_model_dir, "M" + clam_model_names[1], "Class_" + str(n)
+                )
             )
             bag_nets[n].save(
-                os.path.join(args.c_model_dir, "M" + clam_model_names[2], "Class_" + str(n))
+                os.path.join(
+                    args.c_model_dir, "M" + clam_model_names[2], "Class_" + str(n)
+                )
             )
     else:
         if args.att_gate:
@@ -899,7 +938,9 @@ def model_save(
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
-                        args.c_model_dir, "G" + clam_model_names[0], "Model_" + str(m + 1)
+                        args.c_model_dir,
+                        "G" + clam_model_names[0],
+                        "Model_" + str(m + 1),
                     )
                 )
         else:
@@ -907,14 +948,18 @@ def model_save(
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
-                        args.c_model_dir, "NG" + clam_model_names[0], "Model_" + str(m + 1)
+                        args.c_model_dir,
+                        "NG" + clam_model_names[0],
+                        "Model_" + str(m + 1),
                     )
                 )
 
         for n in range(args.n_class):
             ins_nets = c_model.clam_model()[1]
             ins_nets[n].save(
-                os.path.join(args.c_model_dir, "M" + clam_model_names[1], "Class_" + str(n))
+                os.path.join(
+                    args.c_model_dir, "M" + clam_model_names[1], "Class_" + str(n)
+                )
             )
 
         c_model.clam_model()[2].save(
@@ -922,7 +967,9 @@ def model_save(
         )
 
 
-def restore_model(args,):
+def restore_model(
+    args,
+):
     """_summary_
 
     Args:

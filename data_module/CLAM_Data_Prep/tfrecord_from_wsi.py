@@ -203,7 +203,6 @@ def create_summary_img(
     patch_level,
     svs_file,
 ):
-
     OSobj = openslide.OpenSlide(svs_file)
     poly_included = []
     poly_excluded = []
@@ -346,7 +345,6 @@ def create_tfrecord(
     threshold_std,
     patch_byte_cutoff,
 ):
-
     writer = tf.io.TFRecordWriter(os.path.join(tf_output, samp + ".tfrecords"))
 
     OSobj = openslide.OpenSlide(svs_file)
