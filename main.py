@@ -43,14 +43,6 @@ def main(cfg : DictConfig) -> None:
     for key, value in cfg.items():
         if value == "None":
             cfg[key] = eval(value)
-    
-    if cfg.is_training:
-        logging_config_path = os.path.join(cfg.checkpoints_dir, "config/train.json")
-    else:
-        logging_config_path = os.path.join(cfg.checkpoints_dir, "config/test.json")
-    
-    with open(logging_config_path, "w") as f:
-            json.dump(dict(cfg), f)
 
     clam_main(cfg)
 

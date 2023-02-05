@@ -216,9 +216,7 @@ def val_step(
     Returns:
         _type_: _description_
     """
-    i_loss_func, b_loss_func = load_loss_func(
-        i_loss_func_name=args.i_loss_name, b_loss_func_name=args.b_loss_name
-    )
+    i_loss_func, b_loss_func = load_loss_func(args=args,)
 
     loss_t = list()
     loss_i = list()
@@ -238,7 +236,7 @@ def val_step(
         print("=", end="")
         single_val_data = i
         img_features, slide_label = get_data_from_tf(
-            tf_path=single_val_data, imf_norm_op=args.imf_norm_op
+            tf_path=single_val_data, args=args,
         )
         img_features = random.sample(
             img_features, len(img_features)

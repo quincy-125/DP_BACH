@@ -155,32 +155,7 @@ def optimizer_func_options(args,):
     Returns:
         _type_: _description_
     """
-    wd_keys = ["AdamW", "SGDW", "LAMB", "NovoGrad", "RectifiedAdam"]
-    nwd_keys = [
-        "ConditionalGradient",
-        "LazyAdam",
-        "ProximalAdagrad",
-        "Yogi",
-        "Adam",
-        "Adadelta",
-        "Adagrad",
-        "Adamax",
-        "Ftrl",
-        "Nadam",
-        "RMSprop",
-        "SGD",
-    ]
-
     optimizer_func_dic = {
-        # "AdamW": tfa.optimizers.AdamW,
-        # "SGDW": tfa.optimizers.SGDW,
-        # "LAMB": tfa.optimizers.LAMB,
-        # "NovoGrad": tfa.optimizers.NovoGrad,
-        # "RectifiedAdam": tfa.optimizers.RectifiedAdam,
-        # "ConditionalGradient": tfa.optimizers.ConditionalGradient,
-        # "LazyAdam": tfa.optimizers.LazyAdam,
-        # "ProximalAdagrad": tfa.optimizers.ProximalAdagrad,
-        # "Yogi": tfa.optimizers.Yogi,
         "Adam": tf.keras.optimizers.Adam,
         "Adadelta": tf.keras.optimizers.Adadelta,
         "Adagrad": tf.keras.optimizers.Adagrad,
@@ -190,11 +165,6 @@ def optimizer_func_options(args,):
         "RMSprop": tf.keras.optimizers.RMSprop,
         "SGD": tf.keras.optimizers.SGD,
     }
-
-    if args.weight_decay_op:
-        [optimizer_func_dic.pop(key) for key in nwd_keys]
-    else:
-        [optimizer_func_dic.pop(key) for key in wd_keys]
 
     return optimizer_func_dic
 
@@ -215,9 +185,6 @@ def loss_func_options():
         "log_cosh": tf.keras.losses.log_cosh,
         "poisson": tf.keras.losses.poisson,
         "squared_hinge": tf.keras.losses.squared_hinge,
-        # "contrastive": tfa.losses.contrastive_loss,
-        # "pinball": tfa.losses.pinball_loss,
-        # "sigmoid_focal_crossentropy": tfa.losses.sigmoid_focal_crossentropy,
     }
 
     return loss_func_dic
@@ -234,49 +201,13 @@ def load_optimizers(
     Returns:
         _type_: _description_
     """
-    i_tf_func_dic = optimizer_func_options(args=args,)
-    b_tf_func_dic = optimizer_func_options(args=args,)
-    c_tf_func_dic = optimizer_func_options(args=args,)
+    i_optimizer_func = optimizer_func_options(args=args,)[args.i_optimizer_name]
+    b_optimizer_func = optimizer_func_options(args=args,)[args.b_optimizer_name]
+    c_optimizer_func = optimizer_func_options(args=args,)[args.a_optimizer_name]
 
-    i_optimizer_func = i_tf_func_dic[args.i_optimizer_name]
-    b_optimizer_func = b_tf_func_dic[args.b_optimizer_name]
-    c_optimizer_func = c_tf_func_dic[args.a_optimizer_name]
-
-    if args.i_wd_op:
-        if args.i_optimizer_name == "LAMB":
-            i_optimizer = i_optimizer_func(
-                learning_rate=args.i_learn_rate, weight_decay_rate=args.i_l2_decay
-            )
-        else:
-            i_optimizer = i_optimizer_func(
-                learning_rate=args.i_learn_rate, weight_decay=args.i_l2_decay
-            )
-    else:
-        i_optimizer = i_optimizer_func(learning_rate=args.i_learn_rate)
-
-    if args.b_wd_op:
-        if args.b_optimizer_name == "LAMB":
-            b_optimizer = b_optimizer_func(
-                learning_rate=args.b_learn_rate, weight_decay_rate=args.b_l2_decay
-            )
-        else:
-            b_optimizer = b_optimizer_func(
-                learning_rate=args.b_learn_rate, weight_decay=args.b_l2_decay
-            )
-    else:
-        b_optimizer = b_optimizer_func(learning_rate=args.b_learn_rate)
-
-    if args.a_wd_op:
-        if args.a_optimizer_name == "LAMB":
-            c_optimizer = c_optimizer_func(
-                learning_rate=args.a_learn_rate, weight_decay_rate=args.a_l2_decay
-            )
-        else:
-            c_optimizer = c_optimizer_func(
-                learning_rate=args.a_learn_rate, weight_decay=args.a_l2_decay
-            )
-    else:
-        c_optimizer = c_optimizer_func(learning_rate=args.a_learn_rate)
+    i_optimizer = i_optimizer_func(learning_rate=args.i_learn_rate)
+    b_optimizer = b_optimizer_func(learning_rate=args.b_learn_rate)
+    c_optimizer = c_optimizer_func(learning_rate=args.a_learn_rate)
 
     return i_optimizer, b_optimizer, c_optimizer
 
@@ -292,10 +223,8 @@ def load_loss_func(
     Returns:
         _type_: _description_
     """
-    tf_func_dic = loss_func_options()
-
-    i_loss_func = tf_func_dic[args.i_loss_func_name]
-    b_loss_func = tf_func_dic[args.b_loss_func_name]
+    i_loss_func = loss_func_options()[args.i_loss_name]
+    b_loss_func = loss_func_options()[args.b_loss_name]
 
     return i_loss_func, b_loss_func
 

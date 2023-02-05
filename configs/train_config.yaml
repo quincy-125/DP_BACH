@@ -54,9 +54,9 @@
   ## loss function option for bag classifier
   b_loss_name: binary_crossentropy
   ## scalar of instance loss values
-  c_1: 0.7
+  c1: 0.7
   ## scalar of bag loss values
-  c_2: 0.3
+  c2: 0.3
   ## whether or not applying gate attention network
   att_gate: True
   ## whether or not the mutually exclusive assumption holds

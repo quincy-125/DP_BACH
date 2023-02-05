@@ -218,7 +218,10 @@ def load_model(
     s_clam_model = s_clam
     m_clam_model = m_clam
 
-    c_model = [s_clam_model, m_clam_model]
+    if args.m_clam_op:
+        c_model = m_clam_model
+    else:
+        c_model = s_clam_model
 
     return c_model
 
@@ -234,6 +237,8 @@ def clam(
     os.makedirs(args.checkpoints_dir, exist_ok=True)
 
     if args.is_training:
+        logging_config_path = os.path.join(args.checkpoints_dir, "config/train.json")
+
         c_model = load_model(
             args=args,
         )
@@ -250,9 +255,14 @@ def clam(
             args=args,
         )
     else:
+        logging_config_path = os.path.join(cfg.checkpoints_dir, "config/test.json")
+
         clam_test(
             args=args,
         )
+
+    with open(logging_config_path, "w") as f:
+            json.dump(dict(args), f)
 
 
 def clam_main(args,):
