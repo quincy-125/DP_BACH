@@ -96,17 +96,12 @@ def b_val(
     """_summary_
 
     Args:
-        batch_size (_type_): _description_
-        top_k_percent (_type_): _description_
         img_features (_type_): _description_
         slide_label (_type_): _description_
         c_model (_type_): _description_
         i_loss_func (_type_): _description_
         b_loss_func (_type_): _description_
-        n_class (_type_): _description_
-        c1 (_type_): _description_
-        c2 (_type_): _description_
-        mut_ex (_type_): _description_
+        args (_type_): _description_
 
     Returns:
         _type_: _description_
@@ -259,7 +254,6 @@ def val_step(
                     c_model=c_model,
                     i_loss_func=i_loss_func,
                     b_loss_func=b_loss_func,
-                    n_class=args.n_class,
                     args=args,
                 )
         else:
@@ -269,7 +263,6 @@ def val_step(
                 c_model=c_model,
                 i_loss_func=i_loss_func,
                 b_loss_func=b_loss_func,
-                n_class=args.n_class,
                 args=args,
             )
 
