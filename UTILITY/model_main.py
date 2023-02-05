@@ -235,7 +235,7 @@ def clam(
         args (_type_): _description_
     """
     logging_config_path = os.path.join(args.checkpoints_dir, "config")
-    os.makedirs(args.checkpoints_dir, exist_ok=True)
+    os.makedirs(logging_config_path, exist_ok=True)
 
     if args.is_training:
         with open(os.path.join(logging_config_path, "train.json"), "w") as f:
