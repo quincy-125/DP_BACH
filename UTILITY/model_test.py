@@ -80,7 +80,7 @@ def test_step(
         print(">", end="")
         single_test_data = i
         img_features, slide_label = get_data_from_tf(
-            single_test_data,
+            tf_path=single_test_data,
             args=args,
         )
 
