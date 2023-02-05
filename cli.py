@@ -23,18 +23,21 @@
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from yaml.loader import SafeLoader
 from UTILITY.model_main import clam_main
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="train_config")
-def load_config(cfg : DictConfig) -> None:
-    print(OmegaConf.to_yaml(cfg))
-    
-    return cfg
+def main(cfg : DictConfig) -> None:
+    """_summary_
 
-def main():
-    args = load_config()
-    clam_main(
-        args=args,
-    )
+    Args:
+        cfg (DictConfig): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    for key, value in cfg.items():
+        if value == "None":
+            cfg[key] = eval(value)
+    
+    clam_main(cfg)

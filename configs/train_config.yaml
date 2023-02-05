@@ -29,6 +29,8 @@
   is_training: True
   ## whether or not enabling multiple GPU for model optimization process
   multi_gpu: False
+  ## path to all tfrecords, including tfrecords used for training, validation, and testing
+  all_tfrecords_path: /home/quincy/data/bach_tfrecords
   ## directory of training tfrecords
   train_data_dir: 
   ## directory of validation tfrecords

@@ -1,0 +1,15 @@
+task: kf_cv_split
+stdout_path: ../logs/data.out
+conda_env: /home/quincy/miniconda3/envs/bach
+data_path: /home/quincy/data/BACH
+kf_csv_path: /home/quincy/data/bach_kf
+neg_labels:
+- Normal
+- Benign
+pos_labels:
+- InSitu
+- Invasive
+test_ratio: 0.1
+n_folds: 5
+kf_shuffle: true
+kf_rs: 13

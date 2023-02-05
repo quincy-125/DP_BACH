@@ -22,6 +22,7 @@
 
 
 import os
+import logging
 import tensorflow as tf
 import pandas as pd
 from PIL import Image
@@ -32,8 +33,6 @@ sys_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(sys_dir))
 
 from components.utils import *
-
-configure_logging(script_name="cross_val_split")
 
 
 def slide_extract_patches(slide_path, patch_size, patch_path):

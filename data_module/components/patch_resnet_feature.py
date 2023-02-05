@@ -31,8 +31,6 @@ sys.path.append(os.path.dirname(sys_dir))
 from components.patch_extract import slide_extract_patches
 from components.utils import *
 
-configure_logging(script_name="cross_val_split")
-
 
 def customize_res50(
     res_weights="imagenet",

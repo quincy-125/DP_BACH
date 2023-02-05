@@ -22,6 +22,10 @@
 
 
 import os
+import logging
+
+import hydra
+from omegaconf import DictConfig, OmegaConf
 
 from components.cross_val_split import *
 from components.patch_extract import *
@@ -31,58 +35,45 @@ import sys
 sys_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(sys_dir))
 
-configure_logging(script_name="main")
+
+def data_module_run(cfg):
+    """create bash job script file"""
+    if cfg.task == "kf_cv_split":
+        run_kf_cross_val(
+            data_path=cfg.data_path,
+            neg_labels=cfg.neg_labels,
+            pos_labels=cfg.pos_labels,
+            kf_csv_path=cfg.kf_csv_path,
+            test_ratio=cfg.test_ratio,
+            n_folds=cfg.n_folds,
+            kf_shuffle=cfg.kf_shuffle,
+            kf_rs=cfg.kf_rs,
+        )
+    if cfg.task == "patch_extract":
+        bach_patch_extractions(
+            data_path=cfg.data_path,
+            kf_csv_path=cfg.kf_csv_path,
+            patch_size=cfg.patch_size,
+            patch_path=cfg.patch_path,
+        )
 
 
-def load_config(config_path):
+@hydra.main(version_base=None, config_path="../configs", config_name="data_config")
+def run_main(cfg : DictConfig) -> None:
     """_summary_
 
     Args:
-        config_path (_type_): _description_
+        cfg (DictConfig): _description_
 
     Returns:
         _type_: _description_
     """
-    import yaml
-    from yaml.loader import SafeLoader
-
-    with open(config_path) as f:
-        config = yaml.load(f, Loader=SafeLoader)
-        logging.info(
-            "\nLoading {}. \nThe customized configuration parameters are in the following \n  {}".format(
-                config_path.split("/")[-1], config
-            )
-        )
-
-    return config
-
-
-def data_module_run(config):
-    """create bash job script file"""
-    if config["task"] == "kf_cv_split":
-        run_kf_cross_val(
-            data_path=config["data_path"],
-            neg_labels=config["neg_labels"],
-            pos_labels=config["pos_labels"],
-            kf_csv_path=config["kf_csv_path"],
-            test_ratio=config["test_ratio"],
-            n_folds=config["n_folds"],
-            kf_shuffle=config["kf_shuffle"],
-            kf_rs=config["kf_rs"],
-        )
-    if config["task"] == "patch_extract":
-        bach_patch_extractions(
-            data_path=config["data_path"],
-            kf_csv_path=config["kf_csv_path"],
-            patch_size=config["patch_size"],
-            patch_path=config["patch_path"],
-        )
-
-
-def run_main():
-    """_summary_"""
-    config = load_config("configs/data_module_config.yaml")
-    data_module_run(config=config)
+    for key, value in cfg.items():
+        if value == "None":
+            cfg[key] = eval(value)
+    
+    configure_logging(cfg)
+    data_module_run(cfg)
 
 
 if __name__ == "__main__":

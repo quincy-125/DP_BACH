@@ -22,7 +22,7 @@
 
 
 import os
-import argparse
+import logging
 import pandas as pd
 import tensorflow as tf
 from sklearn.model_selection import KFold
@@ -33,8 +33,6 @@ sys_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(sys_dir))
 
 from components.utils import *
-
-configure_logging(script_name="cross_val_split")
 
 
 def binary_bach_data(data_path, neg_labels, pos_labels):

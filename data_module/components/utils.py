@@ -29,42 +29,25 @@ sys_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(sys_dir))
 
 
-def load_config():
-    """_summary_
-
-    Returns:
-        _type_: _description_
-    """
-    import yaml
-    from yaml.loader import SafeLoader
-
-    with open("././configs/data_module_config.yaml") as f:
-        config = yaml.load(f, Loader=SafeLoader)
-
-    return config
-
-
-def configure_logging(script_name):
+def configure_logging(cfg):
     """_summary_
 
     Args:
-        script_name (_type_): _description_
-        stdout_path (_type_): _description_
+        cfg (_type_): _description_
 
     Returns:
         _type_: _description_
     """
-    config = load_config()
     log_format = "%(asctime)s: %(name)s: %(levelname)s: %(message)s"
 
     os.makedirs("../logs", exist_ok=True)
-    with open(config["stdout_path"], "w") as f:
+    with open(cfg.stdout_path, "w") as f:
         pass
 
     logging.basicConfig(
         level=logging.DEBUG,
         format=log_format,
-        filename=config["stdout_path"],
+        filename=cfg.stdout_path,
         filemode="w",
     )
 
@@ -72,6 +55,4 @@ def configure_logging(script_name):
     console.setLevel(logging.DEBUG)
     console.setFormatter(logging.Formatter(log_format))
 
-    logging.getLogger(script_name).addHandler(console)
-
-    return logging.getLogger(script_name)
+    return logging.getLogger()
