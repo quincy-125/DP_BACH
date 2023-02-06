@@ -1,7 +1,7 @@
 # Copyright 2022 Mayo Clinic. All Rights Reserved.
 #
 # Author: Quincy Gu (M216613)
-# Affliation: Division of Computational Pathology and Artificial Intelligence, 
+# Affliation: Division of Computational Pathology and Artificial Intelligence,
 # Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
 # Email: Gu.Qiangqiang@mayo.edu
 # Version: 1.0.1
@@ -31,7 +31,7 @@ from UTILITY.model_main import clam_main
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="train_config")
-def main(cfg : DictConfig) -> None:
+def main(cfg: DictConfig) -> None:
     """_summary_
 
     Args:
@@ -45,6 +45,7 @@ def main(cfg : DictConfig) -> None:
             cfg[key] = eval(value)
 
     clam_main(cfg)
+
 
 if __name__ == "__main__":
     print(tf.__version__)

@@ -1,7 +1,7 @@
 # Copyright 2022 Mayo Clinic. All Rights Reserved.
 #
 # Author: Quincy Gu (M216613)
-# Affliation: Division of Computational Pathology and Artificial Intelligence, 
+# Affliation: Division of Computational Pathology and Artificial Intelligence,
 # Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
 # Email: Gu.Qiangqiang@mayo.edu
 # Version: 1.0.1
@@ -146,7 +146,9 @@ def tf_shut_up(no_warn_op=False):
         )
 
 
-def optimizer_func_options(args,):
+def optimizer_func_options(
+    args,
+):
     """_summary_
 
     Args:
@@ -201,9 +203,15 @@ def load_optimizers(
     Returns:
         _type_: _description_
     """
-    i_optimizer_func = optimizer_func_options(args=args,)[args.i_optimizer_name]
-    b_optimizer_func = optimizer_func_options(args=args,)[args.b_optimizer_name]
-    c_optimizer_func = optimizer_func_options(args=args,)[args.a_optimizer_name]
+    i_optimizer_func = optimizer_func_options(
+        args=args,
+    )[args.i_optimizer_name]
+    b_optimizer_func = optimizer_func_options(
+        args=args,
+    )[args.b_optimizer_name]
+    c_optimizer_func = optimizer_func_options(
+        args=args,
+    )[args.a_optimizer_name]
 
     i_optimizer = i_optimizer_func(learning_rate=args.i_learn_rate)
     b_optimizer = b_optimizer_func(learning_rate=args.b_learn_rate)
@@ -848,7 +856,7 @@ def model_save(
             )
             bag_nets[n].save(
                 os.path.join(
-                    model_checkpoint_path,"M" + clam_model_names[2], "Class_" + str(n)
+                    model_checkpoint_path, "M" + clam_model_names[2], "Class_" + str(n)
                 )
             )
     else:
@@ -898,7 +906,9 @@ def restore_model(
         _type_: _description_
     """
     model_checkpoint_path = os.path.join(args.checkpoints_dir, "models")
-    assert os.path.exists(model_checkpoint_path), Exception(f"Not Found Error: Could not find the model checkpoint path on {model_checkpoint_path}")
+    assert os.path.exists(model_checkpoint_path), Exception(
+        f"Not Found Error: Could not find the model checkpoint path on {model_checkpoint_path}"
+    )
 
     clam_model_names = ["_Att", "_Ins", "_Bag"]
 
@@ -908,14 +918,18 @@ def restore_model(
 
     if args.m_clam_op:
         if args.att_gate:
-            att_nets_dir = os.path.join(model_checkpoint_path, "G" + clam_model_names[0])
+            att_nets_dir = os.path.join(
+                model_checkpoint_path, "G" + clam_model_names[0]
+            )
             for k in range(len(os.listdir(att_nets_dir))):
                 att_net = tf.keras.models.load_model(
                     os.path.join(att_nets_dir, "Model_" + str(k + 1))
                 )
                 trained_att_net.append(att_net)
         else:
-            att_nets_dir = os.path.join(model_checkpoint_path, "NG" + clam_model_names[0])
+            att_nets_dir = os.path.join(
+                model_checkpoint_path, "NG" + clam_model_names[0]
+            )
             for k in range(len(os.listdir(att_nets_dir))):
                 att_net = tf.keras.models.load_model(
                     os.path.join(att_nets_dir, "Model_" + str(k + 1))
@@ -943,14 +957,18 @@ def restore_model(
         ]
     else:
         if args.att_gate:
-            att_nets_dir = os.path.join(model_checkpoint_path, "G" + clam_model_names[0])
+            att_nets_dir = os.path.join(
+                model_checkpoint_path, "G" + clam_model_names[0]
+            )
             for k in range(len(os.listdir(att_nets_dir))):
                 att_net = tf.keras.models.load_model(
                     os.path.join(att_nets_dir, "Model_" + str(k + 1))
                 )
                 trained_att_net.append(att_net)
         else:
-            att_nets_dir = os.path.join(model_checkpoint_path, "NG" + clam_model_names[0])
+            att_nets_dir = os.path.join(
+                model_checkpoint_path, "NG" + clam_model_names[0]
+            )
             for k in range(len(os.listdir(att_nets_dir))):
                 att_net = tf.keras.models.load_model(
                     os.path.join(att_nets_dir, "Model_" + str(k + 1))

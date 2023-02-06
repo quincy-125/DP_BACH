@@ -211,7 +211,9 @@ def val_step(
     Returns:
         _type_: _description_
     """
-    i_loss_func, b_loss_func = load_loss_func(args=args,)
+    i_loss_func, b_loss_func = load_loss_func(
+        args=args,
+    )
 
     loss_t = list()
     loss_i = list()
@@ -224,14 +226,17 @@ def val_step(
     all_img_uuids = list(os.listdir(args.all_tfrecords_path))
 
     val_sample_list = [
-        os.path.join(args.all_tfrecords_path, img_uuid) for img_uuid in all_img_uuids if img_uuid.split("_")[-1].split(".tfrecords")[0] in val_img_uuids
+        os.path.join(args.all_tfrecords_path, img_uuid)
+        for img_uuid in all_img_uuids
+        if img_uuid.split("_")[-1].split(".tfrecords")[0] in val_img_uuids
     ]
 
     for i in val_sample_list:
         print("=", end="")
         single_val_data = i
         img_features, slide_label = get_data_from_tf(
-            tf_path=single_val_data, args=args,
+            tf_path=single_val_data,
+            args=args,
         )
         img_features = random.sample(
             img_features, len(img_features)

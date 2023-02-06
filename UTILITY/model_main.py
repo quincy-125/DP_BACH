@@ -143,12 +143,12 @@ def train_val(
         train_val_logs.append(train_val_log)
 
         print(train_val_log)
-    
+
     train_val_logs_path = os.path.join(args.checkpoints_dir, "logs")
     os.makedirs(train_val_logs_path, exist_ok=True)
     with open(os.path.join(train_val_logs_path, "train_val_log.txt"), "w+") as f:
         for items in train_val_logs:
-            f.write("%s\n" %items)
+            f.write("%s\n" % items)
 
 
 def clam_optimize(
@@ -273,7 +273,9 @@ def clam(
         )
 
 
-def clam_main(args,):
+def clam_main(
+    args,
+):
     """_summary_
 
     Args:
