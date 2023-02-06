@@ -51,6 +51,7 @@ def train_val(
     os.makedirs(val_summary_path, exist_ok=True)
     val_summary_writer = tf.summary.create_file_writer(val_summary_path)
 
+    train_val_logs = list()
     for epoch in range(args.epochs):
         # Training Step
         start_time = time.time()
@@ -131,16 +132,23 @@ def train_val(
             "\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, Epoch Running "
             "Time: {} "
         )
-        print(
-            template.format(
-                epoch + 1,
-                f"{float(train_loss):.8}",
-                f"{float(train_acc):.4%}",
-                f"{float(val_loss):.8}",
-                f"{float(val_acc):.4%}",
-                "--- %s mins ---" % int(epoch_run_time / 60),
-            )
+        train_val_log = template.format(
+            epoch + 1,
+            f"{float(train_loss):.8}",
+            f"{float(train_acc):.4%}",
+            f"{float(val_loss):.8}",
+            f"{float(val_acc):.4%}",
+            "--- %s mins ---" % int(epoch_run_time / 60),
         )
+        train_val_logs.append(train_val_log)
+
+        print(train_val_log)
+    
+    train_val_logs_path = os.path.join(args.checkpoints_dir, "logs")
+    os.makedirs(train_val_logs_path, exist_ok=True)
+    with open(os.path.join(train_val_logs_path, "train_val_log.txt"), "w+") as f:
+        for items in train_val_logs:
+            f.write("%s\n" %items)
 
 
 def clam_optimize(

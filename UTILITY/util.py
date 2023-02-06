@@ -898,7 +898,7 @@ def restore_model(
         _type_: _description_
     """
     model_checkpoint_path = os.path.join(args.checkpoints_dir, "models")
-    os.makedirs(model_checkpoint_path, exist_ok=True)
+    assert os.path.exists(model_checkpoint_path), Exception(f"Not Found Error: Could not find the model checkpoint path on {model_checkpoint_path}")
 
     clam_model_names = ["_Att", "_Ins", "_Bag"]
 
