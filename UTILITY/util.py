@@ -1,21 +1,98 @@
+# Copyright 2022 Mayo Clinic. All Rights Reserved.
+#
+# Author: Quincy Gu (M216613)
+# Affliation: Division of Computational Pathology and Artificial Intelligence,
+# Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
+# Email: Gu.Qiangqiang@mayo.edu
+# Version: 1.0.1
+# Created on: 11/27/2022 6:35 pm CST
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+
 import os
 import random
 import shutil
 
 import numpy as np
 import tensorflow as tf
-import tensorflow_addons as tfa
+
+import sys
+import logging
+
+sys_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(sys_dir))
 
 
-def get_data_from_tf(tf_path, imf_norm_op):
-    feature = {'height': tf.io.FixedLenFeature([], tf.int64),
-               'width': tf.io.FixedLenFeature([], tf.int64),
-               'depth': tf.io.FixedLenFeature([], tf.int64),
-               'label': tf.io.FixedLenFeature([], tf.int64),
-               'image/format': tf.io.FixedLenFeature([], tf.string),
-               'image_name': tf.io.FixedLenFeature([], tf.string),
-               'image/encoded': tf.io.FixedLenFeature([], tf.string),
-               'image_feature': tf.io.FixedLenFeature([], tf.string)}
+def configure_logging(
+    script_name,
+    args,
+):
+    """_summary_
+
+    Args:
+        script_name (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    log_format = "%(asctime)s: %(name)s: %(levelname)s: %(message)s"
+
+    os.makedirs("../logs", exist_ok=True)
+    with open(args.stdout_path, "w") as f:
+        pass
+
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format=log_format,
+        filename=args.stdout_path,
+        filemode="w",
+    )
+
+    console = logging.StreamHandler()
+    console.setLevel(logging.DEBUG)
+    console.setFormatter(logging.Formatter(log_format))
+
+    logging.getLogger(script_name).addHandler(console)
+
+    return logging.getLogger(script_name)
+
+
+def get_data_from_tf(
+    tf_path,
+    args,
+):
+    """_summary_
+
+    Args:
+        tf_path (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    feature = {
+        "height": tf.io.FixedLenFeature([], tf.int64),
+        "width": tf.io.FixedLenFeature([], tf.int64),
+        "depth": tf.io.FixedLenFeature([], tf.int64),
+        "label": tf.io.FixedLenFeature([], tf.int64),
+        "image/format": tf.io.FixedLenFeature([], tf.string),
+        "image_name": tf.io.FixedLenFeature([], tf.string),
+        "image/encoded": tf.io.FixedLenFeature([], tf.string),
+        "image_feature": tf.io.FixedLenFeature([], tf.string),
+    }
 
     tfrecord_dataset = tf.data.TFRecordDataset(tf_path)
 
@@ -27,12 +104,12 @@ def get_data_from_tf(tf_path, imf_norm_op):
     image_features = list()
 
     for tfrecord_value in CLAM_dataset:
-        img_feature = tf.io.parse_tensor(tfrecord_value['image_feature'], 'float32')
+        img_feature = tf.io.parse_tensor(tfrecord_value["image_feature"], "float32")
 
-        if imf_norm_op:
+        if args.imf_norm_op:
             img_feature = tf.math.l2_normalize(img_feature)
 
-        slide_labels = tfrecord_value['label']
+        slide_labels = tfrecord_value["label"]
         slide_label = int(slide_labels)
 
         image_features.append(img_feature)
@@ -40,129 +117,136 @@ def get_data_from_tf(tf_path, imf_norm_op):
     return image_features, slide_label
 
 
-def most_frequent(List):
-    mf = max(set(List), key=List.count)
+def most_frequent(list):
+    """_summary_
+
+    Args:
+        list (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    mf = max(set(list), key=list.count)
     return mf
 
 
 def tf_shut_up(no_warn_op=False):
+    """_summary_
+
+    Args:
+        no_warn_op (bool, optional): _description_. Defaults to False.
+    """
     if no_warn_op:
-        tf.get_logger().setLevel('ERROR')
+        tf.get_logger().setLevel("ERROR")
     else:
-        print('Are you sure you want to receive the annoying TensorFlow Warning Messages?', \
-              '\n', 'If not, check the value of your input prameter for this function and re-run it.')
+        print(
+            "Are you sure you want to receive the annoying TensorFlow Warning Messages?",
+            "\n",
+            "If not, check the value of your input prameter for this function and re-run it.",
+        )
 
 
-def optimizer_func_options(weight_decay_op_name):
+def optimizer_func_options(
+    args,
+):
+    """_summary_
 
-    str_bool_dic = str_to_bool()
-    weight_decay_op = str_bool_dic[weight_decay_op_name]
+    Args:
+        args (_type_): _description_
 
-    wd_keys = ["AdamW", "SGDW", "LAMB", "NovoGrad", "RectifiedAdam"]
-    nwd_keys = ["ConditionalGradient", "LazyAdam", "ProximalAdagrad", "Yogi", "Adam",
-                "Adadelta", "Adagrad", "Adamax", "Ftrl", "Nadam", "RMSprop", "SGD"]
-
-    optimizer_func_dic = {"AdamW": tfa.optimizers.AdamW,
-                          "SGDW": tfa.optimizers.SGDW,
-                          "LAMB": tfa.optimizers.LAMB,
-                          "NovoGrad": tfa.optimizers.NovoGrad,
-                          "RectifiedAdam": tfa.optimizers.RectifiedAdam,
-                          "ConditionalGradient": tfa.optimizers.ConditionalGradient,
-                          "LazyAdam": tfa.optimizers.LazyAdam,
-                          "ProximalAdagrad": tfa.optimizers.ProximalAdagrad,
-                          "Yogi": tfa.optimizers.Yogi,
-                          "Adam": tf.keras.optimizers.Adam,
-                          "Adadelta": tf.keras.optimizers.Adadelta,
-                          "Adagrad": tf.keras.optimizers.Adagrad,
-                          "Adamax": tf.keras.optimizers.Adamax,
-                          "Ftrl": tf.keras.optimizers.Ftrl,
-                          "Nadam": tf.keras.optimizers.Nadam,
-                          "RMSprop": tf.keras.optimizers.RMSprop,
-                          "SGD": tf.keras.optimizers.SGD}
-
-    if weight_decay_op:
-        [optimizer_func_dic.pop(key) for key in nwd_keys]
-    else:
-        [optimizer_func_dic.pop(key) for key in wd_keys]
+    Returns:
+        _type_: _description_
+    """
+    optimizer_func_dic = {
+        "Adam": tf.keras.optimizers.Adam,
+        "Adadelta": tf.keras.optimizers.Adadelta,
+        "Adagrad": tf.keras.optimizers.Adagrad,
+        "Adamax": tf.keras.optimizers.Adamax,
+        "Ftrl": tf.keras.optimizers.Ftrl,
+        "Nadam": tf.keras.optimizers.Nadam,
+        "RMSprop": tf.keras.optimizers.RMSprop,
+        "SGD": tf.keras.optimizers.SGD,
+    }
 
     return optimizer_func_dic
 
+
 def loss_func_options():
-    loss_func_dic = {"binary_crossentropy": tf.keras.losses.binary_crossentropy,
-                     "hinge": tf.keras.losses.hinge,
-                     "categorical_crossentropy": tf.keras.losses.categorical_crossentropy,
-                     "categorical_hinge": tf.keras.losses.categorical_hinge,
-                     "cosine_similarity": tf.keras.losses.cosine_similarity,
-                     "huber": tf.keras.losses.huber,
-                     "log_cosh": tf.keras.losses.log_cosh,
-                     "poisson": tf.keras.losses.poisson,
-                     "squared_hinge": tf.keras.losses.squared_hinge,
-                     "contrastive": tfa.losses.contrastive_loss,
-                     "pinball": tfa.losses.pinball_loss,
-                     "sigmoid_focal_crossentropy": tfa.losses.sigmoid_focal_crossentropy}
+    """_summary_
+
+    Returns:
+        _type_: _description_
+    """
+    loss_func_dic = {
+        "binary_crossentropy": tf.keras.losses.binary_crossentropy,
+        "hinge": tf.keras.losses.hinge,
+        "categorical_crossentropy": tf.keras.losses.categorical_crossentropy,
+        "categorical_hinge": tf.keras.losses.categorical_hinge,
+        "cosine_similarity": tf.keras.losses.cosine_similarity,
+        "huber": tf.keras.losses.huber,
+        "log_cosh": tf.keras.losses.log_cosh,
+        "poisson": tf.keras.losses.poisson,
+        "squared_hinge": tf.keras.losses.squared_hinge,
+    }
 
     return loss_func_dic
 
-def load_optimizers(i_wd_op_name, b_wd_op_name, a_wd_op_name,
-                    i_optimizer_name, b_optimizer_name, a_optimizer_name,
-                    i_learn_rate, b_learn_rate, a_learn_rate,
-                    i_l2_decay, b_l2_decay, a_l2_decay):
 
-    str_bool_dic = str_to_bool()
+def load_optimizers(
+    args,
+):
+    """_summary_
 
-    i_wd_op = str_bool_dic[i_wd_op_name]
-    b_wd_op = str_bool_dic[b_wd_op_name]
-    a_wd_op = str_bool_dic[a_wd_op_name]
+    Args:
+        args (_type_): _description_
 
-    i_tf_func_dic = optimizer_func_options(weight_decay_op_name=i_wd_op_name)
-    b_tf_func_dic = optimizer_func_options(weight_decay_op_name=b_wd_op_name)
-    c_tf_func_dic = optimizer_func_options(weight_decay_op_name=a_wd_op_name)
+    Returns:
+        _type_: _description_
+    """
+    i_optimizer_func = optimizer_func_options(
+        args=args,
+    )[args.i_optimizer_name]
+    b_optimizer_func = optimizer_func_options(
+        args=args,
+    )[args.b_optimizer_name]
+    c_optimizer_func = optimizer_func_options(
+        args=args,
+    )[args.a_optimizer_name]
 
-    i_optimizer_func = i_tf_func_dic[i_optimizer_name]
-    b_optimizer_func = b_tf_func_dic[b_optimizer_name]
-    c_optimizer_func = c_tf_func_dic[a_optimizer_name]
-
-    if i_wd_op:
-        if i_optimizer_name == 'LAMB':
-            i_optimizer = i_optimizer_func(learning_rate=i_learn_rate, weight_decay_rate=i_l2_decay)
-        else:
-            i_optimizer = i_optimizer_func(learning_rate=i_learn_rate, weight_decay=i_l2_decay)
-    else:
-        i_optimizer = i_optimizer_func(learning_rate=i_learn_rate)
-
-    if b_wd_op:
-        if b_optimizer_name == 'LAMB':
-            b_optimizer = b_optimizer_func(learning_rate=b_learn_rate, weight_decay_rate=b_l2_decay)
-        else:
-            b_optimizer = b_optimizer_func(learning_rate=b_learn_rate, weight_decay=b_l2_decay)
-    else:
-        b_optimizer = b_optimizer_func(learning_rate=b_learn_rate)
-
-    if a_wd_op:
-        if a_optimizer_name == 'LAMB':
-            c_optimizer = c_optimizer_func(learning_rate=a_learn_rate, weight_decay_rate=a_l2_decay)
-        else:
-            c_optimizer = c_optimizer_func(learning_rate=a_learn_rate, weight_decay=a_l2_decay)
-    else:
-        c_optimizer = c_optimizer_func(learning_rate=a_learn_rate)
+    i_optimizer = i_optimizer_func(learning_rate=args.i_learn_rate)
+    b_optimizer = b_optimizer_func(learning_rate=args.b_learn_rate)
+    c_optimizer = c_optimizer_func(learning_rate=args.a_learn_rate)
 
     return i_optimizer, b_optimizer, c_optimizer
 
 
-def load_loss_func(i_loss_func_name, b_loss_func_name):
+def load_loss_func(
+    args,
+):
+    """_summary_
 
-    tf_func_dic = loss_func_options()
+    Args:
+        args (_type_): _description_
 
-    i_loss_func = tf_func_dic[i_loss_func_name]
-    b_loss_func = tf_func_dic[b_loss_func_name]
+    Returns:
+        _type_: _description_
+    """
+    i_loss_func = loss_func_options()[args.i_loss_name]
+    b_loss_func = loss_func_options()[args.b_loss_name]
 
     return i_loss_func, b_loss_func
 
+
 def str_to_bool():
-    str_bool_dic = {'True': True,
-                    'False': False}
+    """_summary_
+
+    Returns:
+        _type_: _description_
+    """
+    str_bool_dic = {"True": True, "False": False}
 
     return str_bool_dic
+
 
 def dataset_shuffle(dataset, path, percent):
     """
@@ -172,41 +256,59 @@ def dataset_shuffle(dataset, path, percent):
     """
 
     # return training, validation, and testing path name
-    train = path + '/train'
-    valid = path + '/valid'
-    test = path + '/test'
+    train = path + "/train"
+    valid = path + "/valid"
+    test = path + "/test"
 
     # create training, validation, and testing directory only if it is not existed
-    if not os.path.exists(train):
-        os.mkdir(os.path.join(path, 'train'))
+    os.makedirs(os.path.join(path, "train"), exist_ok=True)
 
-    if not os.path.exists(valid):
-        os.mkdir(os.path.join(path, 'valid'))
+    os.makedirs(os.path.join(path, "valid"), exist_ok=True)
 
-    if not os.path.exists(test):
-        os.mkdir(os.path.join(path, 'test'))
+    os.makedirs(os.path.join(path, "test"), exist_ok=True)
 
     total_num_data = len(os.listdir(dataset))
 
     # only shuffle the data when train, validation, and test directory are all empty
-    if len(os.listdir(train)) == 0 & len(os.listdir(valid)) == 0 & len(os.listdir(test)) == 0:
-        train_names = random.sample(os.listdir(dataset), int(total_num_data * percent[0]))
+    if (
+        len(os.listdir(train))
+        == 0 & len(os.listdir(valid))
+        == 0 & len(os.listdir(test))
+        == 0
+    ):
+        train_names = random.sample(
+            os.listdir(dataset), int(total_num_data * percent[0])
+        )
         for i in train_names:
             train_srcpath = os.path.join(dataset, i)
             shutil.copy(train_srcpath, train)
 
-        valid_names = random.sample(list(set(os.listdir(dataset)) - set(os.listdir(train))),
-                                    int(total_num_data * percent[1]))
+        valid_names = random.sample(
+            list(set(os.listdir(dataset)) - set(os.listdir(train))),
+            int(total_num_data * percent[1]),
+        )
         for j in valid_names:
             valid_srcpath = os.path.join(dataset, j)
             shutil.copy(valid_srcpath, valid)
 
-        test_names = list(set(os.listdir(dataset)) - set(os.listdir(train)) - set(os.listdir(valid)))
+        test_names = list(
+            set(os.listdir(dataset)) - set(os.listdir(train)) - set(os.listdir(valid))
+        )
         for k in test_names:
             test_srcpath = os.path.join(dataset, k)
             shutil.copy(test_srcpath, test)
 
+
 def ng_att_call(ng_att_net, img_features):
+    """_summary_
+
+    Args:
+        ng_att_net (_type_): _description_
+        img_features (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     h = list()
     A = list()
 
@@ -221,6 +323,15 @@ def ng_att_call(ng_att_net, img_features):
 
 
 def g_att_call(g_att_net, img_features):
+    """_summary_
+
+    Args:
+        g_att_net (_type_): _description_
+        img_features (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     h = list()
     A = list()
 
@@ -239,15 +350,57 @@ def g_att_call(g_att_net, img_features):
 
 
 def generate_pos_labels(n_pos_sample):
-    return tf.fill(dims=[n_pos_sample, ], value=1)
+    """_summary_
+
+    Args:
+        n_pos_sample (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    return tf.fill(
+        dims=[
+            n_pos_sample,
+        ],
+        value=1,
+    )
 
 
 def generate_neg_labels(n_neg_sample):
-    return tf.fill(dims=[n_neg_sample, ], value=0)
+    """_summary_
+
+    Args:
+        n_neg_sample (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    return tf.fill(
+        dims=[
+            n_neg_sample,
+        ],
+        value=0,
+    )
 
 
-def ins_in_call(ins_classifier, h, A_I, top_k_percent, n_class):
-    n_ins = top_k_percent * len(h)
+def ins_in_call(
+    ins_classifier,
+    h,
+    A_I,
+    args,
+):
+    """_summary_
+
+    Args:
+        ins_classifier (_type_): _description_
+        h (_type_): _description_
+        A_I (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    n_ins = args.top_k_percent * len(h)
     n_ins = int(n_ins)
 
     pos_label = generate_pos_labels(n_pos_sample=n_ins)
@@ -280,7 +433,7 @@ def ins_in_call(ins_classifier, h, A_I, top_k_percent, n_class):
     logits_unnorm_in = list()
     logits_in = list()
 
-    for i in range(n_class * n_ins):
+    for i in range(args.n_class * n_ins):
         ins_score_unnorm_in = ins_classifier(ins_in[i])
         logit_in = tf.math.softmax(ins_score_unnorm_in)
         logits_unnorm_in.append(ins_score_unnorm_in)
@@ -289,8 +442,24 @@ def ins_in_call(ins_classifier, h, A_I, top_k_percent, n_class):
     return ins_label_in, logits_unnorm_in, logits_in
 
 
-def ins_out_call(ins_classifier, h, A_O, top_k_percent):
-    n_ins = top_k_percent * len(h)
+def ins_out_call(
+    ins_classifier,
+    h,
+    A_O,
+    args,
+):
+    """_summary_
+
+    Args:
+        ins_classifier (_type_): _description_
+        h (_type_): _description_
+        A_O (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    n_ins = args.top_k_percent * len(h)
     n_ins = int(n_ins)
 
     # get compressed 512-dimensional instance-level feature vectors for following use, denoted by h
@@ -322,31 +491,55 @@ def ins_out_call(ins_classifier, h, A_O, top_k_percent):
     return ins_label_out, logits_unnorm_out, logits_out
 
 
-def ins_call(m_ins_classifier, bag_label, h, A, n_class, top_k_percent, mut_ex):
-    for i in range(n_class):
+def ins_call(
+    m_ins_classifier,
+    bag_label,
+    h,
+    A,
+    args,
+):
+    """_summary_
+
+    Args:
+        m_ins_classifier (_type_): _description_
+        bag_label (_type_): _description_
+        h (_type_): _description_
+        A (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    for i in range(args.n_class):
         ins_classifier = m_ins_classifier[i]
         if i == bag_label:
             A_I = list()
             for j in range(len(A)):
                 a_i = A[j][0][i]
                 A_I.append(a_i)
-            ins_label_in, logits_unnorm_in, logits_in = ins_in_call(ins_classifier=ins_classifier,
-                                                                    h=h, A_I=A_I,
-                                                                    top_k_percent=top_k_percent,
-                                                                    n_class=n_class)
+            ins_label_in, logits_unnorm_in, logits_in = ins_in_call(
+                ins_classifier=ins_classifier,
+                h=h,
+                A_I=A_I,
+                top_k_percent=args.top_k_percent,
+                n_class=args.n_class,
+            )
         else:
-            if mut_ex:
+            if args.mut_ex:
                 A_O = list()
                 for j in range(len(A)):
                     a_o = A[j][0][i]
                     A_O.append(a_o)
-                ins_label_out, logits_unnorm_out, logits_out = ins_out_call(ins_classifier=ins_classifier,
-                                                                            h=h, A_O=A_O,
-                                                                            top_k_percent=top_k_percent)
+                ins_label_out, logits_unnorm_out, logits_out = ins_out_call(
+                    ins_classifier=ins_classifier,
+                    h=h,
+                    A_O=A_O,
+                    top_k_percent=args.top_k_percent,
+                )
             else:
                 continue
 
-    if mut_ex:
+    if args.mut_ex:
         ins_labels = tf.concat(values=[ins_label_in, ins_label_out], axis=0)
         ins_logits_unnorm = logits_unnorm_in + logits_unnorm_out
         ins_logits = logits_in + logits_out
@@ -357,7 +550,17 @@ def ins_call(m_ins_classifier, bag_label, h, A, n_class, top_k_percent, mut_ex):
 
     return ins_labels, ins_logits_unnorm, ins_logits
 
+
 def s_bag_h_slide(A, h):
+    """_summary_
+
+    Args:
+        A (_type_): _description_
+        h (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     # compute the slide-level representation aggregated per the attention score distribution for the mth class
     SAR = list()
     for i in range(len(A)):
@@ -369,16 +572,35 @@ def s_bag_h_slide(A, h):
     return slide_agg_rep
 
 
-def s_bag_call(bag_classifier, bag_label, A, h, n_class):
+def s_bag_call(
+    bag_classifier,
+    bag_label,
+    A,
+    h,
+    args,
+):
+    """_summary_
+
+    Args:
+        bag_classifier (_type_): _description_
+        bag_label (_type_): _description_
+        A (_type_): _description_
+        h (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     slide_agg_rep = s_bag_h_slide(A=A, h=h)
 
     slide_score_unnorm = bag_classifier(slide_agg_rep)
-    slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, n_class))
+    slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, args.n_class))
 
     Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
 
-    Y_prob = tf.math.softmax(tf.reshape(slide_score_unnorm,
-                             (1, n_class)))  # shape be (1,2), predictions for each of the classes
+    Y_prob = tf.math.softmax(
+        tf.reshape(slide_score_unnorm, (1, args.n_class))
+    )  # shape be (1,2), predictions for each of the classes
 
     predict_slide_label = np.argmax(Y_prob.numpy())
 
@@ -386,38 +608,74 @@ def s_bag_call(bag_classifier, bag_label, A, h, n_class):
 
     return slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true
 
-def m_bag_h_slide(A, h, dim_compress_features, n_class):
+
+def m_bag_h_slide(
+    A,
+    h,
+    args,
+):
+    """_summary_
+
+    Args:
+        A (_type_): _description_
+        h (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     SAR = list()
     for i in range(len(A)):
         sar = tf.linalg.matmul(tf.transpose(A[i]), h[i])  # shape be (2,512)
         SAR.append(sar)
 
     SAR_Branch = list()
-    for i in range(n_class):
+    for i in range(args.n_class):
         sar_branch = list()
         for j in range(len(SAR)):
-            sar_c = tf.reshape(SAR[j][i], (1, dim_compress_features))
+            sar_c = tf.reshape(SAR[j][i], (1, args.dim_compress_features))
             sar_branch.append(sar_c)
         SAR_Branch.append(sar_branch)
 
     slide_agg_rep = list()
-    for k in range(n_class):
+    for k in range(args.n_class):
         slide_agg_rep.append(tf.math.add_n(SAR_Branch[k]))
 
     return slide_agg_rep
 
-def m_bag_call(m_bag_classifier, bag_label, A, h, n_class, dim_compress_features):
-    slide_agg_rep = m_bag_h_slide(A=A, h=h, dim_compress_features=dim_compress_features, n_class=n_class)
+
+def m_bag_call(
+    m_bag_classifier,
+    bag_label,
+    A,
+    h,
+    args,
+):
+    """_summary_
+
+    Args:
+        m_bag_classifier (_type_): _description_
+        bag_label (_type_): _description_
+        A (_type_): _description_
+        h (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    slide_agg_rep = m_bag_h_slide(
+        A=A, h=h, dim_compress_features=args.dim_compress_features, n_class=args.n_class
+    )
 
     ssus = list()
     # return s_[slide,m] (slide-level prediction scores)
-    for i in range(n_class):
+    for i in range(args.n_class):
         bag_classifier = m_bag_classifier[i]
         ssu = bag_classifier(slide_agg_rep[i])
         ssus.append(ssu[0][0])
 
     slide_score_unnorm = tf.convert_to_tensor(ssus)
-    slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, n_class))
+    slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, args.n_class))
 
     Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
     Y_prob = tf.math.softmax(slide_score_unnorm)
@@ -427,150 +685,311 @@ def m_bag_call(m_bag_classifier, bag_label, A, h, n_class, dim_compress_features
 
     return slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true
 
-def s_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
-                n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex):
-    if att_gate:
-        h, A = g_att_call(g_att_net=att_net, img_features=img_features)
-    else:
-        h, A = ng_att_call(ng_att_net=att_net, img_features=img_features)
-    att_score = A  # output from attention network
-    A = tf.math.softmax(A)   # softmax on attention scores
 
-    if att_only:
-        return att_score
+def s_clam_call(
+    att_net,
+    ins_net,
+    bag_net,
+    img_features,
+    slide_label,
+    args,
+):
+    """_summary_
 
-    if mil_ins:
-        ins_labels, ins_logits_unnorm, ins_logits = ins_call(m_ins_classifier=ins_net,
-                                                             bag_label=slide_label,
-                                                             h=h, A=A,
-                                                             n_class=n_class,
-                                                             top_k_percent=top_k_percent,
-                                                             mut_ex=mut_ex)
+    Args:
+        att_net (_type_): _description_
+        ins_net (_type_): _description_
+        bag_net (_type_): _description_
+        img_features (_type_): _description_
+        slide_label (_type_): _description_
+        args (_type_): _description_
 
-    slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = s_bag_call(bag_classifier=bag_net,
-                                                                                bag_label=slide_label,
-                                                                                A=A, h=h, n_class=n_class)
-
-    return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, \
-           slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_slide_label
-
-def m_clam_call(att_net, ins_net, bag_net, img_features, slide_label,
-                n_class, dim_compress_features, top_k_percent, att_gate, att_only, mil_ins, mut_ex):
-    if att_gate:
+    Returns:
+        _type_: _description_
+    """
+    if args.att_gate:
         h, A = g_att_call(g_att_net=att_net, img_features=img_features)
     else:
         h, A = ng_att_call(ng_att_net=att_net, img_features=img_features)
     att_score = A  # output from attention network
     A = tf.math.softmax(A)  # softmax on attention scores
 
-    if att_only:
+    if args.att_only:
         return att_score
 
-    if mil_ins:
-        ins_labels, ins_logits_unnorm, ins_logits = ins_call(m_ins_classifier=ins_net,
-                                                             bag_label=slide_label,
-                                                             h=h, A=A,
-                                                             n_class=n_class,
-                                                             top_k_percent=top_k_percent,
-                                                             mut_ex=mut_ex)
+    if args.mil_ins:
+        ins_labels, ins_logits_unnorm, ins_logits = ins_call(
+            m_ins_classifier=ins_net,
+            bag_label=slide_label,
+            h=h,
+            A=A,
+            args=args,
+        )
 
-    slide_score_unnorm, Y_hat, Y_prob, \
-    predict_slide_label, Y_true = m_bag_call(m_bag_classifier=bag_net, bag_label=slide_label,
-                                             A=A, h=h, n_class=n_class,
-                                             dim_compress_features=dim_compress_features)
+    slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = s_bag_call(
+        bag_classifier=bag_net, bag_label=slide_label, A=A, h=h, n_class=args.n_class
+    )
 
-    return att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, \
-           slide_score_unnorm, Y_prob, Y_hat, Y_true, predict_slide_label
+    return (
+        att_score,
+        A,
+        h,
+        ins_labels,
+        ins_logits_unnorm,
+        ins_logits,
+        slide_score_unnorm,
+        Y_prob,
+        Y_hat,
+        Y_true,
+        predict_slide_label,
+    )
 
-def model_save(c_model, c_model_dir, n_class, m_clam_op, att_gate):
 
-    clam_model_names = ['_Att', '_Ins', '_Bag']
+def m_clam_call(
+    att_net,
+    ins_net,
+    bag_net,
+    img_features,
+    slide_label,
+    args,
+):
+    """_summary_
 
-    if m_clam_op:
-        if att_gate:
+    Args:
+        att_net (_type_): _description_
+        ins_net (_type_): _description_
+        bag_net (_type_): _description_
+        img_features (_type_): _description_
+        slide_label (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    if args.att_gate:
+        h, A = g_att_call(g_att_net=att_net, img_features=img_features)
+    else:
+        h, A = ng_att_call(ng_att_net=att_net, img_features=img_features)
+    att_score = A  # output from attention network
+    A = tf.math.softmax(A)  # softmax on attention scores
+
+    if args.att_only:
+        return att_score
+
+    if args.mil_ins:
+        ins_labels, ins_logits_unnorm, ins_logits = ins_call(
+            m_ins_classifier=ins_net,
+            bag_label=slide_label,
+            h=h,
+            A=A,
+            args=args,
+        )
+
+    slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = m_bag_call(
+        m_bag_classifier=bag_net,
+        bag_label=slide_label,
+        A=A,
+        h=h,
+        args=args,
+    )
+
+    return (
+        att_score,
+        A,
+        h,
+        ins_labels,
+        ins_logits_unnorm,
+        ins_logits,
+        slide_score_unnorm,
+        Y_prob,
+        Y_hat,
+        Y_true,
+        predict_slide_label,
+    )
+
+
+def model_save(
+    c_model,
+    args,
+):
+    """_summary_
+
+    Args:
+        c_model (_type_): _description_
+        args (_type_): _description_
+    """
+    model_checkpoint_path = os.path.join(args.checkpoints_dir, "models")
+    os.makedirs(model_checkpoint_path, exist_ok=True)
+
+    clam_model_names = ["_Att", "_Ins", "_Bag"]
+
+    if args.m_clam_op:
+        if args.att_gate:
             att_nets = c_model.clam_model()[0]
             for m in range(len(att_nets)):
-                att_nets[m].save(os.path.join(c_model_dir, 'G' + clam_model_names[0], 'Model_' + str(m + 1)))
+                att_nets[m].save(
+                    os.path.join(
+                        model_checkpoint_path,
+                        "G" + clam_model_names[0],
+                        "Model_" + str(m + 1),
+                    )
+                )
         else:
             att_nets = c_model.clam_model()[0]
             for m in range(len(att_nets)):
-                att_nets[m].save(os.path.join(c_model_dir, 'NG' + clam_model_names[0], 'Model_' + str(m + 1)))
+                att_nets[m].save(
+                    os.path.join(
+                        model_checkpoint_path,
+                        "NG" + clam_model_names[0],
+                        "Model_" + str(m + 1),
+                    )
+                )
 
-        for n in range(n_class):
+        for n in range(args.n_class):
             ins_nets = c_model.clam_model()[1]
             bag_nets = c_model.clam_model()[2]
 
-            ins_nets[n].save(os.path.join(c_model_dir, 'M' + clam_model_names[1], 'Class_' + str(n)))
-            bag_nets[n].save(os.path.join(c_model_dir, 'M' + clam_model_names[2], 'Class_' + str(n)))
+            ins_nets[n].save(
+                os.path.join(
+                    model_checkpoint_path, "M" + clam_model_names[1], "Class_" + str(n)
+                )
+            )
+            bag_nets[n].save(
+                os.path.join(
+                    model_checkpoint_path, "M" + clam_model_names[2], "Class_" + str(n)
+                )
+            )
     else:
-        if att_gate:
+        if args.att_gate:
             att_nets = c_model.clam_model()[0]
             for m in range(len(att_nets)):
-                att_nets[m].save(os.path.join(c_model_dir, 'G' + clam_model_names[0], 'Model_' + str(m + 1)))
+                att_nets[m].save(
+                    os.path.join(
+                        model_checkpoint_path,
+                        "G" + clam_model_names[0],
+                        "Model_" + str(m + 1),
+                    )
+                )
         else:
             att_nets = c_model.clam_model()[0]
             for m in range(len(att_nets)):
-                att_nets[m].save(os.path.join(c_model_dir, 'NG' + clam_model_names[0], 'Model_' + str(m + 1)))
+                att_nets[m].save(
+                    os.path.join(
+                        model_checkpoint_path,
+                        "NG" + clam_model_names[0],
+                        "Model_" + str(m + 1),
+                    )
+                )
 
-        for n in range(n_class):
+        for n in range(args.n_class):
             ins_nets = c_model.clam_model()[1]
-            ins_nets[n].save(os.path.join(c_model_dir, 'M' + clam_model_names[1], 'Class_' + str(n)))
+            ins_nets[n].save(
+                os.path.join(
+                    model_checkpoint_path, "M" + clam_model_names[1], "Class_" + str(n)
+                )
+            )
 
-        c_model.clam_model()[2].save(os.path.join(c_model_dir, 'S' + clam_model_names[2]))
+        c_model.clam_model()[2].save(
+            os.path.join(model_checkpoint_path, "S" + clam_model_names[2])
+        )
 
 
-def restore_model(c_model_dir, n_class, m_clam_op, att_gate):
+def restore_model(
+    args,
+):
+    """_summary_
 
-    clam_model_names = ['_Att', '_Ins', '_Bag']
+    Args:
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    model_checkpoint_path = os.path.join(args.checkpoints_dir, "models")
+    assert os.path.exists(model_checkpoint_path), Exception(
+        f"Not Found Error: Could not find the model checkpoint path on {model_checkpoint_path}"
+    )
+
+    clam_model_names = ["_Att", "_Ins", "_Bag"]
 
     trained_att_net = list()
     trained_ins_classifier = list()
     trained_bag_classifier = list()
 
-    if m_clam_op:
-        if att_gate:
-            att_nets_dir = os.path.join(c_model_dir, 'G' + clam_model_names[0])
+    if args.m_clam_op:
+        if args.att_gate:
+            att_nets_dir = os.path.join(
+                model_checkpoint_path, "G" + clam_model_names[0]
+            )
             for k in range(len(os.listdir(att_nets_dir))):
-                att_net = tf.keras.models.load_model(os.path.join(att_nets_dir, 'Model_' + str(k + 1)))
+                att_net = tf.keras.models.load_model(
+                    os.path.join(att_nets_dir, "Model_" + str(k + 1))
+                )
                 trained_att_net.append(att_net)
         else:
-            att_nets_dir = os.path.join(c_model_dir, 'NG' + clam_model_names[0])
+            att_nets_dir = os.path.join(
+                model_checkpoint_path, "NG" + clam_model_names[0]
+            )
             for k in range(len(os.listdir(att_nets_dir))):
-                att_net = tf.keras.models.load_model(os.path.join(att_nets_dir, 'Model_' + str(k + 1)))
+                att_net = tf.keras.models.load_model(
+                    os.path.join(att_nets_dir, "Model_" + str(k + 1))
+                )
                 trained_att_net.append(att_net)
 
-        ins_nets_dir = os.path.join(c_model_dir, 'M' + clam_model_names[1])
-        bag_nets_dir = os.path.join(c_model_dir, 'M' + clam_model_names[2])
+        ins_nets_dir = os.path.join(model_checkpoint_path, "M" + clam_model_names[1])
+        bag_nets_dir = os.path.join(model_checkpoint_path, "M" + clam_model_names[2])
 
-        for m in range(n_class):
-            ins_net = tf.keras.models.load_model(os.path.join(ins_nets_dir, 'Class_' + str(m)))
-            bag_net = tf.keras.models.load_model(os.path.join(bag_nets_dir, 'Class_' + str(m)))
+        for m in range(args.n_class):
+            ins_net = tf.keras.models.load_model(
+                os.path.join(ins_nets_dir, "Class_" + str(m))
+            )
+            bag_net = tf.keras.models.load_model(
+                os.path.join(bag_nets_dir, "Class_" + str(m))
+            )
 
             trained_ins_classifier.append(ins_net)
             trained_bag_classifier.append(bag_net)
 
-        c_trained_model = [trained_att_net, trained_ins_classifier, trained_bag_classifier]
+        c_trained_model = [
+            trained_att_net,
+            trained_ins_classifier,
+            trained_bag_classifier,
+        ]
     else:
-        if att_gate:
-            att_nets_dir = os.path.join(c_model_dir, 'G' + clam_model_names[0])
+        if args.att_gate:
+            att_nets_dir = os.path.join(
+                model_checkpoint_path, "G" + clam_model_names[0]
+            )
             for k in range(len(os.listdir(att_nets_dir))):
-                att_net = tf.keras.models.load_model(os.path.join(att_nets_dir, 'Model_' + str(k + 1)))
+                att_net = tf.keras.models.load_model(
+                    os.path.join(att_nets_dir, "Model_" + str(k + 1))
+                )
                 trained_att_net.append(att_net)
         else:
-            att_nets_dir = os.path.join(c_model_dir, 'NG' + clam_model_names[0])
+            att_nets_dir = os.path.join(
+                model_checkpoint_path, "NG" + clam_model_names[0]
+            )
             for k in range(len(os.listdir(att_nets_dir))):
-                att_net = tf.keras.models.load_model(os.path.join(att_nets_dir, 'Model_' + str(k + 1)))
+                att_net = tf.keras.models.load_model(
+                    os.path.join(att_nets_dir, "Model_" + str(k + 1))
+                )
                 trained_att_net.append(att_net)
 
-        ins_nets_dir = os.path.join(c_model_dir, 'M' + clam_model_names[1])
+        ins_nets_dir = os.path.join(model_checkpoint_path, "M" + clam_model_names[1])
 
-        for m in range(n_class):
-            ins_net = tf.keras.models.load_model(os.path.join(ins_nets_dir, 'Class_' + str(m)))
+        for m in range(args.n_class):
+            ins_net = tf.keras.models.load_model(
+                os.path.join(ins_nets_dir, "Class_" + str(m))
+            )
             trained_ins_classifier.append(ins_net)
 
-        bag_nets_dir = os.path.join(c_model_dir, 'S' + clam_model_names[2])
+        bag_nets_dir = os.path.join(model_checkpoint_path, "S" + clam_model_names[2])
         trained_bag_classifier.append(tf.keras.models.load_model(bag_nets_dir))
 
-        c_trained_model = [trained_att_net, trained_ins_classifier, trained_bag_classifier[0]]
+        c_trained_model = [
+            trained_att_net,
+            trained_ins_classifier,
+            trained_bag_classifier[0],
+        ]
 
     return c_trained_model

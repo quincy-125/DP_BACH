@@ -1,4 +1,29 @@
+# Copyright 2022 Mayo Clinic. All Rights Reserved.
+#
+# Author: Quincy Gu (M216613)
+# Affliation: Division of Computational Pathology and Artificial Intelligence,
+# Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
+# Email: Gu.Qiangqiang@mayo.edu
+# Version: 1.0.1
+# Created on: 11/28/2022 06:37 pm CST
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+
 import tensorflow as tf
+import os
+import json
 import time
 
 from MODEL.model_clam import S_CLAM, M_CLAM
@@ -8,392 +33,263 @@ from UTILITY.model_test import test_step
 from UTILITY.util import model_save, restore_model, tf_shut_up, str_to_bool
 
 
-def train_val(train_log, val_log, train_path, val_path, imf_norm_op, c_model,
-              i_wd_op_name, b_wd_op_name, a_wd_op_name,
-              i_optimizer_name, b_optimizer_name, a_optimizer_name,
-              i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
-              i_learn_rate, b_learn_rate, a_learn_rate,
-              i_l2_decay, b_l2_decay, a_l2_decay, top_k_percent,
-              batch_size, batch_op, epochs):
+def train_val(
+    c_model,
+    args,
+):
+    """_summary_
 
-    train_summary_writer = tf.summary.create_file_writer(train_log)
-    val_summary_writer = tf.summary.create_file_writer(val_log)
+    Args:
+        c_model (_type_): _description_
+        args (_type_): _description_
+    """
+    train_summary_path = os.path.join(args.checkpoints_dir, "summary/train")
+    os.makedirs(train_summary_path, exist_ok=True)
+    train_summary_writer = tf.summary.create_file_writer(train_summary_path)
 
-    for epoch in range(epochs):
+    val_summary_path = os.path.join(args.checkpoints_dir, "summary/val")
+    os.makedirs(val_summary_path, exist_ok=True)
+    val_summary_writer = tf.summary.create_file_writer(val_summary_path)
+
+    train_val_logs = list()
+    for epoch in range(args.epochs):
         # Training Step
         start_time = time.time()
 
-        train_loss, train_ins_loss, train_bag_loss, train_tn, train_fp, train_fn, train_tp, \
-        train_sensitivity, train_specificity, \
-        train_acc, train_auc = train_step(c_model=c_model,
-                                          train_path=train_path,
-                                          imf_norm_op=imf_norm_op,
-                                          i_wd_op_name=i_wd_op_name,
-                                          b_wd_op_name=b_wd_op_name,
-                                          a_wd_op_name=a_wd_op_name,
-                                          i_optimizer_name=i_optimizer_name,
-                                          b_optimizer_name=b_optimizer_name,
-                                          a_optimizer_name=a_optimizer_name,
-                                          i_loss_name=i_loss_name,
-                                          b_loss_name=b_loss_name,
-                                          mut_ex=mut_ex,
-                                          n_class=n_class,
-                                          c1=c1,
-                                          c2=c2,
-                                          i_learn_rate=i_learn_rate,
-                                          b_learn_rate=b_learn_rate,
-                                          a_learn_rate=a_learn_rate,
-                                          i_l2_decay=i_l2_decay,
-                                          b_l2_decay=b_l2_decay,
-                                          a_l2_decay=a_l2_decay,
-                                          top_k_percent=top_k_percent,
-                                          batch_size=batch_size,
-                                          batch_op=batch_op)
+        (
+            train_loss,
+            train_ins_loss,
+            train_bag_loss,
+            train_tn,
+            train_fp,
+            train_fn,
+            train_tp,
+            train_sensitivity,
+            train_specificity,
+            train_acc,
+            train_auc,
+        ) = train_step(
+            c_model=c_model,
+            args=args,
+        )
 
         with train_summary_writer.as_default():
-            tf.summary.scalar('Total Loss', float(train_loss), step=epoch)
-            tf.summary.scalar('Instance Loss', float(train_ins_loss), step=epoch)
-            tf.summary.scalar('Bag Loss', float(train_bag_loss), step=epoch)
-            tf.summary.scalar('Accuracy', float(train_acc), step=epoch)
-            tf.summary.scalar('AUC', float(train_auc), step=epoch)
-            tf.summary.scalar('Sensitivity', float(train_sensitivity), step=epoch)
-            tf.summary.scalar('Specificity', float(train_specificity), step=epoch)
-            tf.summary.histogram('True Positive', int(train_tp), step=epoch)
-            tf.summary.histogram('False Positive', int(train_fp), step=epoch)
-            tf.summary.histogram('True Negative', int(train_tn), step=epoch)
-            tf.summary.histogram('False Negative', int(train_fn), step=epoch)
+            tf.summary.scalar("Total Loss", float(train_loss), step=epoch)
+            tf.summary.scalar("Instance Loss", float(train_ins_loss), step=epoch)
+            tf.summary.scalar("Bag Loss", float(train_bag_loss), step=epoch)
+            tf.summary.scalar("Accuracy", float(train_acc), step=epoch)
+            tf.summary.scalar("AUC", float(train_auc), step=epoch)
+            tf.summary.scalar("Sensitivity", float(train_sensitivity), step=epoch)
+            tf.summary.scalar("Specificity", float(train_specificity), step=epoch)
+            tf.summary.histogram("True Positive", int(train_tp), step=epoch)
+            tf.summary.histogram("False Positive", int(train_fp), step=epoch)
+            tf.summary.histogram("True Negative", int(train_tn), step=epoch)
+            tf.summary.histogram("False Negative", int(train_fn), step=epoch)
 
         # Validation Step
-        val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, \
-        val_sensitivity, val_specificity, \
-        val_acc, val_auc = val_step(c_model=c_model,
-                                    val_path=val_path,
-                                    imf_norm_op=imf_norm_op,
-                                    i_loss_name=i_loss_name,
-                                    b_loss_name=b_loss_name,
-                                    mut_ex=mut_ex,
-                                    n_class=n_class,
-                                    c1=c1,
-                                    c2=c2,
-                                    top_k_percent=top_k_percent,
-                                    batch_size=batch_size,
-                                    batch_op=batch_op)
+        (
+            val_loss,
+            val_ins_loss,
+            val_bag_loss,
+            val_tn,
+            val_fp,
+            val_fn,
+            val_tp,
+            val_sensitivity,
+            val_specificity,
+            val_acc,
+            val_auc,
+        ) = val_step(
+            c_model=c_model,
+            args=args,
+        )
 
         with val_summary_writer.as_default():
-            tf.summary.scalar('Total Loss', float(val_loss), step=epoch)
-            tf.summary.scalar('Instance Loss', float(val_ins_loss), step=epoch)
-            tf.summary.scalar('Bag Loss', float(val_bag_loss), step=epoch)
-            tf.summary.scalar('Accuracy', float(val_acc), step=epoch)
-            tf.summary.scalar('AUC', float(val_auc), step=epoch)
-            tf.summary.scalar('Sensitivity', float(val_sensitivity), step=epoch)
-            tf.summary.scalar('Specificity', float(val_specificity), step=epoch)
-            tf.summary.histogram('True Positive', int(val_tp), step=epoch)
-            tf.summary.histogram('False Positive', int(val_fp), step=epoch)
-            tf.summary.histogram('True Negative', int(val_tn), step=epoch)
-            tf.summary.histogram('False Negative', int(val_fn), step=epoch)
+            tf.summary.scalar("Total Loss", float(val_loss), step=epoch)
+            tf.summary.scalar("Instance Loss", float(val_ins_loss), step=epoch)
+            tf.summary.scalar("Bag Loss", float(val_bag_loss), step=epoch)
+            tf.summary.scalar("Accuracy", float(val_acc), step=epoch)
+            tf.summary.scalar("AUC", float(val_auc), step=epoch)
+            tf.summary.scalar("Sensitivity", float(val_sensitivity), step=epoch)
+            tf.summary.scalar("Specificity", float(val_specificity), step=epoch)
+            tf.summary.histogram("True Positive", int(val_tp), step=epoch)
+            tf.summary.histogram("False Positive", int(val_fp), step=epoch)
+            tf.summary.histogram("True Negative", int(val_tn), step=epoch)
+            tf.summary.histogram("False Negative", int(val_fn), step=epoch)
 
         epoch_run_time = time.time() - start_time
 
         # early-stopping
-        tf.keras.callbacks.EarlyStopping(monitor='val_loss',
-                                         min_delta=0.1,
-                                         patience=20,
-                                         mode='min',
-                                         restore_best_weights=True)
+        tf.keras.callbacks.EarlyStopping(
+            monitor="val_loss",
+            min_delta=0.1,
+            patience=20,
+            mode="min",
+            restore_best_weights=True,
+        )
 
-        template = '\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, Epoch Running ' \
-                   'Time: {} '
-        print(template.format(epoch + 1,
-                              f"{float(train_loss):.8}",
-                              f"{float(train_acc):.4%}",
-                              f"{float(val_loss):.8}",
-                              f"{float(val_acc):.4%}",
-                              "--- %s mins ---" % int(epoch_run_time / 60)))
+        template = (
+            "\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, Epoch Running "
+            "Time: {} "
+        )
+        train_val_log = template.format(
+            epoch + 1,
+            f"{float(train_loss):.8}",
+            f"{float(train_acc):.4%}",
+            f"{float(val_loss):.8}",
+            f"{float(val_acc):.4%}",
+            "--- %s mins ---" % int(epoch_run_time / 60),
+        )
+        train_val_logs.append(train_val_log)
+
+        print(train_val_log)
+
+    train_val_logs_path = os.path.join(args.checkpoints_dir, "logs")
+    os.makedirs(train_val_logs_path, exist_ok=True)
+    with open(os.path.join(train_val_logs_path, "train_val_log.txt"), "w+") as f:
+        for items in train_val_logs:
+            f.write("%s\n" % items)
 
 
-def clam_optimize(train_log, val_log, train_path, val_path, imf_norm_op, c_model,
-                  i_wd_op_name, b_wd_op_name, a_wd_op_name,
-                  i_optimizer_name, b_optimizer_name, a_optimizer_name,
-                  i_loss_name, b_loss_name, mut_ex, n_class, c1, c2,
-                  i_learn_rate, b_learn_rate, a_learn_rate, i_l2_decay, b_l2_decay,
-                  a_l2_decay, top_k_percent, batch_size, batch_op,
-                  c_model_dir, m_clam_op, att_gate, epochs):
+def clam_optimize(
+    c_model,
+    args,
+):
+    """_summary_
 
-    train_val(train_log=train_log,
-              val_log=val_log,
-              train_path=train_path,
-              val_path=val_path,
-              imf_norm_op=imf_norm_op,
-              c_model=c_model,
-              i_wd_op_name=i_wd_op_name,
-              b_wd_op_name=b_wd_op_name,
-              a_wd_op_name=a_wd_op_name,
-              i_optimizer_name=i_optimizer_name,
-              b_optimizer_name=b_optimizer_name,
-              a_optimizer_name=a_optimizer_name,
-              i_loss_name=i_loss_name,
-              b_loss_name=b_loss_name,
-              mut_ex=mut_ex,
-              n_class=n_class,
-              c1=c1,
-              c2=c2,
-              i_learn_rate=i_learn_rate,
-              b_learn_rate=b_learn_rate,
-              a_learn_rate=a_learn_rate,
-              i_l2_decay=i_l2_decay,
-              b_l2_decay=b_l2_decay,
-              a_l2_decay=a_l2_decay,
-              top_k_percent=top_k_percent,
-              batch_size=batch_size,
-              batch_op=batch_op,
-              epochs=epochs)
+    Args:
+        c_model (_type_): _description_
+        args (_type_): _description_
+    """
+    train_val(
+        c_model=c_model,
+        args=args,
+    )
 
-    model_save(c_model=c_model,
-               c_model_dir=c_model_dir,
-               n_class=n_class,
-               m_clam_op=m_clam_op,
-               att_gate=att_gate)
+    model_save(
+        c_model=c_model,
+        args=args,
+    )
 
-def clam_test(n_class, top_k_percent, att_gate, att_only, mil_ins, mut_ex, test_path,
-              result_path, result_file_name, c_model_dir,
-              dim_compress_features, imf_norm_op, m_clam_op, n_test_steps):
 
-    c_trained_model = restore_model(c_model_dir=c_model_dir,
-                                    n_class=n_class,
-                                    m_clam_op=m_clam_op,
-                                    att_gate=att_gate)
+def clam_test(
+    args,
+):
+    """_summary_
 
-    test_step(n_class=n_class,
-              top_k_percent=top_k_percent,
-              att_gate=att_gate,
-              att_only=att_only,
-              mil_ins=mil_ins,
-              mut_ex=mut_ex,
-              m_clam_op=m_clam_op,
-              imf_norm_op=imf_norm_op,
-              c_model=c_trained_model,
-              dim_compress_features=dim_compress_features,
-              test_path=test_path,
-              result_path=result_path,
-              result_file_name=result_file_name,
-              n_test_steps=n_test_steps)
+    Args:
+        args (_type_): _description_
+    """
+    c_trained_model = restore_model(
+        args=args,
+    )
 
-def load_model(n_class, top_k_percent, net_size, mut_ex, att_gate, att_only,
-               mil_ins, dropout, dropout_rate):
+    test_step(
+        c_model=c_trained_model,
+        args=args,
+    )
 
-    s_clam = S_CLAM(att_gate=att_gate,
-                    net_size=net_size,
-                    top_k_percent=top_k_percent,
-                    n_class=n_class,
-                    mut_ex=mut_ex,
-                    dropout=dropout,
-                    drop_rate=dropout_rate,
-                    mil_ins=mil_ins,
-                    att_only=att_only)
 
-    m_clam = M_CLAM(att_gate=att_gate,
-                    net_size=net_size,
-                    top_k_percent=top_k_percent,
-                    n_class=n_class,
-                    mut_ex=mut_ex,
-                    dropout=dropout,
-                    drop_rate=dropout_rate,
-                    mil_ins=mil_ins,
-                    att_only=att_only)
+def load_model(
+    args,
+):
+    """_summary_
+
+    Args:
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    s_clam = S_CLAM(
+        att_gate=args.att_gate,
+        net_size=args.net_size,
+        top_k_percent=args.top_k_percent,
+        n_class=args.n_class,
+        mut_ex=args.mut_ex,
+        drop_rate=args.dropout_rate,
+        mil_ins=args.mil_ins,
+        att_only=args.att_only,
+    )
+
+    m_clam = M_CLAM(
+        att_gate=args.att_gate,
+        net_size=args.net_size,
+        top_k_percent=args.top_k_percent,
+        n_class=args.n_class,
+        mut_ex=args.mut_ex,
+        drop_rate=args.dropout_rate,
+        mil_ins=args.mil_ins,
+        att_only=args.att_only,
+    )
 
     s_clam_model = s_clam
     m_clam_model = m_clam
 
-    c_model = [s_clam_model, m_clam_model]
+    if args.m_clam_op:
+        c_model = m_clam_model
+    else:
+        c_model = s_clam_model
 
     return c_model
 
-def clam(train_log, val_log, train_path, val_path, test_path,
-              result_path, result_file_name, imf_norm_op_name,
-              dim_compress_features, net_size, dropout_name, dropout_rate,
-              i_optimizer_name, b_optimizer_name, a_optimizer_name,
-              i_loss_name, b_loss_name, mut_ex_name, n_class, c1, c2,
-              i_learn_rate, b_learn_rate, a_learn_rate,
-              i_l2_decay, b_l2_decay, a_l2_decay,
-              top_k_percent, batch_size, batch_op_name,
-              c_model_dir, att_only_name, mil_ins_name, att_gate_name,
-              epochs, n_test_steps, no_warn_op_name,
-              i_wd_op_name, b_wd_op_name, a_wd_op_name,
-              m_clam_op_name, is_training_name):
 
-    str_bool_dic = str_to_bool()
+def clam(
+    args,
+):
+    """_summary_
 
-    imf_norm_op = str_bool_dic[imf_norm_op_name]
-    dropout = str_bool_dic[dropout_name]
-    mut_ex = str_bool_dic[mut_ex_name]
-    batch_op = str_bool_dic[batch_op_name]
-    att_only = str_bool_dic[att_only_name]
-    mil_ins = str_bool_dic[mil_ins_name]
-    att_gate = str_bool_dic[att_gate_name]
-    no_warn_op = str_bool_dic[no_warn_op_name]
-    m_clam_op = str_bool_dic[m_clam_op_name]
-    is_training = str_bool_dic[is_training_name]
+    Args:
+        args (_type_): _description_
+    """
+    logging_config_path = os.path.join(args.checkpoints_dir, "config")
+    os.makedirs(logging_config_path, exist_ok=True)
 
-    if is_training:
-        c_model = load_model(n_class=n_class,
-                             top_k_percent=top_k_percent,
-                             net_size=net_size,
-                             mut_ex=mut_ex,
-                             att_gate=att_gate,
-                             att_only=att_only,
-                             mil_ins=mil_ins,
-                             dropout=dropout,
-                             dropout_rate=dropout_rate)
+    if args.is_training:
+        with open(os.path.join(logging_config_path, "train.json"), "w") as f:
+            json.dump(dict(args), f)
 
-        tf_shut_up(no_warn_op=no_warn_op)
+        c_model = load_model(
+            args=args,
+        )
 
-        if m_clam_op:
+        tf_shut_up(no_warn_op=args.no_warn_op)
+
+        if args.m_clam_op:
             b_c_model_index = 1
         else:
             b_c_model_index = 0
 
-        clam_optimize(train_log=train_log, val_log=val_log,
-                      train_path=train_path, val_path=val_path,
-                      imf_norm_op=imf_norm_op,
-                      c_model=c_model[b_c_model_index],
-                      i_wd_op_name=i_wd_op_name,
-                      b_wd_op_name=b_wd_op_name,
-                      a_wd_op_name=a_wd_op_name,
-                      i_optimizer_name=i_optimizer_name,
-                      b_optimizer_name=b_optimizer_name,
-                      a_optimizer_name=a_optimizer_name,
-                      i_loss_name=i_loss_name,
-                      b_loss_name=b_loss_name,
-                      mut_ex=mut_ex,
-                      n_class=n_class,
-                      c1=c1, c2=c2,
-                      i_learn_rate=i_learn_rate,
-                      b_learn_rate=b_learn_rate,
-                      a_learn_rate=a_learn_rate,
-                      i_l2_decay=i_l2_decay,
-                      b_l2_decay=b_l2_decay,
-                      a_l2_decay=a_l2_decay,
-                      top_k_percent=top_k_percent,
-                      batch_size=batch_size, batch_op=batch_op,
-                      c_model_dir=c_model_dir,
-                      m_clam_op=m_clam_op,
-                      att_gate=att_gate,
-                      epochs=epochs)
+        clam_optimize(
+            c_model=c_model,
+            args=args,
+        )
     else:
-        clam_test(n_class=n_class,
-                  top_k_percent=top_k_percent,
-                  att_gate=att_gate,
-                  att_only=att_only,
-                  mil_ins=mil_ins,
-                  mut_ex=mut_ex,
-                  test_path=test_path,
-                  result_path=result_path,
-                  result_file_name=result_file_name,
-                  c_model_dir=c_model_dir,
-                  dim_compress_features=dim_compress_features,
-                  imf_norm_op=imf_norm_op,
-                  m_clam_op=m_clam_op,
-                  n_test_steps=n_test_steps)
+        with open(os.path.join(logging_config_path, "test.json"), "w") as f:
+            json.dump(dict(args), f)
+
+        clam_test(
+            args=args,
+        )
 
 
-def clam_main(train_log, val_log, train_path, val_path, test_path, result_path, result_file_name,
-              imf_norm_op_name, dim_compress_features, net_size, dropout_name, dropout_rate,
-              i_optimizer_name, b_optimizer_name, a_optimizer_name, i_loss_name, b_loss_name,
-              mut_ex_name, n_class, c1, c2, i_learn_rate, b_learn_rate, a_learn_rate,
-              i_l2_decay, b_l2_decay, a_l2_decay, top_k_percent, batch_size, batch_op_name,
-              c_model_dir, att_only_name, mil_ins_name, att_gate_name, epochs, n_test_steps, no_warn_op_name,
-              i_wd_op_name, b_wd_op_name, a_wd_op_name, m_clam_op_name, is_training_name, m_gpu_op_name):
+def clam_main(
+    args,
+):
+    """_summary_
 
-    str_bool_dic = str_to_bool()
-    m_gpu = str_bool_dic[m_gpu_op_name]
-
-    if m_gpu:
-        gpus = tf.config.experimental.list_logical_devices('GPU')
+    Args:
+        args (_type_): _description_
+    """
+    if args.multi_gpu:
+        gpus = tf.config.experimental.list_logical_devices("GPU")
         if gpus:
             for gpu in gpus:
                 with tf.device(gpu.name):
-                    clam(train_log=train_log,
-                         val_log=val_log,
-                         train_path=train_path,
-                         val_path=val_path,
-                         test_path=test_path,
-                         result_path=result_path,
-                         result_file_name=result_file_name,
-                         imf_norm_op_name=imf_norm_op_name,
-                         dim_compress_features=dim_compress_features,
-                         net_size=net_size,
-                         dropout_name=dropout_name,
-                         dropout_rate=dropout_rate,
-                         i_optimizer_name=i_optimizer_name,
-                         b_optimizer_name=b_optimizer_name,
-                         a_optimizer_name=a_optimizer_name,
-                         i_loss_name=i_loss_name,
-                         b_loss_name=b_loss_name,
-                         mut_ex_name=mut_ex_name,
-                         n_class=n_class,
-                         c1=c1,
-                         c2=c2,
-                         i_learn_rate=i_learn_rate,
-                         b_learn_rate=b_learn_rate,
-                         a_learn_rate=a_learn_rate,
-                         i_l2_decay=i_l2_decay,
-                         b_l2_decay=b_l2_decay,
-                         a_l2_decay=a_l2_decay,
-                         top_k_percent=top_k_percent,
-                         batch_size=batch_size,
-                         batch_op_name=batch_op_name,
-                         c_model_dir=c_model_dir,
-                         att_only_name=att_only_name,
-                         mil_ins_name=mil_ins_name,
-                         att_gate_name=att_gate_name,
-                         epochs=epochs,
-                         n_test_steps=n_test_steps,
-                         no_warn_op_name=no_warn_op_name,
-                         i_wd_op_name=i_wd_op_name,
-                         b_wd_op_name=b_wd_op_name,
-                         a_wd_op_name=a_wd_op_name,
-                         m_clam_op_name=m_clam_op_name,
-                         is_training_name=is_training_name)
+                    clam(
+                        args=args,
+                    )
     else:
-        clam(train_log=train_log,
-                  val_log=val_log,
-                  train_path=train_path,
-                  val_path=val_path,
-                  test_path=test_path,
-                  result_path=result_path,
-                  result_file_name=result_file_name,
-                  imf_norm_op_name=imf_norm_op_name,
-                  dim_compress_features=dim_compress_features,
-                  net_size=net_size,
-                  dropout_name=dropout_name,
-                  dropout_rate=dropout_rate,
-                  i_optimizer_name=i_optimizer_name,
-                  b_optimizer_name=b_optimizer_name,
-                  a_optimizer_name=a_optimizer_name,
-                  i_loss_name=i_loss_name,
-                  b_loss_name=b_loss_name,
-                  mut_ex_name=mut_ex_name,
-                  n_class=n_class,
-                  c1=c1,
-                  c2=c2,
-                  i_learn_rate=i_learn_rate,
-                  b_learn_rate=b_learn_rate,
-                  a_learn_rate=a_learn_rate,
-                  i_l2_decay=i_l2_decay,
-                  b_l2_decay=b_l2_decay,
-                  a_l2_decay=a_l2_decay,
-                  top_k_percent=top_k_percent,
-                  batch_size=batch_size,
-                  batch_op_name=batch_op_name,
-                  c_model_dir=c_model_dir,
-                  att_only_name=att_only_name,
-                  mil_ins_name=mil_ins_name,
-                  att_gate_name=att_gate_name,
-                  epochs=epochs,
-                  n_test_steps=n_test_steps,
-                  no_warn_op_name=no_warn_op_name,
-                  i_wd_op_name=i_wd_op_name,
-                  b_wd_op_name=b_wd_op_name,
-                  a_wd_op_name=a_wd_op_name,
-                  m_clam_op_name=m_clam_op_name,
-                  is_training_name=is_training_name)
+        clam(
+            args=args,
+        )

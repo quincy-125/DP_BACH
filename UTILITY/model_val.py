@@ -1,4 +1,28 @@
+# Copyright 2022 Mayo Clinic. All Rights Reserved.
+#
+# Author: Quincy Gu (M216613)
+# Affliation: Division of Computational Pathology and Artificial Intelligence,
+# Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
+# Email: Gu.Qiangqiang@mayo.edu
+# Version: 1.0.1
+# Created on: 11/28/2022 06:37 pm CST
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+
 import tensorflow as tf
+import pandas as pd
 import sklearn
 from sklearn import metrics
 import os
@@ -8,30 +32,80 @@ import statistics
 from UTILITY.util import get_data_from_tf, most_frequent, load_loss_func
 
 
-def nb_val(img_features, slide_label, c_model, i_loss_func, b_loss_func, n_class, c1, c2, mut_ex):
+def nb_val(
+    img_features,
+    slide_label,
+    c_model,
+    i_loss_func,
+    b_loss_func,
+    args,
+):
+    """_summary_
 
-    att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-    Y_prob, Y_hat, Y_true, predict_slide_label = c_model.call(img_features, slide_label)
+    Args:
+        img_features (_type_): _description_
+        slide_label (_type_): _description_
+        c_model (_type_): _description_
+        i_loss_func (_type_): _description_
+        b_loss_func (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    c_model_dict = c_model.call(img_features, slide_label)
+
+    (
+        ins_labels,
+        ins_logits,
+        Y_prob,
+        Y_true,
+        predict_slide_label,
+    ) = (
+        c_model_dict["ins_labels"],
+        c_model_dict["ins_logits"],
+        c_model_dict["Y_prob"],
+        c_model_dict["Y_true"],
+        c_model_dict["predict_slide_label"],
+    )
 
     ins_loss = list()
     for j in range(len(ins_logits)):
         i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
         ins_loss.append(i_loss)
-    if mut_ex:
-        I_Loss = (tf.math.add_n(ins_loss) / len(ins_loss)) / n_class
+    if args.mut_ex:
+        I_Loss = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
     else:
         I_Loss = tf.math.add_n(ins_loss) / len(ins_loss)
 
     B_Loss = b_loss_func(Y_true, Y_prob)
 
-    T_Loss = c1 * B_Loss + c2 * I_Loss
+    T_Loss = args.c1 * B_Loss + args.c2 * I_Loss
 
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
-def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, c_model,
-          i_loss_func, b_loss_func, n_class, c1, c2, mut_ex):
+def b_val(
+    img_features,
+    slide_label,
+    c_model,
+    i_loss_func,
+    b_loss_func,
+    args,
+):
+    """_summary_
 
+    Args:
+        img_features (_type_): _description_
+        slide_label (_type_): _description_
+        c_model (_type_): _description_
+        i_loss_func (_type_): _description_
+        b_loss_func (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     step_size = 0
 
     Ins_Loss = list()
@@ -40,44 +114,72 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, c_mod
 
     label_predict = list()
 
-    n_ins = top_k_percent * batch_size
+    n_ins = args.top_k_percent * args.batch_size
     n_ins = int(n_ins)
 
-    for n_step in range(0, (n_samples // batch_size + 1)):
-        if step_size < (n_samples - batch_size):
-            att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-            Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features[step_size:(step_size + batch_size)],
-                                                                slide_label)
+    for n_step in range(0, (len(img_features) // args.batch_size + 1)):
+        if step_size < (len(img_features) - args.batch_size):
+            c_model_dict = c_model.call(
+                img_features[step_size : (step_size + args.batch_size)], slide_label
+            )
+
+            (
+                ins_labels,
+                ins_logits,
+                Y_prob,
+                Y_true,
+                predict_label,
+            ) = (
+                c_model_dict["ins_labels"],
+                c_model_dict["ins_logits"],
+                c_model_dict["Y_prob"],
+                c_model_dict["Y_true"],
+                c_model_dict["predict_slide_label"],
+            )
 
             ins_loss = list()
             for j in range(len(ins_logits)):
                 i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
                 ins_loss.append(i_loss)
-            if mut_ex:
-                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / n_class
+            if args.mut_ex:
+                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
             else:
                 Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
 
             Loss_B = b_loss_func(Y_true, Y_prob)
-            Loss_T = c1 * Loss_B + c2 * Loss_I
+            Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
 
         else:
-            att_score, A, h, ins_labels, ins_logits_unnorm, ins_logits, slide_score_unnorm, \
-            Y_prob, Y_hat, Y_true, predict_label = c_model.call(img_features[(step_size - n_ins):],
-                                                                slide_label)
+            c_model_dict = c_model.call(
+                img_features[(step_size - n_ins) :], slide_label
+            )
+
+            (
+                ins_labels,
+                ins_logits,
+                Y_prob,
+                Y_true,
+                predict_label,
+            ) = (
+                c_model_dict["ins_labels"],
+                c_model_dict["ins_logits"],
+                c_model_dict["Y_prob"],
+                c_model_dict["Y_true"],
+                c_model_dict["predict_slide_label"],
+            )
 
             ins_loss = list()
             for j in range(len(ins_logits)):
                 i_loss = i_loss_func(tf.one_hot(ins_labels[j], 2), ins_logits[j])
                 ins_loss.append(i_loss)
-            if mut_ex:
-                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / n_class
+            if args.mut_ex:
+                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
             else:
                 Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
 
             Loss_B = b_loss_func(Y_true, Y_prob)
 
-            Loss_T = c1 * Loss_B + c2 * Loss_I
+            Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
 
         Ins_Loss.append(float(Loss_I))
         Bag_Loss.append(float(Loss_B))
@@ -85,7 +187,7 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, c_mod
 
         label_predict.append(predict_label)
 
-        step_size += batch_size
+        step_size += args.batch_size
 
     I_Loss = statistics.mean(Ins_Loss)
     B_Loss = statistics.mean(Bag_Loss)
@@ -96,10 +198,22 @@ def b_val(batch_size, top_k_percent, n_samples, img_features, slide_label, c_mod
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
 
-def val_step(c_model, val_path, imf_norm_op, i_loss_name, b_loss_name, mut_ex, n_class,
-             c1, c2, top_k_percent, batch_size, batch_op):
+def val_step(
+    c_model,
+    args,
+):
+    """_summary_
 
-    i_loss_func, b_loss_func = load_loss_func(i_loss_func_name=i_loss_name, b_loss_func_name=b_loss_name)
+    Args:
+        c_model (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    i_loss_func, b_loss_func = load_loss_func(
+        args=args,
+    )
 
     loss_t = list()
     loss_i = list()
@@ -108,43 +222,54 @@ def val_step(c_model, val_path, imf_norm_op, i_loss_name, b_loss_name, mut_ex, n
     slide_true_label = list()
     slide_predict_label = list()
 
-    val_sample_list = os.listdir(val_path)
-    val_sample_list = random.sample(val_sample_list, len(val_sample_list))
+    val_img_uuids = list(pd.read_csv(args.val_data_dir, index_col=False).UUID)
+    all_img_uuids = list(os.listdir(args.all_tfrecords_path))
+
+    val_sample_list = [
+        os.path.join(args.all_tfrecords_path, img_uuid)
+        for img_uuid in all_img_uuids
+        if img_uuid.split("_")[-1].split(".tfrecords")[0] in val_img_uuids
+    ]
 
     for i in val_sample_list:
-        print('=', end="")
-        single_val_data = val_path + i
-        img_features, slide_label = get_data_from_tf(tf_path=single_val_data, imf_norm_op=imf_norm_op)
-        img_features = random.sample(img_features, len(img_features))  # follow the training loop, see details there
+        print("=", end="")
+        single_val_data = i
+        img_features, slide_label = get_data_from_tf(
+            tf_path=single_val_data,
+            args=args,
+        )
+        img_features = random.sample(
+            img_features, len(img_features)
+        )  # follow the training loop, see details there
 
-        if batch_op:
-            if batch_size < len(img_features):
-                I_Loss, B_Loss, T_Loss, predict_slide_label = b_val(batch_size=batch_size,
-                                                                    top_k_percent=top_k_percent,
-                                                                    n_samples=len(img_features),
-                                                                    img_features=img_features,
-                                                                    slide_label=slide_label,
-                                                                    c_model=c_model,
-                                                                    i_loss_func=i_loss_func,
-                                                                    b_loss_func=b_loss_func,
-                                                                    n_class=n_class, c1=c1, c2=c2,
-                                                                    mut_ex=mut_ex)
+        if args.batch_op:
+            if args.batch_size < len(img_features):
+                I_Loss, B_Loss, T_Loss, predict_slide_label = b_val(
+                    img_features=img_features,
+                    slide_label=slide_label,
+                    c_model=c_model,
+                    i_loss_func=i_loss_func,
+                    b_loss_func=b_loss_func,
+                    args=args,
+                )
             else:
-                I_Loss, B_Loss, T_Loss, predict_slide_label = nb_val(img_features=img_features,
-                                                                     slide_label=slide_label,
-                                                                     c_model=c_model,
-                                                                     i_loss_func=i_loss_func,
-                                                                     b_loss_func=b_loss_func,
-                                                                     n_class=n_class, c1=c1, c2=c2,
-                                                                     mut_ex=mut_ex)
+                I_Loss, B_Loss, T_Loss, predict_slide_label = nb_val(
+                    img_features=img_features,
+                    slide_label=slide_label,
+                    c_model=c_model,
+                    i_loss_func=i_loss_func,
+                    b_loss_func=b_loss_func,
+                    args=args,
+                )
         else:
-            I_Loss, B_Loss, T_Loss, predict_slide_label = nb_val(img_features=img_features,
-                                                                 slide_label=slide_label,
-                                                                 c_model=c_model,
-                                                                 i_loss_func=i_loss_func,
-                                                                 b_loss_func=b_loss_func,
-                                                                 n_class=n_class, c1=c1, c2=c2,
-                                                                 mut_ex=mut_ex)
+            I_Loss, B_Loss, T_Loss, predict_slide_label = nb_val(
+                img_features=img_features,
+                slide_label=slide_label,
+                c_model=c_model,
+                i_loss_func=i_loss_func,
+                b_loss_func=b_loss_func,
+                args=args,
+            )
 
         loss_t.append(float(T_Loss))
         loss_i.append(float(I_Loss))
@@ -153,7 +278,9 @@ def val_step(c_model, val_path, imf_norm_op, i_loss_name, b_loss_name, mut_ex, n
         slide_true_label.append(slide_label)
         slide_predict_label.append(predict_slide_label)
 
-    tn, fp, fn, tp = sklearn.metrics.confusion_matrix(slide_true_label, slide_predict_label).ravel()
+    tn, fp, fn, tp = sklearn.metrics.confusion_matrix(
+        slide_true_label, slide_predict_label
+    ).ravel()
     val_tn = int(tn)
     val_fp = int(fp)
     val_fn = int(fn)
@@ -163,12 +290,25 @@ def val_step(c_model, val_path, imf_norm_op, i_loss_name, b_loss_name, mut_ex, n
     val_specificity = round(val_tn / (val_tn + val_fp), 2)
     val_acc = round((val_tp + val_tn) / (val_tn + val_fp + val_fn + val_tp), 2)
 
-    fpr, tpr, thresholds = sklearn.metrics.roc_curve(slide_true_label, slide_predict_label, pos_label=1)
+    fpr, tpr, thresholds = sklearn.metrics.roc_curve(
+        slide_true_label, slide_predict_label, pos_label=1
+    )
     val_auc = round(sklearn.metrics.auc(fpr, tpr), 2)
 
     val_loss = statistics.mean(loss_t)
     val_ins_loss = statistics.mean(loss_i)
     val_bag_loss = statistics.mean(loss_b)
 
-    return val_loss, val_ins_loss, val_bag_loss, val_tn, val_fp, val_fn, val_tp, val_sensitivity, val_specificity, \
-           val_acc, val_auc
+    return (
+        val_loss,
+        val_ins_loss,
+        val_bag_loss,
+        val_tn,
+        val_fp,
+        val_fn,
+        val_tp,
+        val_sensitivity,
+        val_specificity,
+        val_acc,
+        val_auc,
+    )

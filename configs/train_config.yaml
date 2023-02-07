@@ -1,0 +1,106 @@
+# Copyright 2022 Mayo Clinic. All Rights Reserved.
+#
+# Author: Quincy Gu (M216613)
+# Affliation: Division of Computational Pathology and Artificial Intelligence, 
+# Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
+# Email: Gu.Qiangqiang@mayo.edu
+# Version: 1.0.1
+# Created on: 11/27/2022 6:35 pm CST
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+
+## The kf_cv_config yaml file starts with "---", comments start with "#", and the
+## kf_cv_config yaml file ends with "..."
+
+---
+  ## whether to train the model or not, only executing testing when it is False
+  is_training: True
+  ## whether or not enabling multiple GPU for model optimization process
+  multi_gpu: False
+  ## path to all tfrecords, including tfrecords used for training, validation, and testing
+  all_tfrecords_path: /home/quincy/data/bach_tfrecords
+  ## directory of training data split csv file including slide uuids used for training
+  train_data_dir: /home/quincy/data/bach_kf/fold_5/bach_fold_5_train.csv
+  ## directory of validation data split csv file including slide uuids used for validation
+  val_data_dir: /home/quincy/data/bach_kf/fold_5/bach_fold_5_val.csv
+  ## path to the trained model checkpoint, training and validation reported losses and metrics, and trainning and validation configurations
+  checkpoints_dir: /home/quincy/clam_bach_logs/5_cvs_0_p_1_test/hyperparam_1/model_cv5
+  ## optimizer option for instance classifier
+  i_optimizer_name: Adam
+  ## optimizer option for bag classifier
+  b_optimizer_name: Adam
+  ## optimizer option for attention network
+  a_optimizer_name: Adam
+  ## loss function option for instance classifier
+  i_loss_name: binary_crossentropy
+  ## loss function option for bag classifier
+  b_loss_name: binary_crossentropy
+  ## scalar of instance loss values
+  c1: 0.7
+  ## scalar of bag loss values
+  c2: 0.3
+  ## whether or not applying gate attention network
+  att_gate: True
+  ## whether or not the mutually exclusive assumption holds
+  mut_ex: False
+  ## learning rate for instance classifier
+  i_learn_rate: 0.0002
+  ## learning rate for bag classifier
+  b_learn_rate: 0.0002
+  ## learning rate for attention network
+  a_learn_rate: 0.0002
+  ## L2 weight decay rate for instance classifier
+  i_weight_decay: 0.00001
+  ## L2 weight decay rate for bag classifier
+  b_weight_decay: 0.00001
+  ## L2 weight decay rate for attention network
+  a_weight_decay: 0.00001
+  ## whether or not normalize input image feature vectors
+  imf_norm_op: True
+  ## number of classes need to be classified, default be 2 for binary classification
+  n_class: 2
+  ## percentage of the number of instances from one slide to determine the value of top k
+  top_k_percent: 0.2
+  ## whether or not applying multi-clam models with multi-bag classifiers included
+  m_clam_op: False
+  ## whether or not set batch size during model optimization process
+  batch_op: False
+  ## number of batch size applied during model optimization process
+  batch_size: 50
+  ## number of epochs for model optimization process
+  epochs: 200
+  ## number of times to test the trained model performances on test samples
+  test_steps: 1
+  ## whether or not preventing tensorflow from returning warning messages
+  no_warn_op: True
+  ## whether or not applying optimizer with weight decay options for instance classifier
+  i_wd_op: True
+  ## whether or not applying optimizer with weight decay options for bag classifier
+  b_wd_op: True
+  ## whether or not applying optimizer with weight decay options for attention network
+  a_wd_op: True
+  ## if only returned attention score from trained model for visualization purposes
+  att_only: False
+  ## whether or not performing instance level clustering
+  mil_ins: True
+  ## attention network size which will determine the number of hidden units
+  net_size: big
+  ## dropout rate for the attention network dropout layer if it is enabled
+  dropout_rate: 0.25
+  ## dimensionality of compressed image feature vectors, default be 512
+  dim_compress_features: 512
+  ## path to standard output file
+  stdout_path: ../logs/train.err
+...

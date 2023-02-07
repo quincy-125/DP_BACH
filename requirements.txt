@@ -1,10 +1,9 @@
-tensorflow
+tensorflow==2.3.4
 tensorflow-addons
 pandas
-sklearn
+scikit-learn
 pillow
 openslide-python
-numpy
 scikit-image
 Shapely
 matplotlib

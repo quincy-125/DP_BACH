@@ -1,3 +1,7 @@
+outputs/*
 .idea/
 QSUB_Script/
 .idea/dictionaries/M216613.xml
+*.out
+*__pycache__
+*git
