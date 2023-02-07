@@ -28,7 +28,7 @@
   ## whether to train the model or not, only executing testing when it is False
   is_training: True
   ## whether or not enabling multiple GPU for model optimization process
-  multi_gpu: False
+  multi_gpu: True
   ## path to all tfrecords, including tfrecords used for training, validation, and testing
   all_tfrecords_path: /home/quincy/data/bach_tfrecords
   ## directory of training data split csv file including slide uuids used for training
@@ -75,14 +75,10 @@
   top_k_percent: 0.2
   ## whether or not applying multi-clam models with multi-bag classifiers included
   m_clam_op: False
-  ## whether or not set batch size during model optimization process
-  batch_op: False
-  ## number of batch size applied during model optimization process
-  batch_size: 50
+  ## number of batch size applied during model optimization process, when batch size be 0, means not doing batch training
+  batch_size: 500
   ## number of epochs for model optimization process
   epochs: 200
-  ## number of times to test the trained model performances on test samples
-  test_steps: 1
   ## whether or not preventing tensorflow from returning warning messages
   no_warn_op: True
   ## whether or not applying optimizer with weight decay options for instance classifier

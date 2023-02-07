@@ -1,1 +1,1 @@
-/home/quincy/miniconda3/envs/bach/bin/python main.py
+/home/quincy/miniconda3/envs/tf2/bin/python main.py

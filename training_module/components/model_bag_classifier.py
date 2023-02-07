@@ -77,6 +77,9 @@ class S_Bag(tf.keras.Model):
             sar = tf.linalg.matmul(tf.transpose(A[i]), h[i])  # shape be (2,512)
             SAR.append(sar)
         slide_agg_rep = tf.math.add_n(SAR)  # return h_[slide,m], shape be (2,512)
+        ## need to reshape slide_agg_rep be (1,2,512), which will be compatible with input layer dimension
+        if len(slide_agg_rep.shape) == 2:
+            slide_agg_rep = tf.reshape(slide_agg_rep, (1, slide_agg_rep.shape[0], slide_agg_rep.shape[1]))
 
         return slide_agg_rep
 

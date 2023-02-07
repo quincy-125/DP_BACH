@@ -242,7 +242,7 @@ def val_step(
             img_features, len(img_features)
         )  # follow the training loop, see details there
 
-        if args.batch_op:
+        if args.batch_size != 0:
             if args.batch_size < len(img_features):
                 I_Loss, B_Loss, T_Loss, predict_slide_label = b_val(
                     img_features=img_features,
