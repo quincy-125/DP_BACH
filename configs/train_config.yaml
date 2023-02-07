@@ -28,7 +28,7 @@
   ## whether to train the model or not, only executing testing when it is False
   is_training: True
   ## whether or not enabling multiple GPU for model optimization process
-  multi_gpu: True
+  multi_gpu: False
   ## GCS bucket url
   gcs_file_uri: gs://qwiklabs-asl-00-9cd63ad84b45/capstone/quincy
   ## path to all tfrecords, including tfrecords used for training, validation, and testing
