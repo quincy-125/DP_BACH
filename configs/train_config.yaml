@@ -36,7 +36,7 @@
   ## directory of validation data split csv file including slide uuids used for validation
   val_data_dir: /home/quincy/data/bach_kf/fold_5/bach_fold_5_val.csv
   ## path to the trained model checkpoint, training and validation reported losses and metrics, and trainning and validation configurations
-  checkpoints_dir: /home/quincy/clam_bach_logs/5_cvs_0_p_1_test/hyperparam_1/model_cv5
+  checkpoints_dir: /home/quincy/clam_bach_logs/5_cvs_0_p_1_test/hyperparam_1/model_cv5test
   ## optimizer option for instance classifier
   i_optimizer_name: Adam
   ## optimizer option for bag classifier

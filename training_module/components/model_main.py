@@ -26,7 +26,7 @@ import os
 import json
 import time
 
-from components.model_clam import S_CLAM, M_CLAM
+from training_module.components.model_clam import S_CLAM, M_CLAM
 from training_module.components.model_train import train_step
 from training_module.components.model_val import val_step
 from training_module.components.model_test import test_step

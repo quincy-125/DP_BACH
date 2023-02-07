@@ -1,10 +1,14 @@
 import pandas as pd
 import sklearn
 import os
-import random
 import time
 
-from training_module.util import get_data_from_tf, s_clam_call, most_frequent, m_clam_call
+from training_module.util import (
+    get_data_from_tf,
+    s_clam_call,
+    most_frequent,
+    m_clam_call,
+)
 
 
 def m_test_per_sample(
