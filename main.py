@@ -28,6 +28,7 @@ import json
 import hydra
 from omegaconf import DictConfig, OmegaConf
 from training_module.components.model_main import clam_main
+from training_module.util import connect_path_arg_gcs
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="train_config")
@@ -44,6 +45,7 @@ def main(cfg: DictConfig) -> None:
         if value == "None":
             cfg[key] = eval(value)
 
+    connect_path_arg_gcs(cfg)
     clam_main(cfg)
 
 

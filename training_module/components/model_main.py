@@ -135,8 +135,14 @@ def train_val(
         train_val_log = template.format(
             epoch + 1,
             f"{float(train_loss):.8}",
+            f"{float(train_sensitivity):.4%}",
+            f"{float(val_specificity):.4%}",
+            f"{float(train_auc):.4%}",
             f"{float(train_acc):.4%}",
             f"{float(val_loss):.8}",
+            f"{float(val_sensitivity):.4%}",
+            f"{float(val_specificity):.4%}",
+            f"{float(val_auc):.4%}",
             f"{float(val_acc):.4%}",
             "--- %s mins ---" % int(epoch_run_time / 60),
         )

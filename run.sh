@@ -1,1 +1,1 @@
-/home/quincy/miniconda3/envs/tf2/bin/python main.py
+/home/student-04-6680633e3275/capstone/miniconda3/envs/tf2/bin/python main.py
