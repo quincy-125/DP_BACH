@@ -23,9 +23,9 @@
 
 import tensorflow as tf
 
-from MODEL.model_attention import G_Att_Net, NG_Att_Net
-from MODEL.model_bag_classifier import S_Bag, M_Bag
-from MODEL.model_ins_classifier import Ins
+from components.model_attention import G_Att_Net, NG_Att_Net
+from components.model_bag_classifier import S_Bag, M_Bag
+from components.model_ins_classifier import Ins
 
 
 ## Single CLAM Model (Single Bag-Level Classifier)

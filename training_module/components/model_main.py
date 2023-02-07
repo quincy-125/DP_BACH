@@ -26,11 +26,11 @@ import os
 import json
 import time
 
-from MODEL.model_clam import S_CLAM, M_CLAM
-from UTILITY.model_train import train_step
-from UTILITY.model_val import val_step
-from UTILITY.model_test import test_step
-from UTILITY.util import model_save, restore_model, tf_shut_up, str_to_bool
+from components.model_clam import S_CLAM, M_CLAM
+from training_module.components.model_train import train_step
+from training_module.components.model_val import val_step
+from training_module.components.model_test import test_step
+from training_module.util import model_save, restore_model, tf_shut_up
 
 
 def train_val(

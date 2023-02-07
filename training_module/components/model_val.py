@@ -29,7 +29,7 @@ import os
 import random
 import statistics
 
-from UTILITY.util import get_data_from_tf, most_frequent, load_loss_func
+from training_module.util import get_data_from_tf, most_frequent, load_loss_func
 
 
 def nb_val(
