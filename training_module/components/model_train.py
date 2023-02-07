@@ -29,7 +29,7 @@ import os
 import random
 import statistics
 
-from UTILITY.util import (
+from training_module.util import (
     most_frequent,
     get_data_from_tf,
     load_optimizers,

@@ -27,7 +27,7 @@ import json
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from UTILITY.model_main import clam_main
+from training_module.components.model_main import clam_main
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="train_config")
