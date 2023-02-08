@@ -129,7 +129,7 @@ def train_val(
         )
 
         template = (
-            "\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, Epoch Running "
+            "\n Epoch {},  Train Loss: {}, Train Sensitivity: {}, Train Specificity: {}, Train AUC: {}, Train Accuracy: {}, Val Loss: {}, Val Sensitivity: {}, Val Specificity: {}, Val AUC: {}, Val Accuracy: {}, Epoch Running "
             "Time: {} "
         )
         train_val_log = template.format(
