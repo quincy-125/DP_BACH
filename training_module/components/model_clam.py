@@ -113,8 +113,7 @@ class S_CLAM(tf.keras.Model):
         if self.args.att_only:
             return att_score
 
-        if self.args.mil_ins:
-            ins_net_dict = self.ins_net.call(slide_label, h, A)
+        ins_net_dict = self.ins_net.call(slide_label, h, A)
 
         bag_net_dict = self.bag_net.call(slide_label, A, h)
 
@@ -218,8 +217,7 @@ class M_CLAM(tf.keras.Model):
         if self.args.att_only:
             return att_score
 
-        if self.args.mil_ins:
-            ins_net_dict = self.ins_net.call(slide_label, h, A)
+        ins_net_dict = self.ins_net.call(slide_label, h, A)
 
         bag_net_dict = self.bag_net.call(slide_label, A, h)
 

@@ -30,7 +30,7 @@ from training_module.components.model_clam import S_CLAM, M_CLAM
 from training_module.components.model_train import train_step
 from training_module.components.model_val import val_step
 from training_module.components.model_test import test_step
-from training_module.util import model_save, restore_model, tf_shut_up
+from training_module.util import model_save, restore_model
 
 
 def train_val(
@@ -195,38 +195,21 @@ def clam(
 
         c_model = load_model(args=args,)
 
-        tf_shut_up(no_warn_op=args.no_warn_op)
-
-        clam_optimize(
-            c_model=c_model,
-            args=args,
-        )
+        if args.gpu:
+            print(
+                f"Num GPUs Available: {len(tf.config.experimental.list_physical_devices('GPU'))}, and all available GPU Devices include {tf.config.experimental.list_physical_devices('GPU')}"
+            )
+            gpus = tf.config.experimental.list_logical_devices("GPU")
+            for gpu in gpus:
+                with tf.device(gpu.name):
+                    clam_optimize(
+                        c_model=c_model,
+                        args=args,
+                    )
     else:
         with open(os.path.join(logging_config_path, "test.json"), "w") as f:
             json.dump(dict(args), f)
 
         clam_test(
-            args=args,
-        )
-
-
-def clam_main(
-    args,
-):
-    """_summary_
-
-    Args:
-        args (_type_): _description_
-    """
-    if args.multi_gpu:
-        gpus = tf.config.experimental.list_logical_devices("GPU")
-        if gpus:
-            for gpu in gpus:
-                with tf.device(gpu.name):
-                    clam(
-                        args=args,
-                    )
-    else:
-        clam(
             args=args,
         )

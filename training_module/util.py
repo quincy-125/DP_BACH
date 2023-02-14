@@ -130,22 +130,6 @@ def most_frequent(list):
     return mf
 
 
-def tf_shut_up(no_warn_op=False):
-    """_summary_
-
-    Args:
-        no_warn_op (bool, optional): _description_. Defaults to False.
-    """
-    if no_warn_op:
-        tf.get_logger().setLevel("ERROR")
-    else:
-        print(
-            "Are you sure you want to receive the annoying TensorFlow Warning Messages?",
-            "\n",
-            "If not, check the value of your input prameter for this function and re-run it.",
-        )
-
-
 def optimizer_func_options(
     args,
 ):
@@ -717,16 +701,15 @@ def s_clam_call(
     if args.att_only:
         return att_score
 
-    if args.mil_ins:
-        ins_labels, ins_logits_unnorm, ins_logits = ins_call(
-            m_ins_classifier=ins_net,
-            bag_label=slide_label,
-            h=h,
-            A=A,
-            args=args,
-        )
+    ins_dicts = ins_call(
+        m_ins_classifier=ins_net,
+        bag_label=slide_label,
+        h=h,
+        A=A,
+        args=args,
+    )
 
-    slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = s_bag_call(
+    bag_dicts = s_bag_call(
         bag_classifier=bag_net, bag_label=slide_label, A=A, h=h, n_class=args.n_class
     )
 
@@ -734,14 +717,14 @@ def s_clam_call(
         att_score,
         A,
         h,
-        ins_labels,
-        ins_logits_unnorm,
-        ins_logits,
-        slide_score_unnorm,
-        Y_prob,
-        Y_hat,
-        Y_true,
-        predict_slide_label,
+        ins_dicts["ins_labels"],
+        ins_dicts["ins_logits_unnorm"],
+        ins_dicts["ins_logits"],
+        bag_dicts["slide_score_unnorm"],
+        bag_dicts["Y_prob"],
+        bag_dicts["Y_hat"],
+        bag_dicts["Y_true"],
+        bag_dicts["predict_slide_label"],
     )
 
 
@@ -776,16 +759,15 @@ def m_clam_call(
     if args.att_only:
         return att_score
 
-    if args.mil_ins:
-        ins_labels, ins_logits_unnorm, ins_logits = ins_call(
-            m_ins_classifier=ins_net,
-            bag_label=slide_label,
-            h=h,
-            A=A,
-            args=args,
-        )
+    ins_dicts = ins_call(
+        m_ins_classifier=ins_net,
+        bag_label=slide_label,
+        h=h,
+        A=A,
+        args=args,
+    )
 
-    slide_score_unnorm, Y_hat, Y_prob, predict_slide_label, Y_true = m_bag_call(
+    bag_dicts = m_bag_call(
         m_bag_classifier=bag_net,
         bag_label=slide_label,
         A=A,
@@ -797,14 +779,14 @@ def m_clam_call(
         att_score,
         A,
         h,
-        ins_labels,
-        ins_logits_unnorm,
-        ins_logits,
-        slide_score_unnorm,
-        Y_prob,
-        Y_hat,
-        Y_true,
-        predict_slide_label,
+        ins_dicts["ins_labels"],
+        ins_dicts["ins_logits_unnorm"],
+        ins_dicts["ins_logits"],
+        bag_dicts["slide_score_unnorm"],
+        bag_dicts["Y_prob"],
+        bag_dicts["Y_hat"],
+        bag_dicts["Y_true"],
+        bag_dicts["predict_slide_label"],
     )
 
 

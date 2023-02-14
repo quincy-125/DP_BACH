@@ -23,6 +23,7 @@
 
 import pandas as pd
 import sklearn
+import sklearn.metrics
 import os
 import time
 

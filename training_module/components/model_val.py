@@ -24,6 +24,7 @@
 import tensorflow as tf
 import pandas as pd
 import sklearn
+import sklearn.metrics
 import os
 import random
 import statistics
@@ -50,20 +51,39 @@ def nb_val(
     """
     i_loss_func, b_loss_func = load_loss_func(args=args,)
 
-    c_model_dict = c_model.call(img_features, slide_label)
-    predict_slide_label = c_model_dict["predict_slide_label"]
+    if args.gpu:
+        gpus = tf.config.list_logical_devices('GPU')
+        strategy = tf.distribute.MirroredStrategy(gpus)
+        with strategy.scope():
+            c_model_dict = c_model.call(img_features, slide_label)
+            predict_slide_label = c_model_dict["predict_slide_label"]
 
-    ins_loss = list()
-    for j in range(len(c_model_dict["ins_logits"])):
-        i_loss = i_loss_func(tf.one_hot(c_model_dict["ins_labels"][j], 2), c_model_dict["ins_logits"][j])
-        ins_loss.append(i_loss)
-    if args.mut_ex:
-        I_Loss = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
+            ins_loss = list()
+            for j in range(len(c_model_dict["ins_logits"])):
+                i_loss = i_loss_func(tf.one_hot(c_model_dict["ins_labels"][j], 2), c_model_dict["ins_logits"][j])
+                ins_loss.append(i_loss)
+            if args.mut_ex:
+                I_Loss = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
+            else:
+                I_Loss = tf.math.add_n(ins_loss) / len(ins_loss)
+
+            B_Loss = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
+            T_Loss = args.c1 * B_Loss + args.c2 * I_Loss
     else:
-        I_Loss = tf.math.add_n(ins_loss) / len(ins_loss)
+        c_model_dict = c_model.call(img_features, slide_label)
+        predict_slide_label = c_model_dict["predict_slide_label"]
 
-    B_Loss = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
-    T_Loss = args.c1 * B_Loss + args.c2 * I_Loss
+        ins_loss = list()
+        for j in range(len(c_model_dict["ins_logits"])):
+            i_loss = i_loss_func(tf.one_hot(c_model_dict["ins_labels"][j], 2), c_model_dict["ins_logits"][j])
+            ins_loss.append(i_loss)
+        if args.mut_ex:
+            I_Loss = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
+        else:
+            I_Loss = tf.math.add_n(ins_loss) / len(ins_loss)
+
+        B_Loss = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
+        T_Loss = args.c1 * B_Loss + args.c2 * I_Loss
 
     return I_Loss, B_Loss, T_Loss, predict_slide_label
 
@@ -98,43 +118,95 @@ def b_val(
     n_ins = args.top_k_percent * args.batch_size
     n_ins = int(n_ins)
 
-    for n_step in range(0, (len(img_features) // args.batch_size + 1)):
-        if step_size < (len(img_features) - args.batch_size):
-            c_model_dict = c_model.call(
-                img_features[step_size : (step_size + args.batch_size)], slide_label
-            )
-            predict_label = c_model_dict["predict_slide_label"]
+    if args.gpu:
+        for n_step in range(0, (len(img_features) // args.batch_size + 1)):
+            if step_size < (len(img_features) - args.batch_size):
+                gpus = tf.config.list_logical_devices('GPU')
+                strategy = tf.distribute.MirroredStrategy(gpus)
+                with strategy.scope():
+                    c_model_dict = c_model.call(
+                        img_features[step_size : (step_size + args.batch_size)], slide_label
+                    )
+                    predict_label = c_model_dict["predict_slide_label"]
 
-            ins_loss = list()
-            for j in range(len(c_model_dict["ins_logits"])):
-                i_loss = i_loss_func(tf.one_hot(c_model_dict["ins_labels"][j], 2), c_model_dict["ins_logits"][j])
-                ins_loss.append(i_loss)
-            if args.mut_ex:
-                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
+                    ins_loss = list()
+                    for j in range(len(c_model_dict["ins_logits"])):
+                        i_loss = i_loss_func(tf.one_hot(c_model_dict["ins_labels"][j], 2), c_model_dict["ins_logits"][j])
+                        ins_loss.append(i_loss)
+                    if args.mut_ex:
+                        Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
+                    else:
+                        Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
+
+                    Loss_B = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
+                    Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
             else:
-                Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
+                gpus = tf.config.list_logical_devices('GPU')
+                strategy = tf.distribute.MirroredStrategy(gpus)
+                with strategy.scope():
+                    c_model_dict = c_model.call(
+                        img_features[(step_size - n_ins) :], slide_label
+                    )
+                    predict_label = c_model_dict["predict_slide_label"]
 
-            Loss_B = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
-            Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
+                    ins_loss = list()
+                    for j in range(len(c_model_dict["ins_logits"])):
+                        i_loss = i_loss_func(tf.one_hot(c_model_dict["ins_labels"][j], 2), c_model_dict["ins_logits"][j])
+                        ins_loss.append(i_loss)
+                    if args.mut_ex:
+                        Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
+                    else:
+                        Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
 
-        else:
-            c_model_dict = c_model.call(
-                img_features[(step_size - n_ins) :], slide_label
-            )
-            predict_label = c_model_dict["predict_slide_label"]
+                    Loss_B = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
 
-            ins_loss = list()
-            for j in range(len(c_model_dict["ins_logits"])):
-                i_loss = i_loss_func(tf.one_hot(c_model_dict["ins_labels"][j], 2), c_model_dict["ins_logits"][j])
-                ins_loss.append(i_loss)
-            if args.mut_ex:
-                Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
+                    Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
+        
+        Ins_Loss.append(float(Loss_I))
+        Bag_Loss.append(float(Loss_B))
+        Total_Loss.append(float(Loss_T))
+
+        label_predict.append(predict_label)
+
+        step_size += args.batch_size
+    else:
+        for n_step in range(0, (len(img_features) // args.batch_size + 1)):
+            if step_size < (len(img_features) - args.batch_size):
+                c_model_dict = c_model.call(
+                    img_features[step_size : (step_size + args.batch_size)], slide_label
+                )
+                predict_label = c_model_dict["predict_slide_label"]
+
+                ins_loss = list()
+                for j in range(len(c_model_dict["ins_logits"])):
+                    i_loss = i_loss_func(tf.one_hot(c_model_dict["ins_labels"][j], 2), c_model_dict["ins_logits"][j])
+                    ins_loss.append(i_loss)
+                if args.mut_ex:
+                    Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
+                else:
+                    Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
+
+                Loss_B = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
+                Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
+
             else:
-                Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
+                c_model_dict = c_model.call(
+                    img_features[(step_size - n_ins) :], slide_label
+                )
+                predict_label = c_model_dict["predict_slide_label"]
 
-            Loss_B = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
+                ins_loss = list()
+                for j in range(len(c_model_dict["ins_logits"])):
+                    i_loss = i_loss_func(tf.one_hot(c_model_dict["ins_labels"][j], 2), c_model_dict["ins_logits"][j])
+                    ins_loss.append(i_loss)
+                if args.mut_ex:
+                    Loss_I = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
+                else:
+                    Loss_I = tf.math.add_n(ins_loss) / len(ins_loss)
 
-            Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
+                Loss_B = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
+
+                Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
 
         Ins_Loss.append(float(Loss_I))
         Bag_Loss.append(float(Loss_B))
