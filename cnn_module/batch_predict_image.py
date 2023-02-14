@@ -11,7 +11,7 @@ from tensorflow.keras import models
 import numpy as np
 import PIL.Image as Image
 import glob
-from preprocess import Preprocess, format_example, format_example_tf, update_status
+from cnn_module.training_module.util import Preprocess, format_example, format_example_tf, update_status
 
 input_file_path = sys.argv[1]
 input_file_path = input_file_path.strip()

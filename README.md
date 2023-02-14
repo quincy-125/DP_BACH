@@ -39,4 +39,6 @@ The structure of the codebase
         |- data.out
         |- train.out
         |- eval.out
+|- cnn_module
+|- oneshort_module
 ```
