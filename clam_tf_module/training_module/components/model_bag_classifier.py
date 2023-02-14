@@ -33,7 +33,10 @@ class S_Bag(tf.keras.Model):
         tf (_type_): _description_
     """
 
-    def __init__(self, args,):
+    def __init__(
+        self,
+        args,
+    ):
         """_summary_
 
         Args:
@@ -77,7 +80,9 @@ class S_Bag(tf.keras.Model):
         slide_agg_rep = tf.math.add_n(SAR)  # return h_[slide,m], shape be (2,512)
         ## need to reshape slide_agg_rep be (1,2,512), which will be compatible with input layer dimension
         if len(slide_agg_rep.shape) == 2:
-            slide_agg_rep = tf.reshape(slide_agg_rep, (1, slide_agg_rep.shape[0], slide_agg_rep.shape[1]))
+            slide_agg_rep = tf.reshape(
+                slide_agg_rep, (1, slide_agg_rep.shape[0], slide_agg_rep.shape[1])
+            )
 
         return slide_agg_rep
 
@@ -121,7 +126,10 @@ class M_Bag(tf.keras.Model):
         tf (_type_): _description_
     """
 
-    def __init__(self, args,):
+    def __init__(
+        self,
+        args,
+    ):
         """_summary_
 
         Args:

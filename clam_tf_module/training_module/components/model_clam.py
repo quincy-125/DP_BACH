@@ -36,7 +36,10 @@ class S_CLAM(tf.keras.Model):
         tf (_type_): _description_
     """
 
-    def __init__(self, args,):
+    def __init__(
+        self,
+        args,
+    ):
         """_summary_
 
         Args:
@@ -61,8 +64,12 @@ class S_CLAM(tf.keras.Model):
                 n_hidden_units=self.net_shape[2],
             )
 
-        self.ins_net = Ins(args=self.args,)
-        self.bag_net = S_Bag(args=self.args,)
+        self.ins_net = Ins(
+            args=self.args,
+        )
+        self.bag_net = S_Bag(
+            args=self.args,
+        )
 
     def networks(self):
         """_summary_
@@ -71,8 +78,8 @@ class S_CLAM(tf.keras.Model):
             _type_: _description_
         """
         c_nets = {
-            "a_net": self.att_net, 
-            "i_net": self.ins_net, 
+            "a_net": self.att_net,
+            "i_net": self.ins_net,
             "b_net": self.bag_net,
         }
 
@@ -89,8 +96,8 @@ class S_CLAM(tf.keras.Model):
         bag_classifier = self.bag_net.bag_classifier()
 
         clam_model = {
-            "att_model": att_model, 
-            "ins_classifier": ins_classifier, 
+            "att_model": att_model,
+            "ins_classifier": ins_classifier,
             "bag_classifier": bag_classifier,
         }
 
@@ -140,7 +147,10 @@ class M_CLAM(tf.keras.Model):
         tf (_type_): _description_
     """
 
-    def __init__(self, args,):
+    def __init__(
+        self,
+        args,
+    ):
         """_summary_
 
         Args:
@@ -165,8 +175,12 @@ class M_CLAM(tf.keras.Model):
                 n_hidden_units=self.net_shape[2],
             )
 
-        self.ins_net = Ins(args=self.args,)
-        self.bag_net = M_Bag(args=self.args,)
+        self.ins_net = Ins(
+            args=self.args,
+        )
+        self.bag_net = M_Bag(
+            args=self.args,
+        )
 
     def networks(self):
         """_summary_
@@ -175,8 +189,8 @@ class M_CLAM(tf.keras.Model):
             _type_: _description_
         """
         c_nets = {
-            "a_net": self.att_net, 
-            "i_net": self.ins_net, 
+            "a_net": self.att_net,
+            "i_net": self.ins_net,
             "b_net": self.bag_net,
         }
 
@@ -193,8 +207,8 @@ class M_CLAM(tf.keras.Model):
         bag_classifier = self.bag_net.bag_classifier()
 
         clam_model = {
-            "att_model": att_model, 
-            "ins_classifier": ins_classifier, 
+            "att_model": att_model,
+            "ins_classifier": ins_classifier,
             "bag_classifier": bag_classifier,
         }
 

@@ -32,7 +32,10 @@ class Ins(tf.keras.Model):
         tf (_type_): _description_
     """
 
-    def __init__(self, args,):
+    def __init__(
+        self,
+        args,
+    ):
         """_summary_
 
         Args:
@@ -73,7 +76,9 @@ class Ins(tf.keras.Model):
             _type_: _description_
         """
         return tf.fill(
-            dims=[n_pos_sample,],
+            dims=[
+                n_pos_sample,
+            ],
             value=1,
         )
 
@@ -88,7 +93,9 @@ class Ins(tf.keras.Model):
             _type_: _description_
         """
         return tf.fill(
-            dims=[n_neg_sample,],
+            dims=[
+                n_neg_sample,
+            ],
             value=0,
         )
 

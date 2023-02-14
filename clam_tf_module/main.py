@@ -27,6 +27,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 from training_module.components.model_main import clam
 
+
 @hydra.main(version_base=None, config_path="configs", config_name="train")
 def main(cfg: DictConfig) -> None:
     """_summary_

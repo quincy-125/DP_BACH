@@ -95,7 +95,9 @@ class NG_Att_Net(tf.keras.Model):
         self.model.add(self.att_layer2)
 
         if self.args.dropout_rate > 0.0:
-            self.model.add(tf.keras.layers.Dropout(self.args.dropout_rate, name="Dropout_Layer"))
+            self.model.add(
+                tf.keras.layers.Dropout(self.args.dropout_rate, name="Dropout_Layer")
+            )
 
         self.model.add(self.att_layer3)
 
