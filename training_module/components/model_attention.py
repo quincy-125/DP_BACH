@@ -34,35 +34,29 @@ class NG_Att_Net(tf.keras.Model):
 
     def __init__(
         self,
+        args,
         dim_features=1024,
-        dim_compress_features=512,
         n_hidden_units=256,
-        n_class=2,
-        dropout_rate=0.25,
     ):
         """_summary_
 
         Args:
+            args (_type_): _description_
             dim_features (int, optional): _description_. Defaults to 1024.
-            dim_compress_features (int, optional): _description_. Defaults to 512.
             n_hidden_units (int, optional): _description_. Defaults to 256.
-            n_class (int, optional): _description_. Defaults to 2.
-            dropout_rate (float, optional): _description_. Defaults to 0.25.
         """
         super(NG_Att_Net, self).__init__()
+        self.args = args
         self.dim_features = dim_features
-        self.dim_compress_features = dim_compress_features
         self.n_hidden_units = n_hidden_units
-        self.n_class = n_class
-        self.dropout_rate = dropout_rate
 
         self.compression_model = tf.keras.models.Sequential()
         self.model = tf.keras.models.Sequential()
 
         self.fc_compress_layer = tf.keras.layers.Dense(
-            units=dim_compress_features,
+            units=self.args.dim_compress_features,
             activation="relu",
-            input_shape=(dim_features,),
+            input_shape=(self.dim_features,),
             kernel_initializer="glorot_normal",
             bias_initializer="zeros",
             name="Fully_Connected_Layer",
@@ -73,7 +67,7 @@ class NG_Att_Net(tf.keras.Model):
         self.att_layer1 = tf.keras.layers.Dense(
             units=n_hidden_units,
             activation="linear",
-            input_shape=(dim_compress_features,),
+            input_shape=(self.args.dim_compress_features,),
             kernel_initializer="glorot_normal",
             bias_initializer="zeros",
             name="Attention_layer1",
@@ -82,14 +76,14 @@ class NG_Att_Net(tf.keras.Model):
         self.att_layer2 = tf.keras.layers.Dense(
             units=n_hidden_units,
             activation="tanh",
-            input_shape=(dim_compress_features,),
+            input_shape=(self.args.dim_compress_features,),
             kernel_initializer="glorot_normal",
             bias_initializer="zeros",
             name="Attention_Layer2",
         )
 
         self.att_layer3 = tf.keras.layers.Dense(
-            units=n_class,
+            units=self.args.n_class,
             activation="linear",
             input_shape=(n_hidden_units,),
             kernel_initializer="glorot_normal",
@@ -100,8 +94,8 @@ class NG_Att_Net(tf.keras.Model):
         self.model.add(self.att_layer1)
         self.model.add(self.att_layer2)
 
-        if dropout_rate > 0.0:
-            self.model.add(tf.keras.layers.Dropout(dropout_rate, name="Dropout_Layer"))
+        if self.args.dropout_rate > 0.0:
+            self.model.add(tf.keras.layers.Dropout(self.args.dropout_rate, name="Dropout_Layer"))
 
         self.model.add(self.att_layer3)
 
@@ -147,27 +141,21 @@ class G_Att_Net(tf.keras.Model):
 
     def __init__(
         self,
+        args,
         dim_features=1024,
-        dim_compress_features=512,
         n_hidden_units=256,
-        n_class=2,
-        dropout_rate=0.25,
     ):
         """_summary_
 
         Args:
+            args (_type_): _description_
             dim_features (int, optional): _description_. Defaults to 1024.
-            dim_compress_features (int, optional): _description_. Defaults to 512.
             n_hidden_units (int, optional): _description_. Defaults to 256.
-            n_class (int, optional): _description_. Defaults to 2.
-            dropout_rate (float, optional): _description_. Defaults to 0.25.
         """
         super(G_Att_Net, self).__init__()
+        self.args = args
         self.dim_features = dim_features
-        self.dim_compress_features = dim_compress_features
         self.n_hidden_units = n_hidden_units
-        self.n_class = n_class
-        self.dropout_rate = dropout_rate
 
         self.compression_model = tf.keras.models.Sequential()
         self.model_v = tf.keras.models.Sequential()
@@ -175,9 +163,9 @@ class G_Att_Net(tf.keras.Model):
         self.model = tf.keras.models.Sequential()
 
         self.fc_compress_layer = tf.keras.layers.Dense(
-            units=dim_compress_features,
+            units=self.args.dim_compress_features,
             activation="relu",
-            input_shape=(dim_features,),
+            input_shape=(self.dim_features,),
             kernel_initializer="glorot_normal",
             bias_initializer="zeros",
             name="Fully_Connected_Layer",
@@ -188,7 +176,7 @@ class G_Att_Net(tf.keras.Model):
         self.att_v_layer1 = tf.keras.layers.Dense(
             units=n_hidden_units,
             activation="linear",
-            input_shape=(dim_compress_features,),
+            input_shape=(self.args.dim_compress_features,),
             kernel_initializer="glorot_normal",
             bias_initializer="zeros",
             name="Attention_V_Layer1",
@@ -197,7 +185,7 @@ class G_Att_Net(tf.keras.Model):
         self.att_v_layer2 = tf.keras.layers.Dense(
             units=n_hidden_units,
             activation="tanh",
-            input_shape=(dim_compress_features,),
+            input_shape=(self.args.dim_compress_features,),
             kernel_initializer="glorot_normal",
             bias_initializer="zeros",
             name="Attention_V_Layer2",
@@ -206,7 +194,7 @@ class G_Att_Net(tf.keras.Model):
         self.att_u_layer1 = tf.keras.layers.Dense(
             units=n_hidden_units,
             activation="linear",
-            input_shape=(dim_compress_features,),
+            input_shape=(self.args.dim_compress_features,),
             kernel_initializer="glorot_normal",
             bias_initializer="zeros",
             name="Attention_U_Layer1",
@@ -215,14 +203,14 @@ class G_Att_Net(tf.keras.Model):
         self.att_u_layer2 = tf.keras.layers.Dense(
             units=n_hidden_units,
             activation="sigmoid",
-            input_shape=(dim_compress_features,),
+            input_shape=(self.args.dim_compress_features,),
             kernel_initializer="glorot_normal",
             bias_initializer="zeros",
             name="Attention_U_Layer2",
         )
 
         self.att_layer_f = tf.keras.layers.Dense(
-            units=n_class,
+            units=self.args.n_class,
             activation="linear",
             input_shape=(n_hidden_units,),
             kernel_initializer="glorot_normal",
@@ -236,12 +224,12 @@ class G_Att_Net(tf.keras.Model):
         self.model_u.add(self.att_u_layer1)
         self.model_u.add(self.att_u_layer2)
 
-        if dropout_rate > 0.0:
+        if self.args.dropout_rate > 0.0:
             self.model_v.add(
-                tf.keras.layers.Dropout(dropout_rate, name="Dropout_V_Layer")
+                tf.keras.layers.Dropout(self.args.dropout_rate, name="Dropout_V_Layer")
             )
             self.model_u.add(
-                tf.keras.layers.Dropout(dropout_rate, name="Dropout_U_Layer")
+                tf.keras.layers.Dropout(self.args.dropout_rate, name="Dropout_U_Layer")
             )
 
         self.model.add(self.att_layer_f)
