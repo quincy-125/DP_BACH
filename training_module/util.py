@@ -825,7 +825,7 @@ def model_save(
 
     if args.m_clam_op:
         if args.att_gate:
-            att_nets = c_model.clam_model()[0]
+            att_nets = c_model.clam_model()["att_model"]
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
@@ -835,7 +835,7 @@ def model_save(
                     )
                 )
         else:
-            att_nets = c_model.clam_model()[0]
+            att_nets = c_model.clam_model()["att_model"]
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
@@ -846,8 +846,8 @@ def model_save(
                 )
 
         for n in range(args.n_class):
-            ins_nets = c_model.clam_model()[1]
-            bag_nets = c_model.clam_model()[2]
+            ins_nets = c_model.clam_model()["ins_classifier"]
+            bag_nets = c_model.clam_model()["bag_classifier"]
 
             ins_nets[n].save(
                 os.path.join(
@@ -861,7 +861,7 @@ def model_save(
             )
     else:
         if args.att_gate:
-            att_nets = c_model.clam_model()[0]
+            att_nets = c_model.clam_model()["att_model"]
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
@@ -871,7 +871,7 @@ def model_save(
                     )
                 )
         else:
-            att_nets = c_model.clam_model()[0]
+            att_nets = c_model.clam_model()["att_model"]
             for m in range(len(att_nets)):
                 att_nets[m].save(
                     os.path.join(
@@ -882,14 +882,14 @@ def model_save(
                 )
 
         for n in range(args.n_class):
-            ins_nets = c_model.clam_model()[1]
+            ins_nets = c_model.clam_model()["ins_classifier"]
             ins_nets[n].save(
                 os.path.join(
                     model_checkpoint_path, "M" + clam_model_names[1], "Class_" + str(n)
                 )
             )
 
-        c_model.clam_model()[2].save(
+        c_model.clam_model()["bag_classifier"].save(
             os.path.join(model_checkpoint_path, "S" + clam_model_names[2])
         )
 

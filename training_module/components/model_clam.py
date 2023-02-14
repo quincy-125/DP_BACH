@@ -70,11 +70,11 @@ class S_CLAM(tf.keras.Model):
         Returns:
             _type_: _description_
         """
-        a_net = self.att_net
-        i_net = self.ins_net
-        b_net = self.bag_net
-
-        c_nets = [a_net, i_net, b_net]
+        c_nets = {
+            "a_net": self.att_net, 
+            "i_net": self.ins_net, 
+            "b_net": self.bag_net,
+        }
 
         return c_nets
 
@@ -88,7 +88,11 @@ class S_CLAM(tf.keras.Model):
         ins_classifier = self.ins_net.ins_classifier()
         bag_classifier = self.bag_net.bag_classifier()
 
-        clam_model = [att_model, ins_classifier, bag_classifier]
+        clam_model = {
+            "att_model": att_model, 
+            "ins_classifier": ins_classifier, 
+            "bag_classifier": bag_classifier,
+        }
 
         return clam_model
 
@@ -106,10 +110,10 @@ class S_CLAM(tf.keras.Model):
         (h, att_score) = (att_net_dict["h"], att_net_dict["A"])
         A = tf.math.softmax(att_score)  # softmax on attention scores
 
-        if self.att_only:
+        if self.args.att_only:
             return att_score
 
-        if self.mil_ins:
+        if self.args.mil_ins:
             ins_net_dict = self.ins_net.call(slide_label, h, A)
 
         bag_net_dict = self.bag_net.call(slide_label, A, h)
@@ -171,11 +175,11 @@ class M_CLAM(tf.keras.Model):
         Returns:
             _type_: _description_
         """
-        a_net = self.att_net
-        i_net = self.ins_net
-        b_net = self.bag_net
-
-        c_nets = [a_net, i_net, b_net]
+        c_nets = {
+            "a_net": self.att_net, 
+            "i_net": self.ins_net, 
+            "b_net": self.bag_net,
+        }
 
         return c_nets
 
@@ -189,7 +193,11 @@ class M_CLAM(tf.keras.Model):
         ins_classifier = self.ins_net.ins_classifier()
         bag_classifier = self.bag_net.bag_classifier()
 
-        clam_model = [att_model, ins_classifier, bag_classifier]
+        clam_model = {
+            "att_model": att_model, 
+            "ins_classifier": ins_classifier, 
+            "bag_classifier": bag_classifier,
+        }
 
         return clam_model
 
@@ -207,10 +215,10 @@ class M_CLAM(tf.keras.Model):
         (h, att_score) = (att_net_dict["h"], att_net_dict["A"])
         A = tf.math.softmax(att_score)  # softmax on attention scores
 
-        if self.att_only:
+        if self.args.att_only:
             return att_score
 
-        if self.mil_ins:
+        if self.args.mil_ins:
             ins_net_dict = self.ins_net.call(slide_label, h, A)
 
         bag_net_dict = self.bag_net.call(slide_label, A, h)

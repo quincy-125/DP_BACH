@@ -170,35 +170,10 @@ def load_model(
     Returns:
         _type_: _description_
     """
-    s_clam = S_CLAM(
-        att_gate=args.att_gate,
-        net_size=args.net_size,
-        top_k_percent=args.top_k_percent,
-        n_class=args.n_class,
-        mut_ex=args.mut_ex,
-        drop_rate=args.dropout_rate,
-        mil_ins=args.mil_ins,
-        att_only=args.att_only,
-    )
-
-    m_clam = M_CLAM(
-        att_gate=args.att_gate,
-        net_size=args.net_size,
-        top_k_percent=args.top_k_percent,
-        n_class=args.n_class,
-        mut_ex=args.mut_ex,
-        drop_rate=args.dropout_rate,
-        mil_ins=args.mil_ins,
-        att_only=args.att_only,
-    )
-
-    s_clam_model = s_clam
-    m_clam_model = m_clam
-
     if args.m_clam_op:
-        c_model = m_clam_model
+        c_model = M_CLAM(args=args,)
     else:
-        c_model = s_clam_model
+        c_model = S_CLAM(args=args,)
 
     return c_model
 

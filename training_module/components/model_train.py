@@ -56,32 +56,34 @@ def nb_optimize(
     """
     i_optimizer, b_optimizer, a_optimizer = load_optimizers(args=args,)
     i_loss_func, b_loss_func = load_loss_func(args=args,)
+    
+    gpus = tf.config.list_logical_devices('GPU')
+    strategy = tf.distribute.MirroredStrategy(gpus)
+    with strategy.scope():
+        with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
+            c_model_dict = c_model.call(img_features, slide_label)
 
-    with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
-        c_model_dict = c_model.call(img_features, slide_label)
-        a_net, i_net, b_net = c_model.networks()[0], c_model.networks()[1], c_model.networks()[2]
+            ins_loss = list()
+            for j in range(len(c_model_dict["ins_logits"])):
+                i_loss = i_loss_func(tf.one_hot(c_model_dict["ins_labels"][j], 2), c_model_dict["ins_logits"][j])
+                ins_loss.append(i_loss)
+            if args.mut_ex:
+                I_Loss = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
+            else:
+                I_Loss = tf.math.add_n(ins_loss) / len(ins_loss)
 
-        ins_loss = list()
-        for j in range(len(c_model_dict["ins_logits"])):
-            i_loss = i_loss_func(tf.one_hot(c_model_dict["ins_labels"][j], 2), c_model_dict["ins_logits"][j])
-            ins_loss.append(i_loss)
-        if args.mut_ex:
-            I_Loss = (tf.math.add_n(ins_loss) / len(ins_loss)) / args.n_class
-        else:
-            I_Loss = tf.math.add_n(ins_loss) / len(ins_loss)
+            B_Loss = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
 
-        B_Loss = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
+            T_Loss = args.c1 * B_Loss + args.c2 * I_Loss
 
-        T_Loss = args.c1 * B_Loss + args.c2 * I_Loss
+    i_grad = i_tape.gradient(I_Loss, c_model.networks()["i_net"].trainable_weights)
+    i_optimizer.apply_gradients(zip(i_grad, c_model.networks()["i_net"].trainable_weights))
 
-    i_grad = i_tape.gradient(I_Loss, i_net.trainable_weights)
-    i_optimizer.apply_gradients(zip(i_grad, i_net.trainable_weights))
+    b_grad = b_tape.gradient(B_Loss, c_model.networks()["b_net"].trainable_weights)
+    b_optimizer.apply_gradients(zip(b_grad, c_model.networks()["b_net"].trainable_weights))
 
-    b_grad = b_tape.gradient(B_Loss, b_net.trainable_weights)
-    b_optimizer.apply_gradients(zip(b_grad, b_net.trainable_weights))
-
-    a_grad = a_tape.gradient(T_Loss, a_net.trainable_weights)
-    a_optimizer.apply_gradients(zip(a_grad, a_net.trainable_weights))
+    a_grad = a_tape.gradient(T_Loss, c_model.networks()["a_net"].trainable_weights)
+    a_optimizer.apply_gradients(zip(a_grad, c_model.networks()["a_net"].trainable_weights))
 
     return I_Loss, B_Loss, T_Loss, c_model_dict["predict_slide_label"]
 
@@ -117,8 +119,6 @@ def b_optimize(
     n_ins = args.top_k_percent * args.batch_size
     n_ins = int(n_ins)
 
-    a_net, i_net, b_net = c_model.networks()[0], c_model.networks()[1], c_model.networks()[2]
-
     for n_step in range(0, (len(img_features) // args.batch_size + 1)):
         if step_size < (len(img_features) - args.batch_size):
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
@@ -139,14 +139,14 @@ def b_optimize(
 
                 Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
 
-            i_grad = i_tape.gradient(Loss_I, i_net.trainable_weights)
-            i_optimizer.apply_gradients(zip(i_grad, i_net.trainable_weights))
+            i_grad = i_tape.gradient(Loss_I, c_model.networks()["i_net"].trainable_weights)
+            i_optimizer.apply_gradients(zip(i_grad, c_model.networks()["i_net"].trainable_weights))
 
-            b_grad = b_tape.gradient(Loss_B, b_net.trainable_weights)
-            b_optimizer.apply_gradients(zip(b_grad, b_net.trainable_weights))
+            b_grad = b_tape.gradient(Loss_B, c_model.networks()["b_net"].trainable_weights)
+            b_optimizer.apply_gradients(zip(b_grad, c_model.networks()["b_net"].trainable_weights))
 
-            a_grad = a_tape.gradient(Loss_T, a_net.trainable_weights)
-            a_optimizer.apply_gradients(zip(a_grad, a_net.trainable_weights))
+            a_grad = a_tape.gradient(Loss_T, c_model.networks()["a_net"].trainable_weights)
+            a_optimizer.apply_gradients(zip(a_grad, c_model.networks()["a_net"].trainable_weights))
 
         else:
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
@@ -167,14 +167,14 @@ def b_optimize(
 
                 Loss_T = args.c1 * Loss_B + args.c2 * Loss_I
 
-            i_grad = i_tape.gradient(Loss_I, i_net.trainable_weights)
-            i_optimizer.apply_gradients(zip(i_grad, i_net.trainable_weights))
+            i_grad = i_tape.gradient(Loss_I, c_model.networks()["i_net"].trainable_weights)
+            i_optimizer.apply_gradients(zip(i_grad, c_model.networks()["i_net"].trainable_weights))
 
-            b_grad = b_tape.gradient(Loss_B, b_net.trainable_weights)
-            b_optimizer.apply_gradients(zip(b_grad, b_net.trainable_weights))
+            b_grad = b_tape.gradient(Loss_B, c_model.networks()["b_net"].trainable_weights)
+            b_optimizer.apply_gradients(zip(b_grad, c_model.networks()["b_net"].trainable_weights))
 
-            a_grad = a_tape.gradient(Loss_T, a_net.trainable_weights)
-            a_optimizer.apply_gradients(zip(a_grad, a_net.trainable_weights))
+            a_grad = a_tape.gradient(Loss_T, c_model.networks()["a_net"].trainable_weights)
+            a_optimizer.apply_gradients(zip(a_grad, c_model.networks()["a_net"].trainable_weights))
 
         Ins_Loss.append(float(Loss_I))
         Bag_Loss.append(float(Loss_B))

@@ -133,7 +133,7 @@ class Ins(tf.keras.Model):
         logits_unnorm_in = list()
         logits_in = list()
 
-        for i in range(self.n_class * n_ins):
+        for i in range(self.args.n_class * n_ins):
             ins_score_unnorm_in = ins_classifier(ins_in[i])
             logit_in = tf.math.softmax(ins_score_unnorm_in)
             logits_unnorm_in.append(ins_score_unnorm_in)
@@ -191,13 +191,13 @@ class Ins(tf.keras.Model):
         Returns:
             _type_: _description_
         """
-        n_ins = self.top_k_percent * len(h)
+        n_ins = self.args.top_k_percent * len(h)
         n_ins = int(n_ins)
         # if n_ins computed above is less than 0, make n_ins be default be 8
         if n_ins == 0:
             n_ins += 8
 
-        for i in range(self.n_class):
+        for i in range(self.args.n_class):
             ins_classifier = self.ins_classifier()[i]
             if i == bag_label:
                 A_I = list()
@@ -208,7 +208,7 @@ class Ins(tf.keras.Model):
                     n_ins, ins_classifier, h, A_I
                 )
             else:
-                if self.mut_ex:
+                if self.args.mut_ex:
                     A_O = list()
                     for j in range(len(A)):
                         a_o = A[j][0][i]
@@ -219,7 +219,7 @@ class Ins(tf.keras.Model):
                 else:
                     continue
 
-        if self.mut_ex:
+        if self.args.mut_ex:
             ins_labels = tf.concat(values=[ins_label_in, ins_label_out], axis=0)
             ins_logits_unnorm = logits_unnorm_in + logits_unnorm_out
             ins_logits = logits_in + logits_out
