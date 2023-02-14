@@ -32,34 +32,26 @@ class Ins(tf.keras.Model):
         tf (_type_): _description_
     """
 
-    def __init__(
-        self, dim_compress_features=512, n_class=2, top_k_percent=0.2, mut_ex=False
-    ):
+    def __init__(self, args,):
         """_summary_
 
         Args:
-            dim_compress_features (int, optional): _description_. Defaults to 512.
-            n_class (int, optional): _description_. Defaults to 2.
-            top_k_percent (float, optional): _description_. Defaults to 0.2.
-            mut_ex (bool, optional): _description_. Defaults to False.
+            args (_type_): _description_
         """
         super(Ins, self).__init__()
-        self.dim_compress_features = dim_compress_features
-        self.n_class = n_class
-        self.top_k_percent = top_k_percent
-        self.mut_ex = mut_ex
+        self.args = args
 
         self.ins_model = list()
         self.m_ins_model = tf.keras.models.Sequential()
         self.m_ins_layer = tf.keras.layers.Dense(
-            units=self.n_class,
+            units=self.args.n_class,
             activation="linear",
-            input_shape=(self.dim_compress_features,),
+            input_shape=(self.args.dim_compress_features,),
             name="Instance_Classifier_Layer",
         )
         self.m_ins_model.add(self.m_ins_layer)
 
-        for i in range(self.n_class):
+        for i in range(self.args.n_class):
             self.ins_model.append(self.m_ins_model)
 
     def ins_classifier(self):
@@ -81,9 +73,7 @@ class Ins(tf.keras.Model):
             _type_: _description_
         """
         return tf.fill(
-            dims=[
-                n_pos_sample,
-            ],
+            dims=[n_pos_sample,],
             value=1,
         )
 
@@ -98,9 +88,7 @@ class Ins(tf.keras.Model):
             _type_: _description_
         """
         return tf.fill(
-            dims=[
-                n_neg_sample,
-            ],
+            dims=[n_neg_sample,],
             value=0,
         )
 
@@ -145,7 +133,7 @@ class Ins(tf.keras.Model):
         logits_unnorm_in = list()
         logits_in = list()
 
-        for i in range(self.n_class * n_ins):
+        for i in range(self.args.n_class * n_ins):
             ins_score_unnorm_in = ins_classifier(ins_in[i])
             logit_in = tf.math.softmax(ins_score_unnorm_in)
             logits_unnorm_in.append(ins_score_unnorm_in)
@@ -203,13 +191,13 @@ class Ins(tf.keras.Model):
         Returns:
             _type_: _description_
         """
-        n_ins = self.top_k_percent * len(h)
+        n_ins = self.args.top_k_percent * len(h)
         n_ins = int(n_ins)
         # if n_ins computed above is less than 0, make n_ins be default be 8
         if n_ins == 0:
             n_ins += 8
 
-        for i in range(self.n_class):
+        for i in range(self.args.n_class):
             ins_classifier = self.ins_classifier()[i]
             if i == bag_label:
                 A_I = list()
@@ -220,7 +208,7 @@ class Ins(tf.keras.Model):
                     n_ins, ins_classifier, h, A_I
                 )
             else:
-                if self.mut_ex:
+                if self.args.mut_ex:
                     A_O = list()
                     for j in range(len(A)):
                         a_o = A[j][0][i]
@@ -231,7 +219,7 @@ class Ins(tf.keras.Model):
                 else:
                     continue
 
-        if self.mut_ex:
+        if self.args.mut_ex:
             ins_labels = tf.concat(values=[ins_label_in, ins_label_out], axis=0)
             ins_logits_unnorm = logits_unnorm_in + logits_unnorm_out
             ins_logits = logits_in + logits_out

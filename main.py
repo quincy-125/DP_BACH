@@ -22,15 +22,12 @@
 
 
 import tensorflow as tf
-import os
-import json
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from training_module.components.model_main import clam_main
+from training_module.components.model_main import clam
 
-
-@hydra.main(version_base=None, config_path="configs", config_name="train_config")
+@hydra.main(version_base=None, config_path="configs", config_name="train")
 def main(cfg: DictConfig) -> None:
     """_summary_
 
@@ -43,15 +40,10 @@ def main(cfg: DictConfig) -> None:
     for key, value in cfg.items():
         if value == "None":
             cfg[key] = eval(value)
-
-    clam_main(cfg)
+    tf.get_logger().setLevel("ERROR")
+    clam(cfg)
 
 
 if __name__ == "__main__":
     print(tf.__version__)
-    print(
-        "Num GPUs Available: ", len(tf.config.experimental.list_physical_devices("GPU"))
-    )
-    print(tf.config.experimental.list_physical_devices("GPU"))
-
     main()

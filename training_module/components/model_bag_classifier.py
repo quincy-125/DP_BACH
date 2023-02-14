@@ -33,22 +33,20 @@ class S_Bag(tf.keras.Model):
         tf (_type_): _description_
     """
 
-    def __init__(self, dim_compress_features=512, n_class=2):
+    def __init__(self, args,):
         """_summary_
 
         Args:
-            dim_compress_features (int, optional): _description_. Defaults to 512.
-            n_class (int, optional): _description_. Defaults to 2.
+            args (_type_): _description_
         """
         super(S_Bag, self).__init__()
-        self.dim_compress_features = dim_compress_features
-        self.n_class = n_class
+        self.args = args
 
         self.s_bag_model = tf.keras.models.Sequential()
         self.s_bag_layer = tf.keras.layers.Dense(
             units=1,
             activation="linear",
-            input_shape=(self.n_class, self.dim_compress_features),
+            input_shape=(self.args.n_class, self.args.dim_compress_features),
             name="Bag_Classifier_Layer",
         )
         self.s_bag_model.add(self.s_bag_layer)
@@ -97,10 +95,10 @@ class S_Bag(tf.keras.Model):
         slide_agg_rep = self.h_slide(A, h)
         bag_classifier = self.bag_classifier()
         slide_score_unnorm = bag_classifier(slide_agg_rep)
-        slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, self.n_class))
+        slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, self.args.n_class))
         Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
         Y_prob = tf.math.softmax(
-            tf.reshape(slide_score_unnorm, (1, self.n_class))
+            tf.reshape(slide_score_unnorm, (1, self.args.n_class))
         )  # shape be (1,2), predictions for each of the classes
         predict_slide_label = np.argmax(Y_prob.numpy())
 
@@ -123,27 +121,25 @@ class M_Bag(tf.keras.Model):
         tf (_type_): _description_
     """
 
-    def __init__(self, dim_compress_features=512, n_class=2):
+    def __init__(self, args,):
         """_summary_
 
         Args:
-            dim_compress_features (int, optional): _description_. Defaults to 512.
-            n_class (int, optional): _description_. Defaults to 2.
+            args (_type_): _description_
         """
         super(M_Bag, self).__init__()
-        self.dim_compress_features = dim_compress_features
-        self.n_class = n_class
+        self.args = args
 
         self.m_bag_models = list()
         self.m_bag_model = tf.keras.models.Sequential()
         self.m_bag_layer = tf.keras.layers.Dense(
             units=1,
             activation="linear",
-            input_shape=(1, self.dim_compress_features),
+            input_shape=(1, self.args.dim_compress_features),
             name="Bag_Classifier_Layer",
         )
         self.m_bag_model.add(self.m_bag_layer)
-        for i in range(self.n_class):
+        for i in range(self.args.n_class):
             self.m_bag_models.append(self.m_bag_model)
 
     def bag_classifier(self):
@@ -171,15 +167,15 @@ class M_Bag(tf.keras.Model):
             SAR.append(sar)
 
         SAR_Branch = list()
-        for i in range(self.n_class):
+        for i in range(self.args.n_class):
             sar_branch = list()
             for j in range(len(SAR)):
-                sar_c = tf.reshape(SAR[j][i], (1, self.dim_compress_features))
+                sar_c = tf.reshape(SAR[j][i], (1, self.args.dim_compress_features))
                 sar_branch.append(sar_c)
             SAR_Branch.append(sar_branch)
 
         slide_agg_rep = list()
-        for k in range(self.n_class):
+        for k in range(self.args.n_class):
             slide_agg_rep.append(tf.math.add_n(SAR_Branch[k]))
 
         return slide_agg_rep
@@ -199,13 +195,13 @@ class M_Bag(tf.keras.Model):
 
         # return s_[slide,m] (slide-level prediction scores)
         ssus = list()
-        for i in range(self.n_class):
+        for i in range(self.args.n_class):
             bag_classifier = self.bag_classifier()[i]
             ssu = bag_classifier(slide_agg_rep[i])
             ssus.append(ssu[0][0])
 
         slide_score_unnorm = tf.convert_to_tensor(ssus)
-        slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, self.n_class))
+        slide_score_unnorm = tf.reshape(slide_score_unnorm, (1, self.args.n_class))
 
         Y_hat = tf.math.top_k(slide_score_unnorm, 1)[1][-1]
         Y_prob = tf.math.softmax(slide_score_unnorm)

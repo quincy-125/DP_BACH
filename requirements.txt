@@ -1,5 +1,4 @@
-tensorflow==2.3.4
-tensorflow-addons
+tensorflow==2.8.0
 pandas
 scikit-learn
 pillow

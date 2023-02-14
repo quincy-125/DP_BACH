@@ -30,7 +30,7 @@ from training_module.components.model_clam import S_CLAM, M_CLAM
 from training_module.components.model_train import train_step
 from training_module.components.model_val import val_step
 from training_module.components.model_test import test_step
-from training_module.util import model_save, restore_model, tf_shut_up
+from training_module.util import model_save, restore_model
 
 
 def train_val(
@@ -55,67 +55,36 @@ def train_val(
     for epoch in range(args.epochs):
         # Training Step
         start_time = time.time()
-
-        (
-            train_loss,
-            train_ins_loss,
-            train_bag_loss,
-            train_tn,
-            train_fp,
-            train_fn,
-            train_tp,
-            train_sensitivity,
-            train_specificity,
-            train_acc,
-            train_auc,
-        ) = train_step(
-            c_model=c_model,
-            args=args,
-        )
+        train_dicts = train_step(c_model=c_model, args=args,)
 
         with train_summary_writer.as_default():
-            tf.summary.scalar("Total Loss", float(train_loss), step=epoch)
-            tf.summary.scalar("Instance Loss", float(train_ins_loss), step=epoch)
-            tf.summary.scalar("Bag Loss", float(train_bag_loss), step=epoch)
-            tf.summary.scalar("Accuracy", float(train_acc), step=epoch)
-            tf.summary.scalar("AUC", float(train_auc), step=epoch)
-            tf.summary.scalar("Sensitivity", float(train_sensitivity), step=epoch)
-            tf.summary.scalar("Specificity", float(train_specificity), step=epoch)
-            tf.summary.histogram("True Positive", int(train_tp), step=epoch)
-            tf.summary.histogram("False Positive", int(train_fp), step=epoch)
-            tf.summary.histogram("True Negative", int(train_tn), step=epoch)
-            tf.summary.histogram("False Negative", int(train_fn), step=epoch)
+            tf.summary.scalar("Total Loss", float(train_dicts["train_loss"]), step=epoch)
+            tf.summary.scalar("Instance Loss", float(train_dicts["train_ins_loss"]), step=epoch)
+            tf.summary.scalar("Bag Loss", float(train_dicts["train_bag_loss"]), step=epoch)
+            tf.summary.scalar("Accuracy", float(train_dicts["train_acc"]), step=epoch)
+            tf.summary.scalar("AUC", float(train_dicts["train_auc"]), step=epoch)
+            tf.summary.scalar("Sensitivity", float(train_dicts["train_sensitivity"]), step=epoch)
+            tf.summary.scalar("Specificity", float(train_dicts["train_specificity"]), step=epoch)
+            tf.summary.histogram("True Positive", int(train_dicts["train_tp"]), step=epoch)
+            tf.summary.histogram("False Positive", int(train_dicts["train_fp"]), step=epoch)
+            tf.summary.histogram("True Negative", int(train_dicts["train_tn"]), step=epoch)
+            tf.summary.histogram("False Negative", int(train_dicts["train_fn"]), step=epoch)
 
         # Validation Step
-        (
-            val_loss,
-            val_ins_loss,
-            val_bag_loss,
-            val_tn,
-            val_fp,
-            val_fn,
-            val_tp,
-            val_sensitivity,
-            val_specificity,
-            val_acc,
-            val_auc,
-        ) = val_step(
-            c_model=c_model,
-            args=args,
-        )
+        val_dicts = val_step(c_model=c_model, args=args,)
 
         with val_summary_writer.as_default():
-            tf.summary.scalar("Total Loss", float(val_loss), step=epoch)
-            tf.summary.scalar("Instance Loss", float(val_ins_loss), step=epoch)
-            tf.summary.scalar("Bag Loss", float(val_bag_loss), step=epoch)
-            tf.summary.scalar("Accuracy", float(val_acc), step=epoch)
-            tf.summary.scalar("AUC", float(val_auc), step=epoch)
-            tf.summary.scalar("Sensitivity", float(val_sensitivity), step=epoch)
-            tf.summary.scalar("Specificity", float(val_specificity), step=epoch)
-            tf.summary.histogram("True Positive", int(val_tp), step=epoch)
-            tf.summary.histogram("False Positive", int(val_fp), step=epoch)
-            tf.summary.histogram("True Negative", int(val_tn), step=epoch)
-            tf.summary.histogram("False Negative", int(val_fn), step=epoch)
+            tf.summary.scalar("Total Loss", float(val_dicts["val_loss"]), step=epoch)
+            tf.summary.scalar("Instance Loss", float(val_dicts["val_ins_loss"]), step=epoch)
+            tf.summary.scalar("Bag Loss", float(val_dicts["val_bag_loss"]), step=epoch)
+            tf.summary.scalar("Accuracy", float(val_dicts["val_acc"]), step=epoch)
+            tf.summary.scalar("AUC", float(val_dicts["val_auc"]), step=epoch)
+            tf.summary.scalar("Sensitivity", float(val_dicts["val_sensitivity"]), step=epoch)
+            tf.summary.scalar("Specificity", float(val_dicts["val_specificity"]), step=epoch)
+            tf.summary.histogram("True Positive", int(val_dicts["val_tp"]), step=epoch)
+            tf.summary.histogram("False Positive", int(val_dicts["val_fp"]), step=epoch)
+            tf.summary.histogram("True Negative", int(val_dicts["val_tn"]), step=epoch)
+            tf.summary.histogram("False Negative", int(val_dicts["val_fn"]), step=epoch)
 
         epoch_run_time = time.time() - start_time
 
@@ -134,10 +103,10 @@ def train_val(
         )
         train_val_log = template.format(
             epoch + 1,
-            f"{float(train_loss):.8}",
-            f"{float(train_acc):.4%}",
-            f"{float(val_loss):.8}",
-            f"{float(val_acc):.4%}",
+            f"{float(train_dicts['train_loss']):.8}",
+            f"{float(train_dicts['train_acc']):.4%}",
+            f"{float(val_dicts['val_loss']):.8}",
+            f"{float(val_dicts['val_acc']):.4%}",
             "--- %s mins ---" % int(epoch_run_time / 60),
         )
         train_val_logs.append(train_val_log)
@@ -201,35 +170,10 @@ def load_model(
     Returns:
         _type_: _description_
     """
-    s_clam = S_CLAM(
-        att_gate=args.att_gate,
-        net_size=args.net_size,
-        top_k_percent=args.top_k_percent,
-        n_class=args.n_class,
-        mut_ex=args.mut_ex,
-        drop_rate=args.dropout_rate,
-        mil_ins=args.mil_ins,
-        att_only=args.att_only,
-    )
-
-    m_clam = M_CLAM(
-        att_gate=args.att_gate,
-        net_size=args.net_size,
-        top_k_percent=args.top_k_percent,
-        n_class=args.n_class,
-        mut_ex=args.mut_ex,
-        drop_rate=args.dropout_rate,
-        mil_ins=args.mil_ins,
-        att_only=args.att_only,
-    )
-
-    s_clam_model = s_clam
-    m_clam_model = m_clam
-
     if args.m_clam_op:
-        c_model = m_clam_model
+        c_model = M_CLAM(args=args,)
     else:
-        c_model = s_clam_model
+        c_model = S_CLAM(args=args,)
 
     return c_model
 
@@ -249,47 +193,23 @@ def clam(
         with open(os.path.join(logging_config_path, "train.json"), "w") as f:
             json.dump(dict(args), f)
 
-        c_model = load_model(
-            args=args,
-        )
+        c_model = load_model(args=args,)
 
-        tf_shut_up(no_warn_op=args.no_warn_op)
-
-        if args.m_clam_op:
-            b_c_model_index = 1
-        else:
-            b_c_model_index = 0
-
-        clam_optimize(
-            c_model=c_model,
-            args=args,
-        )
+        if args.gpu:
+            print(
+                f"Num GPUs Available: {len(tf.config.experimental.list_physical_devices('GPU'))}, and all available GPU Devices include {tf.config.experimental.list_physical_devices('GPU')}"
+            )
+            gpus = tf.config.experimental.list_logical_devices("GPU")
+            for gpu in gpus:
+                with tf.device(gpu.name):
+                    clam_optimize(
+                        c_model=c_model,
+                        args=args,
+                    )
     else:
         with open(os.path.join(logging_config_path, "test.json"), "w") as f:
             json.dump(dict(args), f)
 
         clam_test(
-            args=args,
-        )
-
-
-def clam_main(
-    args,
-):
-    """_summary_
-
-    Args:
-        args (_type_): _description_
-    """
-    if args.multi_gpu:
-        gpus = tf.config.experimental.list_logical_devices("GPU")
-        if gpus:
-            for gpu in gpus:
-                with tf.device(gpu.name):
-                    clam(
-                        args=args,
-                    )
-    else:
-        clam(
             args=args,
         )
