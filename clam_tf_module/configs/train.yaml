@@ -76,7 +76,7 @@
   ## whether or not applying multi-clam models with multi-bag classifiers included
   m_clam_op: False
   ## number of batch size applied during model optimization process, when batch size be 0, means not doing batch training
-  batch_size: 40
+  batch_size: 400
   ## number of epochs for model optimization process
   epochs: 200
   ## whether or not preventing tensorflow from returning warning messages
