@@ -1,0 +1,114 @@
+# Copyright 2022 Mayo Clinic. All Rights Reserved.
+#
+# Author: Quincy Gu (M216613)
+# Affliation: Division of Computational Pathology and Artificial Intelligence, 
+# Department of Laboratory Medicine and Pathology, Mayo Clinic College of Medicine and Science
+# Email: Gu.Qiangqiang@mayo.edu
+# Version: 1.0.1
+# Created on: 11/27/2022 6:35 pm CST
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+
+## The kf_cv_config yaml file starts with "---", comments start with "#", and the
+## kf_cv_config yaml file ends with "..."
+
+---
+  ## file path ending in folders that are to be used for model training
+  image_dir_train: 
+  ## file path ending in folders that are to be used for model validation
+  image_dir_validation: 
+  ## number of classes the model is trying to classify
+  classes: 2
+  ## general CNN models pretrained weights
+  weights: imagenet
+  ## the network loaded whether to include the classification layers at the 
+  ## top, default is false
+  include_top: False
+  ## models available from tf.keras, options include
+  ## [
+  ##   "DenseNet121",
+  ##   "DenseNet169",
+  ##   "DenseNet201",
+  ##   "InceptionResNetV2",
+  ##   "InceptionV3",
+  ##   "MobileNet",
+  ##   "MobileNetV2",
+  ##   "NASNetLarge",
+  ##   "NASNetMobile",
+  ##   "ResNet50",
+  ##   "ResNet152",
+  ##   "VGG16",
+  ##   "VGG19",
+  ##   "Xception",
+  ## ]
+  model_name: VGG16
+  ## optimizers from tf.keras, options include
+  ## [
+  ##   "Adadelta",
+  ##   "Adagrad",
+  ##   "Adam",
+  ##   "Adamax",
+  ##   "Ftrl",
+  ##   "Nadam",
+  ##   "RMSprop",
+  ##   "SGD",
+  ## ]
+  optimizer_name: Adam
+  ## patch size to use for training
+  patch_size: 256
+  ## path to where the tensorboard logs stored
+  log_dir: 
+  ## learning rate
+  lr: 0.0001
+  ## loss functions from tf.keras, options include
+  ## [
+  ##   "SparseCategoricalCrossentropy",
+  ##   "CategoricalCrossentropy",
+  ##   "BinaryCrossentropy",
+  ##   "Hinge",
+  ## ]
+  loss_function: BinaryCrossentropy
+  ## number of epochs to use for training
+  num-epochs: 10
+  ## number of batches to use for training
+  batch-size: 1
+  ## number of workers to use for training
+  num-workers: 1
+  ## whether or not to use multiprocessing
+  use-multiprocessing: False
+  ## the logging level, options include
+  ## ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+  verbose: DEBUG
+  ## input data filetype, options include
+  ## ["tfrecords", "images"]
+  filetype: images
+  ## regulrization drop out percent 0-1
+  dropout_rate: 
+  ## L2 Regulrization 0-0.1, if value be -1, indicate no L2 
+  ## regularization applied
+  l2_reg: -1
+  ## tfrecord attribute to write images as byte-array in
+  tfrecord_image: image/encoded
+  ## tfrecord attribute to write image labels in
+  tfrecord_label: null
+  ## indexing number of the layer of the model used to start trained on 
+  ## internal dataset -1 means to completely not re-train the model, 0 
+  ## means to re-train all layers of the model, any other positive numbers 
+  ## means to re-train the laters of the model starting layer index 
+  ## equals to num_layers
+  num_layers: -1
+  ## load previous checkpoint
+  prev_checkpoint: False
+...
