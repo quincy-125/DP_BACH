@@ -6,7 +6,7 @@ This is the codebase of Tensorflow-Version Deep Neural Networks Implementations 
 The structure of the codebase
 ```
 |- README.md
-|-clam_tf_module
+|- clam_tf_module
     |- requirements.txt
     |- configs
         |- data_config.yaml
