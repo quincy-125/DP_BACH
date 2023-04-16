@@ -230,13 +230,14 @@ def clam(
         c_model = load_model(
             args=args,
         )
-
+        print('Model loaded!')
         if args.gpu:
             print(
                 f"Num GPUs Available: {len(tf.config.experimental.list_physical_devices('GPU'))}, and all available GPU Devices include {tf.config.experimental.list_physical_devices('GPU')}"
             )
             gpus = tf.config.experimental.list_logical_devices("GPU")
             for gpu in gpus:
+                print(f'Loading GPU {gpu}')
                 with tf.device(gpu.name):
                     clam_optimize(
                         c_model=c_model,

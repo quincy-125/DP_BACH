@@ -1,4 +1,4 @@
-tensorflow==2.8.0
+tensorflow
 pandas
 scikit-learn
 pillow
@@ -10,3 +10,5 @@ descartes
 statistics
 import-ipynb
 jupyterlab
+ipykernel
+hydra-core

@@ -41,7 +41,7 @@ def main(cfg: DictConfig) -> None:
     for key, value in cfg.items():
         if value == "None":
             cfg[key] = eval(value)
-    tf.get_logger().setLevel("ERROR")
+    tf.get_logger().setLevel("DEBUG")
     clam(cfg)
 
 
