@@ -143,13 +143,14 @@ def optimizer_func_options(
     """
     optimizer_func_dic = {
         "Adam": tf.keras.optimizers.Adam,
-        "Adadelta": tf.keras.optimizers.Adadelta,
-        "Adagrad": tf.keras.optimizers.Adagrad,
-        "Adamax": tf.keras.optimizers.Adamax,
-        "Ftrl": tf.keras.optimizers.Ftrl,
-        "Nadam": tf.keras.optimizers.Nadam,
-        "RMSprop": tf.keras.optimizers.RMSprop,
-        "SGD": tf.keras.optimizers.SGD,
+        "AdamW": tf.keras.optimizers.AdamW,
+        "Adadelta": tf.keras.optimizers.experimental.Adadelta,
+        "Adagrad": tf.keras.optimizers.experimental.Adagrad,
+        "Adamax": tf.keras.optimizers.experimental.Adamax,
+        "Ftrl": tf.keras.optimizers.experimental.Ftrl,
+        "Nadam": tf.keras.optimizers.experimental.Nadam,
+        "RMSprop": tf.keras.optimizers.experimental.RMSprop,
+        "SGD": tf.keras.optimizers.experimental.SGD,
     }
 
     return optimizer_func_dic
@@ -162,15 +163,14 @@ def loss_func_options():
         _type_: _description_
     """
     loss_func_dic = {
-        "binary_crossentropy": tf.keras.losses.binary_crossentropy,
-        "hinge": tf.keras.losses.hinge,
-        "categorical_crossentropy": tf.keras.losses.categorical_crossentropy,
+        "binary_crossentropy": tf.keras.metrics.binary_crossentropy,
+        "hinge": tf.keras.metrics.hinge,
+        "categorical_crossentropy": tf.keras.metrics.categorical_crossentropy,
         "categorical_hinge": tf.keras.losses.categorical_hinge,
         "cosine_similarity": tf.keras.losses.cosine_similarity,
-        "huber": tf.keras.losses.huber,
         "log_cosh": tf.keras.losses.log_cosh,
-        "poisson": tf.keras.losses.poisson,
-        "squared_hinge": tf.keras.losses.squared_hinge,
+        "poisson": tf.keras.metrics.poisson,
+        "squared_hinge": tf.keras.metrics.squared_hinge,
     }
 
     return loss_func_dic
@@ -197,9 +197,9 @@ def load_optimizers(
         args=args,
     )[args.a_optimizer_name]
 
-    i_optimizer = i_optimizer_func(learning_rate=args.i_learn_rate)
-    b_optimizer = b_optimizer_func(learning_rate=args.b_learn_rate)
-    c_optimizer = c_optimizer_func(learning_rate=args.a_learn_rate)
+    i_optimizer = i_optimizer_func(learning_rate=args.i_learn_rate, weight_decay=args.i_weight_decay)
+    b_optimizer = b_optimizer_func(learning_rate=args.b_learn_rate, weight_decay=args.b_weight_decay)
+    c_optimizer = c_optimizer_func(learning_rate=args.a_learn_rate, weight_decay=args.a_weight_decay)
 
     return i_optimizer, b_optimizer, c_optimizer
 

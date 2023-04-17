@@ -1,4 +1,4 @@
-outputs/*
+clam_tf_module/outputs/*
 .idea/
 QSUB_Script/
 .idea/dictionaries/M216613.xml

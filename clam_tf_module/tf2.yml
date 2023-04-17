@@ -1,4 +1,4 @@
-name: stevetf
+name: quincytf
 channels:
   - conda-forge
   - defaults
@@ -67,4 +67,4 @@ dependencies:
       - werkzeug==2.2.2
       - wrapt==1.14.1
       - zipp==3.12.1
-prefix: /home/m087494/miniconda3/envs/tf
+prefix: /home/quincy/miniconda3/envs/tf2n
