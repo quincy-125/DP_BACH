@@ -130,6 +130,8 @@ class NG_Att_Net(tf.keras.Model):
             a = self.att_model()[1](j)
             A.append(a)
 
+        h, A = tf.convert_to_tensor(h), tf.convert_to_tensor(A)
+
         return {"h": h, "A": A}
 
 
@@ -272,5 +274,7 @@ class G_Att_Net(tf.keras.Model):
             att_input = tf.math.multiply(att_v_output, att_u_output)
             a = self.att_model()[3](att_input)
             A.append(a)
+
+        h, A = tf.convert_to_tensor(h), tf.convert_to_tensor(A)
 
         return {"h": h, "A": A}

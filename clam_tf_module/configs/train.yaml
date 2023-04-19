@@ -48,9 +48,9 @@
   ## loss function option for bag classifier
   b_loss_name: binary_crossentropy
   ## scalar of instance loss values
-  c1: 0.95
+  c1: 0.7
   ## scalar of bag loss values
-  c2: 0.05
+  c2: 0.3
   ## whether or not applying gate attention network
   att_gate: True
   ## whether or not the mutually exclusive assumption holds
@@ -69,8 +69,6 @@
   top_k_percent: 0.2
   ## whether or not applying multi-clam models with multi-bag classifiers included
   m_clam_op: False
-  ## number of batch size applied during model optimization process, when batch size be 0, means not doing batch training
-  batch_size: 0
   ## number of epochs for model optimization process
   epochs: 50
   ## if only returned attention score from trained model for visualization purposes

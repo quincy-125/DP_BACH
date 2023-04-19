@@ -191,7 +191,7 @@ class M_Bag(tf.keras.Model):
                     slide_rep, (1, slide_rep.shape[0], slide_rep.shape[1])
                 )
             slide_agg_rep.append(slide_rep)
-        
+
         return slide_agg_rep
 
     def call(self, bag_label, A, h):

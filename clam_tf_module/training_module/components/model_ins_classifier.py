@@ -235,6 +235,13 @@ class Ins(tf.keras.Model):
             ins_logits_unnorm = logits_unnorm_in
             ins_logits = logits_in
 
+        ins_labels, ins_logits_unnorm, ins_logits = (
+            tf.convert_to_tensor(ins_labels),
+            tf.convert_to_tensor(ins_logits_unnorm),
+            tf.convert_to_tensor(ins_logits),
+        )
+        ins_labels = tf.one_hot(ins_labels, 2)
+
         return {
             "ins_labels": ins_labels,
             "ins_logits_unnorm": ins_logits_unnorm,

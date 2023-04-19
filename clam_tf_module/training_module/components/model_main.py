@@ -234,20 +234,20 @@ def clam(
             print(
                 f"Num GPUs Available: {len(tf.config.experimental.list_physical_devices('GPU'))}, and all available GPU Devices include {tf.config.experimental.list_physical_devices('GPU')}"
             )
-            gpus = tf.config.experimental.list_logical_devices("GPU")
-            for gpu in gpus:
-                print(f'Loading GPU {gpu}')
-                # try:
-                #     tf.config.experimental.set_virtual_device_configuration(
-                #         gpus,[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=5120)])
-                # except RuntimeError as e:
-                #     print(f"error is {e}")
+            gpu = tf.config.experimental.list_logical_devices("GPU")[0]
+            # for gpu in gpus:
+            #     print(f'Loading GPU {gpu}')
+            # try:
+            #     tf.config.experimental.set_virtual_device_configuration(
+            #         gpus,[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=5120)])
+            # except RuntimeError as e:
+            #     print(f"error is {e}")
 
-                with tf.device(gpu.name):
-                    clam_optimize(
-                        c_model=c_model,
-                        args=args,
-                    )
+            with tf.device(gpu.name):
+                clam_optimize(
+                    c_model=c_model,
+                    args=args,
+                )
         else:
             print("Execute training with CPUs only")
             clam_optimize(
