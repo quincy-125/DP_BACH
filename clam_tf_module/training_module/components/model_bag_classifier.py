@@ -184,8 +184,14 @@ class M_Bag(tf.keras.Model):
 
         slide_agg_rep = list()
         for k in range(self.args.n_class):
-            slide_agg_rep.append(tf.math.add_n(SAR_Branch[k]))
-
+            slide_rep = tf.math.add_n(SAR_Branch[k])
+            ## need to reshape slide_agg_rep be (1,2,512), which will be compatible with input layer dimension
+            if len(slide_rep.shape) == 2:
+                slide_rep = tf.reshape(
+                    slide_rep, (1, slide_rep.shape[0], slide_rep.shape[1])
+                )
+            slide_agg_rep.append(slide_rep)
+        
         return slide_agg_rep
 
     def call(self, bag_label, A, h):

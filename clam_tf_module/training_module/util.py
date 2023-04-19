@@ -35,41 +35,6 @@ sys_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(sys_dir))
 
 
-def configure_logging(
-    script_name,
-    args,
-):
-    """_summary_
-
-    Args:
-        script_name (_type_): _description_
-        args (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    log_format = "%(asctime)s: %(name)s: %(levelname)s: %(message)s"
-
-    os.makedirs("../logs", exist_ok=True)
-    with open(args.stdout_path, "w") as f:
-        pass
-
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format=log_format,
-        filename=args.stdout_path,
-        filemode="w",
-    )
-
-    console = logging.StreamHandler()
-    console.setLevel(logging.DEBUG)
-    console.setFormatter(logging.Formatter(log_format))
-
-    logging.getLogger(script_name).addHandler(console)
-
-    return logging.getLogger(script_name)
-
-
 def get_data_from_tf(
     tf_path,
     args,
@@ -162,15 +127,14 @@ def loss_func_options():
         _type_: _description_
     """
     loss_func_dic = {
-        "binary_crossentropy": tf.keras.losses.binary_crossentropy,
-        "hinge": tf.keras.losses.hinge,
-        "categorical_crossentropy": tf.keras.losses.categorical_crossentropy,
+        "binary_crossentropy": tf.keras.metrics.binary_crossentropy,
+        "hinge": tf.keras.metrics.hinge,
+        "categorical_crossentropy": tf.keras.metrics.categorical_crossentropy,
         "categorical_hinge": tf.keras.losses.categorical_hinge,
         "cosine_similarity": tf.keras.losses.cosine_similarity,
-        "huber": tf.keras.losses.huber,
         "log_cosh": tf.keras.losses.log_cosh,
-        "poisson": tf.keras.losses.poisson,
-        "squared_hinge": tf.keras.losses.squared_hinge,
+        "poisson": tf.keras.metrics.poisson,
+        "squared_hinge": tf.keras.metrics.squared_hinge,
     }
 
     return loss_func_dic

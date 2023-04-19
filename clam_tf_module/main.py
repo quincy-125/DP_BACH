@@ -38,13 +38,13 @@ def main(cfg: DictConfig) -> None:
     Returns:
         _type_: _description_
     """
+    tf.get_logger().setLevel("ERROR")
     for key, value in cfg.items():
         if value == "None":
             cfg[key] = eval(value)
-    tf.get_logger().setLevel("ERROR")
     clam(cfg)
 
 
 if __name__ == "__main__":
-    print(tf.__version__)
+    print(f"tensorflow version is {tf.__version__}")
     main()
