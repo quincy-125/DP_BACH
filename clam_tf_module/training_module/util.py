@@ -35,41 +35,6 @@ sys_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(sys_dir))
 
 
-def configure_logging(
-    script_name,
-    args,
-):
-    """_summary_
-
-    Args:
-        script_name (_type_): _description_
-        args (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    log_format = "%(asctime)s: %(name)s: %(levelname)s: %(message)s"
-
-    os.makedirs("../logs", exist_ok=True)
-    with open(args.stdout_path, "w") as f:
-        pass
-
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format=log_format,
-        filename=args.stdout_path,
-        filemode="w",
-    )
-
-    console = logging.StreamHandler()
-    console.setLevel(logging.DEBUG)
-    console.setFormatter(logging.Formatter(log_format))
-
-    logging.getLogger(script_name).addHandler(console)
-
-    return logging.getLogger(script_name)
-
-
 def get_data_from_tf(
     tf_path,
     args,
@@ -143,14 +108,13 @@ def optimizer_func_options(
     """
     optimizer_func_dic = {
         "Adam": tf.keras.optimizers.Adam,
-        "AdamW": tf.keras.optimizers.AdamW,
-        "Adadelta": tf.keras.optimizers.experimental.Adadelta,
-        "Adagrad": tf.keras.optimizers.experimental.Adagrad,
-        "Adamax": tf.keras.optimizers.experimental.Adamax,
-        "Ftrl": tf.keras.optimizers.experimental.Ftrl,
-        "Nadam": tf.keras.optimizers.experimental.Nadam,
-        "RMSprop": tf.keras.optimizers.experimental.RMSprop,
-        "SGD": tf.keras.optimizers.experimental.SGD,
+        "Adadelta": tf.keras.optimizers.Adadelta,
+        "Adagrad": tf.keras.optimizers.Adagrad,
+        "Adamax": tf.keras.optimizers.Adamax,
+        "Ftrl": tf.keras.optimizers.Ftrl,
+        "Nadam": tf.keras.optimizers.Nadam,
+        "RMSprop": tf.keras.optimizers.RMSprop,
+        "SGD": tf.keras.optimizers.SGD,
     }
 
     return optimizer_func_dic
@@ -197,9 +161,9 @@ def load_optimizers(
         args=args,
     )[args.a_optimizer_name]
 
-    i_optimizer = i_optimizer_func(learning_rate=args.i_learn_rate, weight_decay=args.i_weight_decay)
-    b_optimizer = b_optimizer_func(learning_rate=args.b_learn_rate, weight_decay=args.b_weight_decay)
-    c_optimizer = c_optimizer_func(learning_rate=args.a_learn_rate, weight_decay=args.a_weight_decay)
+    i_optimizer = i_optimizer_func(learning_rate=args.i_learn_rate)
+    b_optimizer = b_optimizer_func(learning_rate=args.b_learn_rate)
+    c_optimizer = c_optimizer_func(learning_rate=args.a_learn_rate)
 
     return i_optimizer, b_optimizer, c_optimizer
 

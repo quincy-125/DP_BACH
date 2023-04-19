@@ -36,21 +36,21 @@
   ## directory of validation data split csv file including slide uuids used for validation
   val_data_dir: /home/quincy/data/bach_kf/fold_1/bach_fold_1_val.csv
   ## path to the trained model checkpoint, training and validation reported losses and metrics, and trainning and validation configurations
-  checkpoints_dir: /home/quincy/exps/c1/cv1
+  checkpoints_dir: /home/quincy/exps/clam/h1/cv1
   ## optimizer option for instance classifier
-  i_optimizer_name: AdamW
+  i_optimizer_name: Adam
   ## optimizer option for bag classifier
-  b_optimizer_name: AdamW
+  b_optimizer_name: Adam
   ## optimizer option for attention network
-  a_optimizer_name: AdamW
+  a_optimizer_name: Adam
   ## loss function option for instance classifier
   i_loss_name: binary_crossentropy
   ## loss function option for bag classifier
   b_loss_name: binary_crossentropy
   ## scalar of instance loss values
-  c1: 0.7
+  c1: 0.95
   ## scalar of bag loss values
-  c2: 0.3
+  c2: 0.05
   ## whether or not applying gate attention network
   att_gate: True
   ## whether or not the mutually exclusive assumption holds
@@ -61,12 +61,6 @@
   b_learn_rate: 0.0002
   ## learning rate for attention network
   a_learn_rate: 0.0002
-  ## L2 weight decay rate for instance classifier
-  i_weight_decay: 0.00001
-  ## L2 weight decay rate for bag classifier
-  b_weight_decay: 0.00001
-  ## L2 weight decay rate for attention network
-  a_weight_decay: 0.00001
   ## whether or not normalize input image feature vectors
   imf_norm_op: True
   ## number of classes need to be classified, default be 2 for binary classification
@@ -76,25 +70,15 @@
   ## whether or not applying multi-clam models with multi-bag classifiers included
   m_clam_op: False
   ## number of batch size applied during model optimization process, when batch size be 0, means not doing batch training
-  batch_size: 400
+  batch_size: 0
   ## number of epochs for model optimization process
-  epochs: 200
-  ## whether or not preventing tensorflow from returning warning messages
-  no_warn_op: True
-  ## whether or not applying optimizer with weight decay options for instance classifier
-  i_wd_op: False
-  ## whether or not applying optimizer with weight decay options for bag classifier
-  b_wd_op: True
-  ## whether or not applying optimizer with weight decay options for attention network
-  a_wd_op: True
+  epochs: 50
   ## if only returned attention score from trained model for visualization purposes
   att_only: False
   ## attention network size which will determine the number of hidden units
-  net_size: big
+  net_size: small
   ## dropout rate for the attention network dropout layer if it is enabled
-  dropout_rate: 0.25
+  dropout_rate: 0.5
   ## dimensionality of compressed image feature vectors, default be 512
   dim_compress_features: 512
-  ## path to standard output file
-  stdout_path: /home/quincy/logs/train.err
 ...

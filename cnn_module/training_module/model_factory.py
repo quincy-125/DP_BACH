@@ -1,15 +1,4 @@
 import tensorflow as tf
-from tensorflow.keras.layers import (
-    Input,
-    Dense,
-    GlobalAveragePooling2D,
-    Flatten,
-    Dropout,
-)
-from tensorflow.keras import (
-    Model,
-    regularizers,
-)
 import logging
 import sys
 
@@ -42,7 +31,7 @@ class GetModel:
         Returns:
             _type_: _description_
         """
-        input_tensor = Input(shape=(self.args.patch_size, self.args.patch_size, 3))
+        input_tensor = tf.keras.layers.Input(shape=(self.args.patch_size, self.args.patch_size, 3))
         img_shape = (self.args.patch_size, self.args.patch_size, 3)
 
         if self.args.model_name == "DenseNet121":
@@ -187,33 +176,33 @@ class GetModel:
         base_model = model
 
         x = base_model.output
-        x = GlobalAveragePooling2D(name="avg_pool")(x)
-        x = Flatten()(x)
+        x = tf.keras.layers.GlobalAveragePooling2D(name="avg_pool")(x)
+        x = tf.keras.layers.Flatten()(x)
 
         if self.args.dropout_rate != 0.0:
-            x = Dropout(self.args.dropout_rate)(x)
+            x = tf.keras.layers.Dropout(self.args.dropout_rate)(x)
         if self.args.l2_reg != -1:
-            x = Dense(
+            x = tf.keras.layers.Dense(
                 1024,
                 activation="relu",
                 kernel_initializer="he_normal",
-                kernel_regularizer=regularizers.l2(self.args.l2_reg),
+                kernel_regularizer=tf.keras.regularizers.l2(self.args.l2_reg),
             )(x)
         else:
-            x = Dense(1024, activation="relu")(x)
+            x = tf.keras.layers.Dense(1024, activation="relu")(x)
         if self.args.dropout_rate != 0.0:
-            x = Dropout(self.args.dropout_rate)(x)
+            x = tf.keras.layers.Dropout(self.args.dropout_rate)(x)
         if self.args.l2_reg != -1:
-            x = Dense(
+            x = tf.keras.layers.Dense(
                 512,
                 activation="relu",
                 kernel_initializer="he_normal",
-                kernel_regularizer=regularizers.l2(self.args.l2_reg),
+                kernel_regularizer=tf.keras.regularizers.l2(self.args.l2_reg),
             )(x)
         else:
-            x = Dense(512, activation="relu")(x)
+            x = tf.keras.layers.Dense(512, activation="relu")(x)
 
-        out = Dense(self.args.classes, activation="softmax")(x)
+        out = tf.keras.layers.Dense(self.args.classes, activation="softmax")(x)
 
         base_model.trainable = False
 
@@ -228,7 +217,7 @@ class GetModel:
                 for layer in base_model.layers[self.args.num_layers :]:
                     layer.trainable = True
 
-        conv_model = Model(inputs=input_tensor, outputs=out)
+        conv_model = tf.keras.Model(inputs=input_tensor, outputs=out)
 
         return conv_model, preprocess
 

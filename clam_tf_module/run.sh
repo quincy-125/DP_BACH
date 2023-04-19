@@ -1,1 +1,1 @@
-python main.py
+/home/quincy/tf2n/bin/python main.py

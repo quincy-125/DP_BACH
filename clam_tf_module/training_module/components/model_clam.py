@@ -162,7 +162,7 @@ class M_CLAM(tf.keras.Model):
         self.net_shape_dict = {"small": [1024, 512, 256], "big": [1024, 512, 384]}
         self.net_shape = self.net_shape_dict[self.args.net_size]
 
-        if self.att_gate:
+        if self.args.att_gate:
             self.att_net = G_Att_Net(
                 args=self.args,
                 dim_features=self.net_shape[0],
