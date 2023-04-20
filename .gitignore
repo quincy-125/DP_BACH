@@ -6,3 +6,6 @@ QSUB_Script/
 *__pycache__
 *git
 *checkpoints
+*sh
+*outputs
+*scripts
