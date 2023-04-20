@@ -200,9 +200,6 @@ class Ins(tf.keras.Model):
         """
         n_ins = self.args.top_k_percent * len(h)
         n_ins = int(n_ins)
-        # if n_ins computed above is less than 0, make n_ins be default be 8
-        if n_ins == 0:
-            n_ins += 8
 
         for i in range(self.args.n_class):
             ins_classifier = self.ins_classifier()[i]

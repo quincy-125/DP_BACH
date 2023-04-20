@@ -119,18 +119,15 @@ class NG_Att_Net(tf.keras.Model):
         Returns:
             _type_: _description_
         """
-        h = list()
-        A = list()
+        h = self.att_model()[0](img_features)
 
-        for i in img_features:
-            c_imf = self.att_model()[0](i)
-            h.append(c_imf)
+        att_v_output = self.att_model()[1](h)
+        att_u_output = self.att_model()[2](h)
+        att_input = tf.math.multiply(att_v_output, att_u_output)
+        A = self.att_model()[3](att_input)
 
-        for j in h:
-            a = self.att_model()[1](j)
-            A.append(a)
-
-        h, A = tf.convert_to_tensor(h), tf.convert_to_tensor(A)
+        h = tf.reshape(h, (h.shape[0], 1, h.shape[-1]))
+        A = tf.reshape(A, (A.shape[0], 1, A.shape[-1]))
 
         return {"h": h, "A": A}
 
@@ -261,20 +258,14 @@ class G_Att_Net(tf.keras.Model):
         Returns:
             _type_: _description_
         """
-        h = list()
-        A = list()
+        h = self.att_model()[0](img_features)
 
-        for i in img_features:
-            c_imf = self.att_model()[0](i)
-            h.append(c_imf)
+        att_v_output = self.att_model()[1](h)
+        att_u_output = self.att_model()[2](h)
+        att_input = tf.math.multiply(att_v_output, att_u_output)
+        A = self.att_model()[3](att_input)
 
-        for j in h:
-            att_v_output = self.att_model()[1](j)
-            att_u_output = self.att_model()[2](j)
-            att_input = tf.math.multiply(att_v_output, att_u_output)
-            a = self.att_model()[3](att_input)
-            A.append(a)
-
-        h, A = tf.convert_to_tensor(h), tf.convert_to_tensor(A)
+        h = tf.reshape(h, (h.shape[0], 1, h.shape[-1]))
+        A = tf.reshape(A, (A.shape[0], 1, A.shape[-1]))
 
         return {"h": h, "A": A}

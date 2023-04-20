@@ -78,6 +78,10 @@ def get_data_from_tf(
         image_features.append(img_feature)
 
     image_features = tf.convert_to_tensor(image_features)
+    image_features = tf.reshape(
+        image_features, 
+        (image_features.shape[0], image_features.shape[-1])
+    )
     if args.imf_norm_op:
         image_features = tf.math.l2_normalize(image_features)
 
