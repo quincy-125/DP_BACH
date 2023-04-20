@@ -29,7 +29,7 @@ class Preprocess:
         # self.tfrecord_image = self.args.tfrecord_image
         # self.tfrecord_label = self.args.tfrecord_label
         self.directory_path = directory_path
-        
+
         (
             self.files,
             self.labels,
@@ -46,7 +46,6 @@ class Preprocess:
             return new
         else:
             return prev + new
-
 
     def __get_lists(self):
         logging.debug("Getting initial list of images and labels")
@@ -104,8 +103,8 @@ class Preprocess:
                     ]
                 else:
                     tmp1 = tmp
-                files[i::self.args.classes] = tmp1
-                labels[i::self.args.classes] = [labels_list[i][0]] * len(tmp1)
+                files[i :: self.args.classes] = tmp1
+                labels[i :: self.args.classes] = [labels_list[i][0]] * len(tmp1)
             del tmp1
             del tmp
         del files_list

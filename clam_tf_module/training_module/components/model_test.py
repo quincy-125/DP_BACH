@@ -29,6 +29,7 @@ import time
 
 from training_module.util import (
     get_data_from_tf,
+    load_sample_dataset,
     s_clam_call,
     most_frequent,
     m_clam_call,
@@ -94,45 +95,34 @@ def test_step(
 
     slide_true_label = list()
     slide_predict_label = list()
-    sample_names = list()
 
-    test_img_uuids = list(pd.read_csv(args.test_data_dir, index_col=False).UUID)
-    all_img_uuids = list(os.listdir(args.all_tfrecords_path))
-
-    test_sample_list = [
-        os.path.join(args.all_tfrecords_path, img_uuid)
-        for img_uuid in all_img_uuids
-        if img_uuid.split("_")[-1].split(".tfrecords")[0] in test_img_uuids
-    ]
-
-    for i in test_sample_list:
+    test_sample_dataset = load_sample_dataset(args=args, sample_name="test")
+    sample_names, features, labels = (
+        test_sample_dataset["sample_names"],
+        test_sample_dataset["image_features"],
+        test_sample_dataset["slide_labels"],
+    )
+    for i in range(len(labels)):
         print(">", end="")
-        single_test_data = i
-        img_features, slide_label = get_data_from_tf(
-            tf_path=single_test_data,
-            args=args,
-        )
-
         predict_slide_label = m_test_per_sample(
             c_model=c_model,
-            img_features=img_features,
-            slide_label=slide_label,
+            img_features=features[i],
+            slide_label=labels[i],
             args=args,
         )
 
-        slide_true_label.append(slide_label)
+        slide_true_label.append(labels[i])
         slide_predict_label.append(predict_slide_label)
-        sample_names.append(i)
 
-        test_results = pd.DataFrame(
-            list(zip(sample_names, slide_true_label, slide_predict_label)),
-            columns=["Sample Names", "Slide True Label", "Slide Predict Label"],
-        )
-        test_results.to_csv(
-            os.path.join(args.test_result_dir, args.test_result_file_name),
-            sep="\t",
-            index=False,
-        )
+    test_results = pd.DataFrame(
+        list(zip(sample_names, slide_true_label, slide_predict_label)),
+        columns=["Sample Names", "Slide True Label", "Slide Predict Label"],
+    )
+    test_results.to_csv(
+        os.path.join(args.test_result_dir, args.test_result_file_name),
+        sep="\t",
+        index=False,
+    )
 
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(
         slide_true_label, slide_predict_label

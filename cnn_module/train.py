@@ -11,7 +11,12 @@ import tensorflow as tf
 # tf.keras.backend.clear_session()
 from callbacks import CallBacks
 from cnn_module.training_module.model_factory import GetModel
-from cnn_module.training_module.util import Preprocess, format_example, format_example_tf, update_status
+from cnn_module.training_module.util import (
+    Preprocess,
+    format_example,
+    format_example_tf,
+    update_status,
+)
 
 
 def train_main(args):
@@ -123,7 +128,6 @@ def train_main(args):
         validation_ds = None
         validation_steps = None
 
-
     out_dir = os.path.join(
         args.log_dir,
         args.model_name
@@ -144,11 +148,9 @@ def train_main(args):
     if args.reg_drop_out_per is not None:
         reg_drop_out_per = float(args.reg_drop_out_per)
 
-
     l2_reg = None
     if args.l2_reg is not None:
         l2_reg = float(args.l2_reg)
-
 
     num_layers = None
     if args.train_num_layers is not None:

@@ -26,6 +26,7 @@ import random
 import shutil
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 import sys
@@ -64,22 +65,72 @@ def get_data_from_tf(
     def _parse_image_function(key):
         return tf.io.parse_single_example(key, feature)
 
-    CLAM_dataset = tfrecord_dataset.map(_parse_image_function)
+    dataset = tfrecord_dataset.map(_parse_image_function)
 
     image_features = list()
 
-    for tfrecord_value in CLAM_dataset:
+    for tfrecord_value in dataset:
         img_feature = tf.io.parse_tensor(tfrecord_value["image_feature"], "float32")
-
-        if args.imf_norm_op:
-            img_feature = tf.math.l2_normalize(img_feature)
 
         slide_labels = tfrecord_value["label"]
         slide_label = int(slide_labels)
 
         image_features.append(img_feature)
 
+    image_features = tf.convert_to_tensor(image_features)
+    image_features = tf.reshape(
+        image_features, (image_features.shape[0], image_features.shape[-1])
+    )
+    if args.imf_norm_op:
+        image_features = tf.math.l2_normalize(image_features)
+
     return image_features, slide_label
+
+
+def load_sample_dataset(args, sample_name="train"):
+    """_summary_
+
+    Args:
+        args (_type_): _description_
+        sample_name (str, optional): _description_. Defaults to "train".
+
+    Returns:
+        _type_: _description_
+    """
+    all_img_uuids = list(os.listdir(args.all_tfrecords_path))
+
+    if sample_name == "train":
+        img_uuids = list(pd.read_csv(args.train_data_dir, index_col=False).UUID)
+    elif sample_name == "val":
+        img_uuids = list(pd.read_csv(args.val_data_dir, index_col=False).UUID)
+    else:
+        img_uuids = list(pd.read_csv(args.test_data_dir, index_col=False).UUID)
+
+    sample_list = [
+        os.path.join(args.all_tfrecords_path, img_uuid)
+        for img_uuid in all_img_uuids
+        if img_uuid.split("_")[-1].split(".tfrecords")[0] in img_uuids
+    ]
+    if sample_list != "test":
+        sample_list = random.sample(sample_list, len(sample_list))
+
+    features = list()
+    labels = list()
+    for i in sample_list:
+        img_features, slide_label = get_data_from_tf(
+            tf_path=i,
+            args=args,
+        )
+        features.append(img_features)
+        labels.append(slide_label)
+
+    sample_dataset = {
+        "sample_names": sample_list,
+        "image_features": features,
+        "slide_labels": labels,
+    }
+
+    return sample_dataset
 
 
 def most_frequent(list):
@@ -257,16 +308,12 @@ def ng_att_call(ng_att_net, img_features):
     Returns:
         _type_: _description_
     """
-    h = list()
-    A = list()
+    h = ng_att_net()[0](img_features)
+    A = ng_att_net()[1](h)
 
-    for i in img_features:
-        c_imf = ng_att_net[0](i)
-        h.append(c_imf)
+    h = tf.reshape(h, (h.shape[0], 1, h.shape[-1]))
+    A = tf.reshape(A, (A.shape[0], 1, A.shape[-1]))
 
-    for j in h:
-        a = ng_att_net[1](j)
-        A.append(a)
     return h, A
 
 
@@ -280,19 +327,15 @@ def g_att_call(g_att_net, img_features):
     Returns:
         _type_: _description_
     """
-    h = list()
-    A = list()
+    h = g_att_net()[0](img_features)
 
-    for i in img_features:
-        c_imf = g_att_net[0](i)
-        h.append(c_imf)
+    att_v_output = g_att_net()[1](h)
+    att_u_output = g_att_net()[2](h)
+    att_input = tf.math.multiply(att_v_output, att_u_output)
+    A = g_att_net()[3](att_input)
 
-    for j in h:
-        att_v_output = g_att_net[1](j)
-        att_u_output = g_att_net[2](j)
-        att_input = tf.math.multiply(att_v_output, att_u_output)
-        a = g_att_net[3](att_input)
-        A.append(a)
+    h = tf.reshape(h, (h.shape[0], 1, h.shape[-1]))
+    A = tf.reshape(A, (A.shape[0], 1, A.shape[-1]))
 
     return h, A
 

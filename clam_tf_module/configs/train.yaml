@@ -32,11 +32,11 @@
   ## path to all tfrecords, including tfrecords used for training, validation, and testing
   all_tfrecords_path: /home/quincy/data/bach_tfrecords
   ## directory of training data split csv file including slide uuids used for training
-  train_data_dir: /home/quincy/data/bach_kf/fold_1/bach_fold_1_train.csv
+  train_data_dir: /home/quincy/data/bach_kf/fold_5/bach_fold_5_train.csv
   ## directory of validation data split csv file including slide uuids used for validation
-  val_data_dir: /home/quincy/data/bach_kf/fold_1/bach_fold_1_val.csv
+  val_data_dir: /home/quincy/data/bach_kf/fold_5/bach_fold_5_val.csv
   ## path to the trained model checkpoint, training and validation reported losses and metrics, and trainning and validation configurations
-  checkpoints_dir: /home/quincy/exps/clam/h1/cv1
+  checkpoints_dir: /home/quincy/exps/clam/h2/cv5
   ## optimizer option for instance classifier
   i_optimizer_name: Adam
   ## optimizer option for bag classifier
@@ -56,29 +56,27 @@
   ## whether or not the mutually exclusive assumption holds
   mut_ex: False
   ## learning rate for instance classifier
-  i_learn_rate: 0.0002
+  i_learn_rate: 0.0001
   ## learning rate for bag classifier
-  b_learn_rate: 0.0002
+  b_learn_rate: 0.0001
   ## learning rate for attention network
-  a_learn_rate: 0.0002
+  a_learn_rate: 0.0001
   ## whether or not normalize input image feature vectors
-  imf_norm_op: True
+  imf_norm_op: False
   ## number of classes need to be classified, default be 2 for binary classification
   n_class: 2
   ## percentage of the number of instances from one slide to determine the value of top k
-  top_k_percent: 0.2
+  top_k_percent: 0.25
   ## whether or not applying multi-clam models with multi-bag classifiers included
   m_clam_op: False
-  ## number of batch size applied during model optimization process, when batch size be 0, means not doing batch training
-  batch_size: 0
   ## number of epochs for model optimization process
-  epochs: 50
+  epochs: 20
   ## if only returned attention score from trained model for visualization purposes
   att_only: False
   ## attention network size which will determine the number of hidden units
-  net_size: small
+  net_size: big
   ## dropout rate for the attention network dropout layer if it is enabled
-  dropout_rate: 0.5
+  dropout_rate: 0.25
   ## dimensionality of compressed image feature vectors, default be 512
   dim_compress_features: 512
 ...

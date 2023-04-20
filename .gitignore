@@ -5,3 +5,4 @@ QSUB_Script/
 *.out
 *__pycache__
 *git
+*checkpoints

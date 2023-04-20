@@ -200,9 +200,6 @@ class Ins(tf.keras.Model):
         """
         n_ins = self.args.top_k_percent * len(h)
         n_ins = int(n_ins)
-        # if n_ins computed above is less than 0, make n_ins be default be 8
-        if n_ins == 0:
-            n_ins += 8
 
         for i in range(self.args.n_class):
             ins_classifier = self.ins_classifier()[i]
@@ -234,6 +231,13 @@ class Ins(tf.keras.Model):
             ins_labels = ins_label_in
             ins_logits_unnorm = logits_unnorm_in
             ins_logits = logits_in
+
+        ins_labels, ins_logits_unnorm, ins_logits = (
+            tf.convert_to_tensor(ins_labels),
+            tf.convert_to_tensor(ins_logits_unnorm),
+            tf.convert_to_tensor(ins_logits),
+        )
+        ins_labels = tf.one_hot(ins_labels, 2)
 
         return {
             "ins_labels": ins_labels,

@@ -22,7 +22,9 @@ class GetModel:
         """
         self.args = args
 
-    def get_model_and_preprocess(self,):
+    def get_model_and_preprocess(
+        self,
+    ):
         """_summary_
 
         Raises:
@@ -31,7 +33,9 @@ class GetModel:
         Returns:
             _type_: _description_
         """
-        input_tensor = tf.keras.layers.Input(shape=(self.args.patch_size, self.args.patch_size, 3))
+        input_tensor = tf.keras.layers.Input(
+            shape=(self.args.patch_size, self.args.patch_size, 3)
+        )
         img_shape = (self.args.patch_size, self.args.patch_size, 3)
 
         if self.args.model_name == "DenseNet121":
@@ -221,7 +225,9 @@ class GetModel:
 
         return conv_model, preprocess
 
-    def get_loss(self,):
+    def get_loss(
+        self,
+    ):
         """_summary_
 
         Raises:
@@ -240,9 +246,13 @@ class GetModel:
         elif self.args.loss_function == "Hinge":
             return tf.keras.losses.Hinge()
         else:
-            raise AttributeError(f"{self.args.loss_function} as a loss function is not yet coded")
+            raise AttributeError(
+                f"{self.args.loss_function} as a loss function is not yet coded"
+            )
 
-    def get_optimizer(self,):
+    def get_optimizer(
+        self,
+    ):
         if self.args.optimizer_name == "Adadelta":
             optimizer = tf.keras.optimizers.Adadelta(learning_rate=self.args.lr)
         elif self.args.optimizer_name == "Adagrad":
@@ -265,7 +275,9 @@ class GetModel:
             )
         return optimizer
 
-    def compile_model(self,):
+    def compile_model(
+        self,
+    ):
         model, preprocess = self.get_model_and_preprocess()
 
         # Define the trainable model
@@ -273,20 +285,20 @@ class GetModel:
             optimizer=self.get_optimizer(),
             loss=self.get_loss(),
             metrics=[
-                tf.keras.metrics.AUC(curve='PR', num_thresholds=10, name='PR'),
-                tf.keras.metrics.AUC(name='AUC'),
-                tf.keras.metrics.AUC(curve='PR',name='PR'),
-                tf.keras.metrics.Accuracy(name='accuracy'),
-                tf.keras.metrics.CategoricalAccuracy(name='CategoricalAccuracy'),
-                tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-                tf.keras.metrics.TruePositives(name='tp'),
-                tf.keras.metrics.FalsePositives(name='fp'),
-                tf.keras.metrics.TrueNegatives(name='tn'),
-                tf.keras.metrics.FalseNegatives(name='fn'),
+                tf.keras.metrics.AUC(curve="PR", num_thresholds=10, name="PR"),
+                tf.keras.metrics.AUC(name="AUC"),
+                tf.keras.metrics.AUC(curve="PR", name="PR"),
+                tf.keras.metrics.Accuracy(name="accuracy"),
+                tf.keras.metrics.CategoricalAccuracy(name="CategoricalAccuracy"),
                 tf.keras.metrics.BinaryAccuracy(name="accuracy"),
-                tf.keras.metrics.Precision(name='precision'),
-                tf.keras.metrics.Recall(name='recall'),
-                tf.keras.metrics.AUC(name='auc'),
+                tf.keras.metrics.TruePositives(name="tp"),
+                tf.keras.metrics.FalsePositives(name="fp"),
+                tf.keras.metrics.TrueNegatives(name="tn"),
+                tf.keras.metrics.FalseNegatives(name="fn"),
+                tf.keras.metrics.BinaryAccuracy(name="accuracy"),
+                tf.keras.metrics.Precision(name="precision"),
+                tf.keras.metrics.Recall(name="recall"),
+                tf.keras.metrics.AUC(name="auc"),
             ],
         )
 
