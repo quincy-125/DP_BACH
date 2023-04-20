@@ -70,7 +70,7 @@ def forward_propagation(c_model, args):
     ins_logits = tf.convert_to_tensor(sum(ins_logits) / len(ins_logits))
     y_true = tf.convert_to_tensor(sum(y_true) / len(y_true))
     y_prob = tf.convert_to_tensor(sum(y_prob) / len(y_prob))
-    
+
     outputs_dict = {
         "ins_labels": ins_labels,
         "ins_logits": ins_logits,
@@ -109,7 +109,9 @@ def backward_propagation(
         with strategy.scope():
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
                 outputs_dict = forward_propagation(c_model=c_model, args=args)
-                i_loss = i_loss_func(outputs_dict["ins_labels"], outputs_dict["ins_logits"])
+                i_loss = i_loss_func(
+                    outputs_dict["ins_labels"], outputs_dict["ins_logits"]
+                )
                 i_loss = tf.math.reduce_mean(i_loss)
                 if args.mut_ex:
                     i_loss = i_loss / args.n_class
@@ -158,7 +160,6 @@ def train_step(
     """
     outputs_dict = forward_propagation(c_model=c_model, args=args)
     i_loss, b_loss, t_loss = backward_propagation(c_model=c_model, args=args)
-
 
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(
         outputs_dict["true_labels"], outputs_dict["pred_labels"]

@@ -66,7 +66,7 @@ def forward_val(c_model, args):
     ins_logits = tf.convert_to_tensor(sum(ins_logits) / len(ins_logits))
     y_true = tf.convert_to_tensor(sum(y_true) / len(y_true))
     y_prob = tf.convert_to_tensor(sum(y_prob) / len(y_prob))
-    
+
     outputs_dict = {
         "ins_labels": ins_labels,
         "ins_logits": ins_logits,

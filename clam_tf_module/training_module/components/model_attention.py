@@ -120,11 +120,7 @@ class NG_Att_Net(tf.keras.Model):
             _type_: _description_
         """
         h = self.att_model()[0](img_features)
-
-        att_v_output = self.att_model()[1](h)
-        att_u_output = self.att_model()[2](h)
-        att_input = tf.math.multiply(att_v_output, att_u_output)
-        A = self.att_model()[3](att_input)
+        A = self.att_model()[1](h)
 
         h = tf.reshape(h, (h.shape[0], 1, h.shape[-1]))
         A = tf.reshape(A, (A.shape[0], 1, A.shape[-1]))

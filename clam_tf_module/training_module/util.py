@@ -79,8 +79,7 @@ def get_data_from_tf(
 
     image_features = tf.convert_to_tensor(image_features)
     image_features = tf.reshape(
-        image_features, 
-        (image_features.shape[0], image_features.shape[-1])
+        image_features, (image_features.shape[0], image_features.shape[-1])
     )
     if args.imf_norm_op:
         image_features = tf.math.l2_normalize(image_features)
@@ -309,16 +308,12 @@ def ng_att_call(ng_att_net, img_features):
     Returns:
         _type_: _description_
     """
-    h = list()
-    A = list()
+    h = ng_att_net()[0](img_features)
+    A = ng_att_net()[1](h)
 
-    for i in img_features:
-        c_imf = ng_att_net[0](i)
-        h.append(c_imf)
+    h = tf.reshape(h, (h.shape[0], 1, h.shape[-1]))
+    A = tf.reshape(A, (A.shape[0], 1, A.shape[-1]))
 
-    for j in h:
-        a = ng_att_net[1](j)
-        A.append(a)
     return h, A
 
 
@@ -332,19 +327,15 @@ def g_att_call(g_att_net, img_features):
     Returns:
         _type_: _description_
     """
-    h = list()
-    A = list()
+    h = g_att_net()[0](img_features)
 
-    for i in img_features:
-        c_imf = g_att_net[0](i)
-        h.append(c_imf)
+    att_v_output = g_att_net()[1](h)
+    att_u_output = g_att_net()[2](h)
+    att_input = tf.math.multiply(att_v_output, att_u_output)
+    A = g_att_net()[3](att_input)
 
-    for j in h:
-        att_v_output = g_att_net[1](j)
-        att_u_output = g_att_net[2](j)
-        att_input = tf.math.multiply(att_v_output, att_u_output)
-        a = g_att_net[3](att_input)
-        A.append(a)
+    h = tf.reshape(h, (h.shape[0], 1, h.shape[-1]))
+    A = tf.reshape(A, (A.shape[0], 1, A.shape[-1]))
 
     return h, A
 
