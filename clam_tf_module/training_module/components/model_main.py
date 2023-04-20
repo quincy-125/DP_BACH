@@ -59,7 +59,6 @@ def train_val(
             c_model=c_model,
             args=args,
         )
-
         with train_summary_writer.as_default():
             tf.summary.scalar(
                 "Total Loss", float(train_dicts["train_loss"]), step=epoch
@@ -78,25 +77,12 @@ def train_val(
             tf.summary.scalar(
                 "Specificity", float(train_dicts["train_specificity"]), step=epoch
             )
-            tf.summary.histogram(
-                "True Positive", int(train_dicts["train_tp"]), step=epoch
-            )
-            tf.summary.histogram(
-                "False Positive", int(train_dicts["train_fp"]), step=epoch
-            )
-            tf.summary.histogram(
-                "True Negative", int(train_dicts["train_tn"]), step=epoch
-            )
-            tf.summary.histogram(
-                "False Negative", int(train_dicts["train_fn"]), step=epoch
-            )
 
         # Validation Step
         val_dicts = val_step(
             c_model=c_model,
             args=args,
         )
-
         with val_summary_writer.as_default():
             tf.summary.scalar("Total Loss", float(val_dicts["val_loss"]), step=epoch)
             tf.summary.scalar(
@@ -111,31 +97,15 @@ def train_val(
             tf.summary.scalar(
                 "Specificity", float(val_dicts["val_specificity"]), step=epoch
             )
-            tf.summary.histogram("True Positive", int(val_dicts["val_tp"]), step=epoch)
-            tf.summary.histogram("False Positive", int(val_dicts["val_fp"]), step=epoch)
-            tf.summary.histogram("True Negative", int(val_dicts["val_tn"]), step=epoch)
-            tf.summary.histogram("False Negative", int(val_dicts["val_fn"]), step=epoch)
-
         epoch_run_time = time.time() - start_time
 
-        # early-stopping
-        tf.keras.callbacks.EarlyStopping(
-            monitor="val_loss",
-            min_delta=0.1,
-            patience=20,
-            mode="min",
-            restore_best_weights=True,
-        )
-
         template = (
-            "\n Epoch {},  Train Loss: {}, Train Accuracy: {}, Val Loss: {}, Val Accuracy: {}, Epoch Running "
+            "\n Epoch {}, Train Accuracy: {}, Val Accuracy: {}, Epoch Running "
             "Time: {} "
         )
         train_val_log = template.format(
             epoch + 1,
-            f"{float(train_dicts['train_loss']):.8}",
             f"{float(train_dicts['train_acc']):.4%}",
-            f"{float(val_dicts['val_loss']):.8}",
             f"{float(val_dicts['val_acc']):.4%}",
             "--- %s mins ---" % int(epoch_run_time / 60),
         )
@@ -235,14 +205,6 @@ def clam(
                 f"Num GPUs Available: {len(tf.config.experimental.list_physical_devices('GPU'))}, and all available GPU Devices include {tf.config.experimental.list_physical_devices('GPU')}"
             )
             gpu = tf.config.experimental.list_logical_devices("GPU")[0]
-            # for gpu in gpus:
-            #     print(f'Loading GPU {gpu}')
-            # try:
-            #     tf.config.experimental.set_virtual_device_configuration(
-            #         gpus,[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=5120)])
-            # except RuntimeError as e:
-            #     print(f"error is {e}")
-
             with tf.device(gpu.name):
                 clam_optimize(
                     c_model=c_model,

@@ -22,16 +22,12 @@
 
 
 import tensorflow as tf
-import pandas as pd
 import sklearn
 import sklearn.metrics
 import os
-import random
-import statistics
+from statistics import mean
 
 from training_module.util import (
-    most_frequent,
-    get_data_from_tf,
     load_sample_dataset,
     load_optimizers,
     load_loss_func,
@@ -40,17 +36,59 @@ from training_module.util import (
 os.environ["HYDRA_FULL_ERROR"] = "1"
 
 
-def optimize(
-    img_features,
-    slide_label,
-    c_model,
-    args,
-):
+def forward_propagation(c_model, args):
     """_summary_
 
     Args:
-        img_features (_type_): _description_
-        slide_label (_type_): _description_
+        c_model (_type_): _description_
+        args (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    train_sample_dataset = load_sample_dataset(args=args, sample_name="train")
+    features, labels = (
+        train_sample_dataset["image_features"],
+        train_sample_dataset["slide_labels"],
+    )
+
+    ins_labels = list()
+    ins_logits = list()
+    y_true = list()
+    y_prob = list()
+    pred_labels = list()
+
+    for i in range(len(labels)):
+        c_model_dict = c_model.call(features[i], labels[i])
+        ins_labels.append(c_model_dict["ins_labels"])
+        ins_logits.append(c_model_dict["ins_logits"])
+        y_true.append(c_model_dict["Y_true"])
+        y_prob.append(c_model_dict["Y_prob"])
+        pred_labels.append(c_model_dict["predict_slide_label"])
+
+    ins_labels = tf.convert_to_tensor(sum(ins_labels) / len(ins_labels))
+    ins_logits = tf.convert_to_tensor(sum(ins_logits) / len(ins_logits))
+    y_true = tf.convert_to_tensor(sum(y_true) / len(y_true))
+    y_prob = tf.convert_to_tensor(sum(y_prob) / len(y_prob))
+    
+    outputs_dict = {
+        "ins_labels": ins_labels,
+        "ins_logits": ins_logits,
+        "y_true": y_true,
+        "y_prob": y_prob,
+        "true_labels": labels,
+        "pred_labels": pred_labels,
+    }
+    return outputs_dict
+
+
+def backward_propagation(
+    c_model,
+    args,
+):
+    """å
+
+    Args:
         c_model (_type_): _description_
         args (_type_): _description_
 
@@ -70,47 +108,39 @@ def optimize(
 
         with strategy.scope():
             with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
-                c_model_dict = c_model.call(img_features, slide_label)
-
-                i_loss = i_loss_func(
-                    c_model_dict["ins_labels"],
-                    c_model_dict["ins_logits"],
-                )
-                I_Loss = tf.math.reduce_mean(i_loss)
+                outputs_dict = forward_propagation(c_model=c_model, args=args)
+                i_loss = i_loss_func(outputs_dict["ins_labels"], outputs_dict["ins_logits"])
+                i_loss = tf.math.reduce_mean(i_loss)
                 if args.mut_ex:
-                    I_Loss = I_Loss / args.n_class
-                B_Loss = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
-                T_Loss = args.c1 * B_Loss + args.c2 * I_Loss
+                    i_loss = i_loss / args.n_class
+                b_loss = b_loss_func(outputs_dict["y_true"], outputs_dict["y_prob"])
+                t_loss = args.c1 * b_loss + args.c2 * i_loss
     else:
         with tf.GradientTape() as i_tape, tf.GradientTape() as b_tape, tf.GradientTape() as a_tape:
-            c_model_dict = c_model.call(img_features, slide_label)
-
-            i_loss = i_loss_func(
-                c_model_dict["ins_labels"],
-                c_model_dict["ins_logits"],
-            )
-            I_Loss = tf.math.reduce_mean(i_loss)
+            outputs_dict = forward_propagation(c_model=c_model, args=args)
+            i_loss = i_loss_func(outputs_dict["ins_labels"], outputs_dict["ins_logits"])
+            i_loss = tf.math.reduce_mean(i_loss)
             if args.mut_ex:
-                I_Loss = I_Loss / args.n_class
-            B_Loss = b_loss_func(c_model_dict["Y_true"], c_model_dict["Y_prob"])
-            T_Loss = args.c1 * B_Loss + args.c2 * I_Loss
+                i_loss = i_loss / args.n_class
+            b_loss = b_loss_func(outputs_dict["y_true"], outputs_dict["y_prob"])
+            t_loss = args.c1 * b_loss + args.c2 * i_loss
 
-    i_grad = i_tape.gradient(I_Loss, c_model.networks()["i_net"].trainable_weights)
+    i_grad = i_tape.gradient(i_loss, c_model.networks()["i_net"].trainable_weights)
     i_optimizer.apply_gradients(
         zip(i_grad, c_model.networks()["i_net"].trainable_weights)
     )
 
-    b_grad = b_tape.gradient(B_Loss, c_model.networks()["b_net"].trainable_weights)
+    b_grad = b_tape.gradient(b_loss, c_model.networks()["b_net"].trainable_weights)
     b_optimizer.apply_gradients(
         zip(b_grad, c_model.networks()["b_net"].trainable_weights)
     )
 
-    a_grad = a_tape.gradient(T_Loss, c_model.networks()["a_net"].trainable_weights)
+    a_grad = a_tape.gradient(t_loss, c_model.networks()["a_net"].trainable_weights)
     a_optimizer.apply_gradients(
         zip(a_grad, c_model.networks()["a_net"].trainable_weights)
     )
 
-    return I_Loss, B_Loss, T_Loss, c_model_dict["predict_slide_label"]
+    return i_loss, b_loss, t_loss
 
 
 def train_step(
@@ -126,41 +156,14 @@ def train_step(
     Returns:
         _type_: _description_
     """
-    loss_total = list()
-    loss_ins = list()
-    loss_bag = list()
+    outputs_dict = forward_propagation(c_model=c_model, args=args)
+    i_loss, b_loss, t_loss = backward_propagation(c_model=c_model, args=args)
 
-    slide_true_label = list()
-    slide_predict_label = list()
-
-    train_sample_dataset = load_sample_dataset(args=args, sample_name="train")
-    features, labels = (
-        train_sample_dataset["image_features"],
-        train_sample_dataset["slide_labels"],
-    )
-    for i in range(len(labels)):
-        print("=", end="")
-        I_Loss, B_Loss, T_Loss, predict_slide_label = optimize(
-            img_features=features[i],
-            slide_label=labels[i],
-            c_model=c_model,
-            args=args,
-        )
-
-        loss_total.append(float(T_Loss))
-        loss_ins.append(float(I_Loss))
-        loss_bag.append(float(B_Loss))
-
-        slide_true_label.append(labels[i])
-        slide_predict_label.append(predict_slide_label)
 
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(
-        slide_true_label, slide_predict_label
+        outputs_dict["true_labels"], outputs_dict["pred_labels"]
     ).ravel()
-    train_tn = int(tn)
-    train_fp = int(fp)
-    train_fn = int(fn)
-    train_tp = int(tp)
+    train_tn, train_fp, train_fn, train_tp = int(tn), int(fp), int(fn), int(tp)
 
     train_sensitivity = round(train_tp / (train_tp + train_fn), 2)
     train_specificity = round(train_tn / (train_tn + train_fp), 2)
@@ -169,22 +172,14 @@ def train_step(
     )
 
     fpr, tpr, thresholds = sklearn.metrics.roc_curve(
-        slide_true_label, slide_predict_label, pos_label=1
+        outputs_dict["true_labels"], outputs_dict["pred_labels"], pos_label=1
     )
     train_auc = round(sklearn.metrics.auc(fpr, tpr), 2)
 
-    train_loss = statistics.mean(loss_total)
-    train_ins_loss = statistics.mean(loss_ins)
-    train_bag_loss = statistics.mean(loss_bag)
-
     return {
-        "train_loss": train_loss,
-        "train_ins_loss": train_ins_loss,
-        "train_bag_loss": train_bag_loss,
-        "train_tn": train_tn,
-        "train_fp": train_fp,
-        "train_fn": train_fn,
-        "train_tp": train_tp,
+        "train_loss": t_loss,
+        "train_ins_loss": i_loss,
+        "train_bag_loss": b_loss,
         "train_sensitivity": train_sensitivity,
         "train_specificity": train_specificity,
         "train_acc": train_acc,

@@ -50,7 +50,7 @@
   ## scalar of instance loss values
   c1: 0.7
   ## scalar of bag loss values
-  c2: 0.3
+  c2: 0.03
   ## whether or not applying gate attention network
   att_gate: True
   ## whether or not the mutually exclusive assumption holds
@@ -70,7 +70,7 @@
   ## whether or not applying multi-clam models with multi-bag classifiers included
   m_clam_op: False
   ## number of epochs for model optimization process
-  epochs: 50
+  epochs: 20
   ## if only returned attention score from trained model for visualization purposes
   att_only: False
   ## attention network size which will determine the number of hidden units
