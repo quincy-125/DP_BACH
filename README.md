@@ -1,7 +1,7 @@
 # DP_BACH
 This is the codebase of Tensorflow-Version Deep Neural Networks Implementations for the paper cited in below:
 
-[Gu, Q., Prodduturi, N., Hart, S. Deep Learning in Automating Breast Cancer Diagnosis from Microscopy Images. MedRxiv. 2023.] (https://www.medrxiv.org/content/10.1101/2023.06.15.23291437v1)
+[Gu, Q., Prodduturi, N., Hart, S. Deep Learning in Automating Breast Cancer Diagnosis from Microscopy Images. MedRxiv. 2023.](https://www.medrxiv.org/content/10.1101/2023.06.15.23291437v1)
 
 The structure of the codebase
 ```
