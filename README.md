@@ -1,5 +1,5 @@
 # DP_BACH
-This is the codebase of Tensorflow-Version Deep Neural Networks Implementations for the paper cited in below:
+This is the codebase of Tensorflow-Version Deep Neural Networks Implementations for the paper cited in below. To use our codebase, you must cite the following publication:
 
 [Gu, Q., Prodduturi, N., Hart, S. Deep Learning in Automating Breast Cancer Diagnosis from Microscopy Images. MedRxiv. 2023.](https://www.medrxiv.org/content/10.1101/2023.06.15.23291437v1)
 
